@@ -814,7 +814,7 @@
   background: var(--cosmic-page-bg);
 }
 
-html.cosmic-cursor-active .cosmic-shell {
+html.cosmic-cursor-active .cosmic-distortion-surface {
   filter: url('#cosmic-cursor-distortion');
   will-change: filter;
 }

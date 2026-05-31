@@ -15,7 +15,7 @@
   <!-- Default Home Page -->
   <div
     v-else
-    class="cosmic-shell relative flex min-h-screen flex-col overflow-hidden"
+    class="cosmic-shell cosmic-distortion-surface relative flex min-h-screen flex-col overflow-hidden"
   >
     <!-- 星空与鼠标黑洞透镜背景 -->
     <div class="cosmic-backdrop cosmic-backdrop--absolute">

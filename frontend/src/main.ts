@@ -21,6 +21,7 @@ const COSMIC_MAP_ID = 'cosmic-cursor-distortion-map'
 const COSMIC_DISPLACEMENT_ID = 'cosmic-cursor-displacement'
 const COSMIC_VISUAL_ID = 'cosmic-cursor-visual'
 const COSMIC_PARTICLES_ID = 'cosmic-pull-particles'
+const COSMIC_DISTORTION_SURFACE_SELECTOR = '.cosmic-distortion-surface'
 const COSMIC_SVG_NS = 'http://www.w3.org/2000/svg'
 const COSMIC_XLINK_NS = 'http://www.w3.org/1999/xlink'
 const COSMIC_PULL_BASE_SCALE = 86
@@ -553,10 +554,22 @@ function initCosmicCursor() {
 
   const updateFilterBounds = () => {
     const padding = getRadius() * 3
-    filter.setAttribute('x', `${window.scrollX - padding}`)
-    filter.setAttribute('y', `${window.scrollY - padding}`)
+    const surfaceOffset = getDistortionSurfaceOffset()
+    filter.setAttribute('x', `${window.scrollX - surfaceOffset.x - padding}`)
+    filter.setAttribute('y', `${window.scrollY - surfaceOffset.y - padding}`)
     filter.setAttribute('width', `${window.innerWidth + padding * 2}`)
     filter.setAttribute('height', `${window.innerHeight + padding * 2}`)
+  }
+
+  const getDistortionSurfaceOffset = () => {
+    const surface = document.querySelector<HTMLElement>(COSMIC_DISTORTION_SURFACE_SELECTOR)
+    if (!surface) return { x: 0, y: 0 }
+
+    const rect = surface.getBoundingClientRect()
+    return {
+      x: rect.left + window.scrollX,
+      y: rect.top + window.scrollY
+    }
   }
 
   const getPullMaxScale = () =>
@@ -810,11 +823,14 @@ function initCosmicCursor() {
     const radius = getRadius()
     const pageX = nextClientX + window.scrollX
     const pageY = nextClientY + window.scrollY
+    const surfaceOffset = getDistortionSurfaceOffset()
+    const localX = pageX - surfaceOffset.x
+    const localY = pageY - surfaceOffset.y
 
     root.style.setProperty('--cosmic-cursor-x', `${nextClientX}px`)
     root.style.setProperty('--cosmic-cursor-y', `${nextClientY}px`)
-    map.setAttribute('x', `${pageX - radius}`)
-    map.setAttribute('y', `${pageY - radius}`)
+    map.setAttribute('x', `${localX - radius}`)
+    map.setAttribute('y', `${localY - radius}`)
     map.setAttribute('width', `${radius * 2}`)
     map.setAttribute('height', `${radius * 2}`)
     if (!isActive) setActive(true)
