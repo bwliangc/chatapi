@@ -24,6 +24,7 @@ const COSMIC_PARTICLES_ID = 'cosmic-pull-particles'
 const COSMIC_SVG_NS = 'http://www.w3.org/2000/svg'
 const COSMIC_XLINK_NS = 'http://www.w3.org/1999/xlink'
 const COSMIC_PULL_BASE_SCALE = 86
+const COSMIC_WHITE_HOLE_PULL_BASE_SCALE = 38
 const COSMIC_PULL_MAX_SCALE = 185
 const COSMIC_BLACK_HOLE_PULL_MAX_SCALE = 220
 const COSMIC_PULL_RAMP_MS = 2600
@@ -38,7 +39,7 @@ const COSMIC_DISPLACEMENT_MAP_SIZE = 160
 // 旋转帧率上限（~30fps），避免空转时整页 SVG 滤镜被高频重栅格化
 const COSMIC_SPIN_MIN_FRAME_MS = 33
 // 鼠标静止超过该时长后，先平滑收缩再卸下整页滤镜
-const COSMIC_IDLE_TIMEOUT_MS = 3800
+const COSMIC_IDLE_TIMEOUT_MS = 3500
 const COSMIC_COLLAPSE_MS = 1100
 // 熄火后需累计移动超过该距离才重新唤醒，过滤触控板/鼠标的微小漂移导致的反复点亮
 const COSMIC_WAKE_THRESHOLD_PX = 8
@@ -561,6 +562,9 @@ function initCosmicCursor() {
   const getPullMaxScale = () =>
     cursorField === 'attract' ? COSMIC_BLACK_HOLE_PULL_MAX_SCALE : COSMIC_PULL_MAX_SCALE
 
+  const getPullBaseScale = () =>
+    cursorField === 'repel' ? COSMIC_WHITE_HOLE_PULL_BASE_SCALE : COSMIC_PULL_BASE_SCALE
+
   const updatePullScale = () => {
     if (!isActive) {
       return
@@ -568,8 +572,9 @@ function initCosmicCursor() {
 
     const progress = Math.min(1, (performance.now() - holdStartedAt) / COSMIC_PULL_RAMP_MS)
     const eased = progress * progress * (3 - 2 * progress)
+    const baseScale = getPullBaseScale()
     const maxScale = getPullMaxScale()
-    const scale = COSMIC_PULL_BASE_SCALE + (maxScale - COSMIC_PULL_BASE_SCALE) * eased
+    const scale = baseScale + (maxScale - baseScale) * eased
     displacement.setAttribute('scale', scale.toFixed(1))
     root.style.setProperty('--cosmic-pull-strength', eased.toFixed(3))
 
@@ -591,7 +596,7 @@ function initCosmicCursor() {
     holdStartedAt = performance.now()
     root.style.setProperty('--cosmic-pull-strength', '0')
     if (isActive) {
-      displacement.setAttribute('scale', `${COSMIC_PULL_BASE_SCALE}`)
+      displacement.setAttribute('scale', `${getPullBaseScale()}`)
       startPullRamp()
     }
   }
@@ -729,7 +734,7 @@ function initCosmicCursor() {
     root.classList.toggle('cosmic-cursor-active', active)
     root.style.setProperty('--cosmic-cursor-active', active ? '1' : '0')
     root.style.setProperty('--cosmic-cursor-scale', active ? '1' : '0')
-    displacement.setAttribute('scale', active ? `${COSMIC_PULL_BASE_SCALE}` : '0')
+    displacement.setAttribute('scale', active ? `${getPullBaseScale()}` : '0')
     if (active) {
       startPullRamp()
       startSpinFrameLoop()
@@ -767,7 +772,7 @@ function initCosmicCursor() {
     const startedAt = performance.now()
     const initialStrength = Number.parseFloat(root.style.getPropertyValue('--cosmic-pull-strength')) || 0
     const initialDisplacementScale =
-      Number.parseFloat(displacement.getAttribute('scale') || '') || COSMIC_PULL_BASE_SCALE
+      Number.parseFloat(displacement.getAttribute('scale') || '') || getPullBaseScale()
 
     const step = (timestamp: number) => {
       const progress = Math.min(1, (timestamp - startedAt) / COSMIC_COLLAPSE_MS)
