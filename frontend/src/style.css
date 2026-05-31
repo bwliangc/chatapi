@@ -836,6 +836,10 @@ html.cosmic-cursor-active .cosmic-shell {
   contain: layout style paint;
 }
 
+html.cosmic-cursor-white-hole .cosmic-pull-particles {
+  mix-blend-mode: multiply;
+}
+
 .cosmic-pull-particle {
   position: fixed;
   width: calc(var(--particle-size) * var(--particle-length));
@@ -885,8 +889,25 @@ html.cosmic-cursor-active .cosmic-shell {
   animation: cosmic-cursor-edge-flow 2.8s linear infinite;
 }
 
-.dark .cosmic-cursor-visual {
+html.cosmic-cursor-black-hole .cosmic-cursor-visual {
   background: rgba(0, 0, 0, 0.36);
+  box-shadow:
+    inset 0 0 5px rgba(255, 255, 255, 0.06),
+    0 0 12px rgba(15, 23, 42, 0.24);
+}
+
+html.cosmic-cursor-white-hole .cosmic-cursor-visual {
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.94) 0 34%, rgba(219, 234, 254, 0.64) 48%, rgba(96, 165, 250, 0.12) 66%, transparent 78%);
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, 0.82),
+    0 0 18px rgba(96, 165, 250, 0.24);
+}
+
+html.cosmic-cursor-white-hole .cosmic-cursor-visual::before {
+  background:
+    conic-gradient(from 0deg, transparent 0 44deg, rgba(255, 255, 255, 0.74) 72deg, transparent 104deg, transparent 188deg, rgba(125, 211, 252, 0.38) 218deg, transparent 256deg, transparent 360deg);
+  opacity: calc(0.28 + var(--cosmic-pull-strength) * 0.18);
 }
 
 .cosmic-backdrop {
@@ -1001,7 +1022,6 @@ html.cosmic-cursor-active .cosmic-shell {
     radial-gradient(2px 2px at 260px 470px, var(--star-faint), transparent);
   opacity: 0.82;
   animation: twinkle 9s ease-in-out infinite alternate, drift 240s linear infinite;
-  filter: drop-shadow(0 0 3px rgba(96, 165, 250, 0.34));
 }
 
 /* 内页弱化变体：星点压暗，避免干扰表格阅读 */
@@ -1205,4 +1225,13 @@ html.cosmic-cursor-active .cosmic-shell {
   .cosmic-pull-particle {
     display: none !important;
   }
+}
+
+/* 标签页隐藏时冻结所有常驻背景动画，避免后台空转发热 */
+html.cosmic-paused .starfield .stars-sm,
+html.cosmic-paused .starfield .stars-md,
+html.cosmic-paused .starfield .stars-lg,
+html.cosmic-paused .meteors .meteor,
+html.cosmic-paused .cosmic-cursor-visual::before {
+  animation-play-state: paused !important;
 }

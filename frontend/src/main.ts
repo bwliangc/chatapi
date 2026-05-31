@@ -25,6 +25,7 @@ const COSMIC_SVG_NS = 'http://www.w3.org/2000/svg'
 const COSMIC_XLINK_NS = 'http://www.w3.org/1999/xlink'
 const COSMIC_PULL_BASE_SCALE = 86
 const COSMIC_PULL_MAX_SCALE = 185
+const COSMIC_BLACK_HOLE_PULL_MAX_SCALE = 220
 const COSMIC_PULL_RAMP_MS = 2600
 const COSMIC_PULL_MOVE_RESET_PX = 4
 const COSMIC_PARTICLE_INTERVAL_MS = 220
@@ -36,9 +37,11 @@ const COSMIC_SPIN_FRAME_MS = 120
 const COSMIC_DISPLACEMENT_MAP_SIZE = 160
 // 旋转帧率上限（~30fps），避免空转时整页 SVG 滤镜被高频重栅格化
 const COSMIC_SPIN_MIN_FRAME_MS = 33
-// 鼠标静止超过该时长后，停掉所有循环并卸下整页滤镜
-const COSMIC_IDLE_TIMEOUT_MS = 5000
+// 鼠标静止超过该时长后，先平滑收缩再卸下整页滤镜
+const COSMIC_IDLE_TIMEOUT_MS = 3800
 const COSMIC_COLLAPSE_MS = 1100
+// 熄火后需累计移动超过该距离才重新唤醒，过滤触控板/鼠标的微小漂移导致的反复点亮
+const COSMIC_WAKE_THRESHOLD_PX = 8
 
 type CosmicParticleSource = {
   color: string
@@ -46,6 +49,9 @@ type CosmicParticleSource = {
   x: number
   y: number
 }
+
+type CosmicCursorMode = 'black-hole' | 'white-hole'
+type CosmicCursorField = 'attract' | 'repel'
 
 type CosmicCssColor = {
   alpha: number
@@ -197,7 +203,11 @@ function sampleGradientColor(value: string, rect: DOMRect, clientX: number, clie
   return normalizeParsedParticleColor(stops[nearestIndex].color)
 }
 
-function createCosmicDisplacementMap(size = COSMIC_DISPLACEMENT_MAP_SIZE, spinPhase = 0) {
+function createCosmicDisplacementMap(
+  size = COSMIC_DISPLACEMENT_MAP_SIZE,
+  spinPhase = 0,
+  field: CosmicCursorField = 'attract'
+) {
   const canvas = document.createElement('canvas')
   canvas.width = size
   canvas.height = size
@@ -208,6 +218,8 @@ function createCosmicDisplacementMap(size = COSMIC_DISPLACEMENT_MAP_SIZE, spinPh
   const image = context.createImageData(size, size)
   const center = (size - 1) / 2
   const radius = center * 0.96
+  const isRepulsive = field === 'repel'
+  const polarity = isRepulsive ? -1 : 1
 
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
@@ -225,17 +237,29 @@ function createCosmicDisplacementMap(size = COSMIC_DISPLACEMENT_MAP_SIZE, spinPh
         continue
       }
 
-      const edgeFalloff = Math.pow(1 - distance, 1.35)
-      const innerFade = 1 - Math.exp(-Math.pow(distance / 0.16, 2))
-      const lensStrength = Math.sin((1 - distance) * Math.PI) * edgeFalloff * innerFade
-      // feDisplacementMap samples in the opposite direction of the perceived motion.
-      const spiralPhase = angle * 3 + (1 - distance) * 8 + spinPhase * COSMIC_SPIN_DIRECTION
+      const radialX = distance > 0.001 ? dx / distance : 0
+      const radialY = distance > 0.001 ? dy / distance : 0
+      const edgeFalloff = Math.pow(1 - distance, isRepulsive ? 1.08 : 1.35)
+      const innerFade = isRepulsive
+        ? 0.48 + 0.52 * (1 - Math.exp(-Math.pow(distance / 0.2, 2)))
+        : 1 - Math.exp(-Math.pow(distance / 0.16, 2))
+      const corePush = isRepulsive ? 0.16 * Math.exp(-Math.pow(distance / 0.2, 2)) : 0
+      const lensStrength = Math.sin((1 - distance) * Math.PI) * edgeFalloff * innerFade + corePush
+      const mapSpinDirection = -COSMIC_SPIN_DIRECTION
+      const displacementSwirlDirection = isRepulsive ? COSMIC_SPIN_DIRECTION : -COSMIC_SPIN_DIRECTION
+      const spiralPhase = angle * 3 + (1 - distance) * 8 + spinPhase * mapSpinDirection
       const spiralWave = Math.sin(spiralPhase)
-      const shearWave = Math.cos(angle * 2 - (1 - distance) * 5 + spinPhase * 0.72)
-      const radialPull = (1.1 + spiralWave * 0.14) * lensStrength
-      const swirl = (0.32 + spiralWave * 0.16 + shearWave * 0.06) * lensStrength * (1 - distance)
-      const vectorX = dx * radialPull - dy * swirl * COSMIC_SPIN_DIRECTION
-      const vectorY = dy * radialPull + dx * swirl * COSMIC_SPIN_DIRECTION
+      const shearWave = Math.cos(angle * 2 - (1 - distance) * 5 + spinPhase * mapSpinDirection * 0.72)
+      const radialPull = (isRepulsive ? 0.9 + spiralWave * 0.07 : 1.1 + spiralWave * 0.14) * lensStrength
+      const swirl =
+        (isRepulsive ? 0.22 + spiralWave * 0.08 + shearWave * 0.04 : 0.32 + spiralWave * 0.16 + shearWave * 0.06) *
+        lensStrength *
+        (1 - distance)
+      const baseX = isRepulsive ? radialX : dx
+      const baseY = isRepulsive ? radialY : dy
+      // feDisplacementMap 反向采样；吸引场的切向量需要反相，视觉自旋才会和黑洞一致
+      const vectorX = (baseX * radialPull - baseY * swirl * displacementSwirlDirection) * polarity
+      const vectorY = (baseY * radialPull + baseX * swirl * displacementSwirlDirection) * polarity
 
       image.data[index] = clampByte(128 + vectorX * 128)
       image.data[index + 1] = clampByte(128 + vectorY * 128)
@@ -358,10 +382,14 @@ function initCosmicCursor() {
   let idleTimer = 0
   let nextClientX = window.innerWidth / 2
   let nextClientY = window.innerHeight / 2
+  let wakeAnchorX = nextClientX
+  let wakeAnchorY = nextClientY
   let anchorClientX = nextClientX
   let anchorClientY = nextClientY
   let holdStartedAt = 0
-  const spinFrames: string[] = []
+  let cursorMode: CosmicCursorMode = root.classList.contains('dark') ? 'black-hole' : 'white-hole'
+  let cursorField: CosmicCursorField = root.classList.contains('dark') ? 'attract' : 'repel'
+  const spinFrames = new Map<string, string[]>()
 
   const getRadius = () => Math.max(126, Math.min(180, window.innerWidth * 0.12))
 
@@ -370,14 +398,31 @@ function initCosmicCursor() {
     return visualRadius || 24
   }
 
+  const getCursorField = (mode: CosmicCursorMode): CosmicCursorField =>
+    mode === 'white-hole' ? 'repel' : 'attract'
+
+  const syncCursorMode = () => {
+    cursorMode = root.classList.contains('dark') ? 'black-hole' : 'white-hole'
+    cursorField = getCursorField(cursorMode)
+    root.classList.toggle('cosmic-cursor-white-hole', cursorMode === 'white-hole')
+    root.classList.toggle('cosmic-cursor-black-hole', cursorMode === 'black-hole')
+  }
+
   const getSpinFrame = (index: number) => {
-    if (!spinFrames[index]) {
-      spinFrames[index] = createCosmicDisplacementMap(
+    const cacheKey = `${cursorMode}:${cursorField}`
+    let frames = spinFrames.get(cacheKey)
+    if (!frames) {
+      frames = []
+      spinFrames.set(cacheKey, frames)
+    }
+    if (!frames[index]) {
+      frames[index] = createCosmicDisplacementMap(
         COSMIC_DISPLACEMENT_MAP_SIZE,
-        (index / COSMIC_SPIN_FRAME_COUNT) * Math.PI * 2
+        (index / COSMIC_SPIN_FRAME_COUNT) * Math.PI * 2,
+        cursorField
       )
     }
-    return spinFrames[index]
+    return frames[index]
   }
 
   const setDisplacementMapUrl = (mapUrl: string) => {
@@ -513,6 +558,9 @@ function initCosmicCursor() {
     filter.setAttribute('height', `${window.innerHeight + padding * 2}`)
   }
 
+  const getPullMaxScale = () =>
+    cursorField === 'attract' ? COSMIC_BLACK_HOLE_PULL_MAX_SCALE : COSMIC_PULL_MAX_SCALE
+
   const updatePullScale = () => {
     if (!isActive) {
       return
@@ -520,7 +568,8 @@ function initCosmicCursor() {
 
     const progress = Math.min(1, (performance.now() - holdStartedAt) / COSMIC_PULL_RAMP_MS)
     const eased = progress * progress * (3 - 2 * progress)
-    const scale = COSMIC_PULL_BASE_SCALE + (COSMIC_PULL_MAX_SCALE - COSMIC_PULL_BASE_SCALE) * eased
+    const maxScale = getPullMaxScale()
+    const scale = COSMIC_PULL_BASE_SCALE + (maxScale - COSMIC_PULL_BASE_SCALE) * eased
     displacement.setAttribute('scale', scale.toFixed(1))
     root.style.setProperty('--cosmic-pull-strength', eased.toFixed(3))
 
@@ -591,16 +640,26 @@ function initCosmicCursor() {
 
     const eventHorizonRadius = getEventHorizonRadius() * 0.92
     const sourceAngle = Math.atan2(source.y - nextClientY, source.x - nextClientX)
+    const isRepulsive = cursorField === 'repel'
     const spinAdvance =
       COSMIC_SPIN_DIRECTION * Math.min(1.55, 0.72 + strength * 0.46 + source.distance / 360)
+    const startAngle = isRepulsive ? sourceAngle - spinAdvance : sourceAngle
+    const startRadius = isRepulsive ? eventHorizonRadius : source.distance
+    const startX = nextClientX + Math.cos(startAngle) * startRadius
+    const startY = nextClientY + Math.sin(startAngle) * startRadius
     const spiralPoint = (progress: number) => {
-      const radiusProgress = Math.pow(1 - progress, 1.45)
       const angleProgress = 1 - Math.pow(1 - progress, 1.18)
-      const radius = eventHorizonRadius + (source.distance - eventHorizonRadius) * radiusProgress
-      const angle = sourceAngle + spinAdvance * angleProgress
+      const radius = isRepulsive
+        ? eventHorizonRadius +
+          (source.distance - eventHorizonRadius) * (1 - Math.pow(1 - progress, 1.38))
+        : eventHorizonRadius +
+          (source.distance - eventHorizonRadius) * Math.pow(1 - progress, 1.45)
+      const angle = isRepulsive
+        ? sourceAngle - spinAdvance * (1 - angleProgress)
+        : sourceAngle + spinAdvance * angleProgress
       return {
-        x: nextClientX + Math.cos(angle) * radius - source.x,
-        y: nextClientY + Math.sin(angle) * radius - source.y
+        x: nextClientX + Math.cos(angle) * radius - startX,
+        y: nextClientY + Math.sin(angle) * radius - startY
       }
     }
     const p1 = spiralPoint(0.18)
@@ -616,8 +675,8 @@ function initCosmicCursor() {
 
     const particle = document.createElement('span')
     particle.classList.add('cosmic-pull-particle')
-    particle.style.left = `${source.x}px`
-    particle.style.top = `${source.y}px`
+    particle.style.left = `${startX}px`
+    particle.style.top = `${startY}px`
     particle.style.setProperty('--particle-p1-x', `${p1.x.toFixed(1)}px`)
     particle.style.setProperty('--particle-p1-y', `${p1.y.toFixed(1)}px`)
     particle.style.setProperty('--particle-p2-x', `${p2.x.toFixed(1)}px`)
@@ -676,6 +735,8 @@ function initCosmicCursor() {
       startSpinFrameLoop()
       startParticleEmitter()
     } else {
+      wakeAnchorX = nextClientX
+      wakeAnchorY = nextClientY
       stopPullRamp()
       stopSpinFrameLoop()
       stopParticleEmitter()
@@ -758,9 +819,35 @@ function initCosmicCursor() {
     if (!frame) frame = window.requestAnimationFrame(applyPosition)
   }
 
+  syncCursorMode()
+  setDisplacementMapUrl(getSpinFrame(spinFrameIndex))
+  const modeObserver =
+    typeof MutationObserver === 'function'
+      ? new MutationObserver(() => {
+          const previousMode = cursorMode
+          const previousField = cursorField
+          syncCursorMode()
+          if (previousMode !== cursorMode || previousField !== cursorField) {
+            spinFrameIndex = 0
+            setDisplacementMapUrl(getSpinFrame(spinFrameIndex))
+          }
+        })
+      : null
+  modeObserver?.observe(root, { attributes: true, attributeFilter: ['class'] })
+
   updateFilterBounds()
 
   window.addEventListener('pointermove', (event) => {
+    // 熄火状态下，微小漂移不唤醒，避免触控板/鼠标抖动反复点亮整页滤镜
+    if (!isActive && !collapseFrame) {
+      const wakeDistance = Math.hypot(event.clientX - wakeAnchorX, event.clientY - wakeAnchorY)
+      if (wakeDistance < COSMIC_WAKE_THRESHOLD_PX) {
+        nextClientX = event.clientX
+        nextClientY = event.clientY
+        return
+      }
+    }
+
     const hasMovedAway =
       Math.hypot(event.clientX - anchorClientX, event.clientY - anchorClientY) >
       COSMIC_PULL_MOVE_RESET_PX
@@ -789,6 +876,8 @@ function initCosmicCursor() {
   document.addEventListener('mouseleave', deactivateCursor, { passive: true })
   window.addEventListener('blur', deactivateCursor, { passive: true })
   document.addEventListener('visibilitychange', () => {
+    // 隐藏时冻结所有常驻背景动画（星空/流星），并熄火黑洞，避免后台空转发热
+    root.classList.toggle('cosmic-paused', document.hidden)
     if (document.hidden) deactivateCursor()
   }, { passive: true })
   window.addEventListener('scroll', () => {
