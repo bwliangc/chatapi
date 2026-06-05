@@ -362,7 +362,6 @@ export default {
     groups: 'Groups',
     channels: 'Channels',
     availableChannels: 'Available Channels',
-    groupsInfo: 'Groups Info',
     subscriptions: 'Subscriptions',
     accounts: 'Accounts',
     proxies: 'Proxies',
@@ -1016,19 +1015,6 @@ export default {
     }
   },
 
-  // Groups Info (user-facing)
-  groupsInfo: {
-    title: 'Groups Info',
-    description: 'Public groups you can bind, with their rate, platform and supported models',
-    searchPlaceholder: 'Search groups or models...',
-    allPlatforms: 'All platforms',
-    rate: 'Rate',
-    exclusive: 'Exclusive',
-    modelCount: '{count} models',
-    noModels: 'No models configured',
-    empty: 'No available groups',
-    emptyDescription: 'There are no public groups to show right now'
-  },
   // Available Channels (user-facing)
   availableChannels: {
     title: 'Available Channels',

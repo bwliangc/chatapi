@@ -5,23 +5,6 @@
 
 import { apiClient } from './client'
 import type { Group } from '@/types'
-import type { UserSupportedModel } from './channels'
-
-/**
- * 公开分组信息条目：在可绑定分组基础上，额外带分组描述与可用模型列表。
- * 模型来自该分组关联渠道的支持模型并集（后端已按分组平台脱敏、按模型名去重）。
- * 受 available-channels 开关约束：未启用时返回空数组。
- */
-export interface GroupInfo {
-  id: number
-  name: string
-  description: string
-  platform: string
-  subscription_type: string
-  rate_multiplier: number
-  is_exclusive: boolean
-  models: UserSupportedModel[]
-}
 
 /**
  * Get available groups that the current user can bind to API keys
@@ -44,23 +27,9 @@ export async function getUserGroupRates(): Promise<Record<number, number>> {
   return data || {}
 }
 
-/**
- * Get public info for groups the current user can bind (rate / platform / models).
- * Gated by the same available-channels setting; returns [] when disabled.
- */
-export async function getAvailableGroupsInfo(options?: {
-  signal?: AbortSignal
-}): Promise<GroupInfo[]> {
-  const { data } = await apiClient.get<GroupInfo[]>('/groups/available/info', {
-    signal: options?.signal
-  })
-  return data
-}
-
 export const userGroupsAPI = {
   getAvailable,
-  getUserGroupRates,
-  getAvailableGroupsInfo
+  getUserGroupRates
 }
 
 export default userGroupsAPI
