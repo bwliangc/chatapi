@@ -490,7 +490,7 @@
             v-model.number="createForm.rate_multiplier"
             type="number"
             step="0.001"
-            min="0.001"
+            min="0"
             required
             class="input"
             data-tour="group-form-multiplier"
@@ -1777,7 +1777,7 @@
             v-model.number="editForm.rate_multiplier"
             type="number"
             step="0.001"
-            min="0.001"
+            min="0"
             required
             class="input"
             data-tour="group-form-multiplier"
