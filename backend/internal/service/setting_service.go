@@ -759,7 +759,6 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyChannelMonitorEnabled,
 		SettingKeyChannelMonitorDefaultIntervalSeconds,
 		SettingKeyAvailableChannelsEnabled,
-		SettingKeyGroupsInfoEnabled,
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
 	}
@@ -871,8 +870,6 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 		AvailableChannelsEnabled: settings[SettingKeyAvailableChannelsEnabled] == "true",
 
-		GroupsInfoEnabled: settings[SettingKeyGroupsInfoEnabled] == "true",
-
 		AffiliateEnabled: settings[SettingKeyAffiliateEnabled] == "true",
 
 		RiskControlEnabled: settings[SettingKeyRiskControlEnabled] == "true",
@@ -950,25 +947,6 @@ func (s *SettingService) GetAvailableChannelsRuntime(ctx context.Context) Availa
 	}
 	return AvailableChannelsRuntime{
 		Enabled: vals[SettingKeyAvailableChannelsEnabled] == "true",
-	}
-}
-
-// GroupsInfoRuntime is the lightweight view of the groups-info feature switch
-// consumed by the user-facing handler.
-type GroupsInfoRuntime struct {
-	Enabled bool
-}
-
-// GetGroupsInfoRuntime reads the groups-info feature switch directly from the
-// settings store. Fail-closed: on error returns Enabled=false, matching the
-// opt-in default (unknown ↔ disabled).
-func (s *SettingService) GetGroupsInfoRuntime(ctx context.Context) GroupsInfoRuntime {
-	vals, err := s.settingRepo.GetMultiple(ctx, []string{SettingKeyGroupsInfoEnabled})
-	if err != nil {
-		return GroupsInfoRuntime{Enabled: false}
-	}
-	return GroupsInfoRuntime{
-		Enabled: vals[SettingKeyGroupsInfoEnabled] == "true",
 	}
 }
 
@@ -1195,7 +1173,6 @@ type PublicSettingsInjectionPayload struct {
 	ChannelMonitorEnabled                bool `json:"channel_monitor_enabled"`
 	ChannelMonitorDefaultIntervalSeconds int  `json:"channel_monitor_default_interval_seconds"`
 	AvailableChannelsEnabled             bool `json:"available_channels_enabled"`
-	GroupsInfoEnabled                    bool `json:"groups_info_enabled"`
 	AffiliateEnabled                     bool `json:"affiliate_enabled"`
 	RiskControlEnabled                   bool `json:"risk_control_enabled"`
 }
@@ -1258,7 +1235,6 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ChannelMonitorEnabled:                settings.ChannelMonitorEnabled,
 		ChannelMonitorDefaultIntervalSeconds: settings.ChannelMonitorDefaultIntervalSeconds,
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
-		GroupsInfoEnabled:                    settings.GroupsInfoEnabled,
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 	}, nil
@@ -1896,9 +1872,6 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 
 	// Available channels feature switch
 	updates[SettingKeyAvailableChannelsEnabled] = strconv.FormatBool(settings.AvailableChannelsEnabled)
-
-	// Groups info feature switch
-	updates[SettingKeyGroupsInfoEnabled] = strconv.FormatBool(settings.GroupsInfoEnabled)
 
 	// Affiliate (邀请返利) feature switch
 	updates[SettingKeyAffiliateEnabled] = strconv.FormatBool(settings.AffiliateEnabled)
@@ -2822,9 +2795,6 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		// Available channels feature (default disabled; opt-in)
 		SettingKeyAvailableChannelsEnabled: "false",
 
-		// Groups info feature (default disabled; opt-in)
-		SettingKeyGroupsInfoEnabled: "false",
-
 		// Affiliate (邀请返利) feature (default disabled; opt-in)
 		SettingKeyAffiliateEnabled: "false",
 
@@ -3331,9 +3301,6 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// Available channels feature (default: disabled; strict true)
 	result.AvailableChannelsEnabled = settings[SettingKeyAvailableChannelsEnabled] == "true"
-
-	// Groups info feature (default: disabled; strict true)
-	result.GroupsInfoEnabled = settings[SettingKeyGroupsInfoEnabled] == "true"
 
 	// Affiliate (邀请返利) feature (default: disabled; strict true)
 	result.AffiliateEnabled = settings[SettingKeyAffiliateEnabled] == "true"

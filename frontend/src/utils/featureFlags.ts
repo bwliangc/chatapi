@@ -104,11 +104,6 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Available Channels',
   }),
-  groupsInfo: defineFlag({
-    key: 'groups_info_enabled',
-    mode: 'opt-in',
-    label: 'Groups Info',
-  }),
   payment: defineFlag({
     key: 'payment_enabled',
     mode: 'opt-out',

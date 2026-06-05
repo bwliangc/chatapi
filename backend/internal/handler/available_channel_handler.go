@@ -47,15 +47,6 @@ func (h *AvailableChannelHandler) featureEnabled(c *gin.Context) bool {
 	return h.settingService.GetAvailableChannelsRuntime(c.Request.Context()).Enabled
 }
 
-// groupsInfoEnabled 返回 groups-info 开关是否启用。默认关闭（opt-in），
-// 与 available-channels 相互独立。
-func (h *AvailableChannelHandler) groupsInfoEnabled(c *gin.Context) bool {
-	if h.settingService == nil {
-		return false
-	}
-	return h.settingService.GetGroupsInfoRuntime(c.Request.Context()).Enabled
-}
-
 // userAvailableGroup 用户可见的分组概要（白名单字段）。
 //
 // 前端据此区分专属 vs 公开分组（IsExclusive）、订阅 vs 标准分组（SubscriptionType，
@@ -203,8 +194,8 @@ func (h *AvailableChannelHandler) ListAvailableGroupsInfo(c *gin.Context) {
 		return
 	}
 
-	// groups-info 有独立开关：未启用时返回空数组，认证在前。
-	if !h.groupsInfoEnabled(c) {
+	// 与 List 保持一致：开关未启用时返回空数组，认证在前。
+	if !h.featureEnabled(c) {
 		response.Success(c, []userGroupInfo{})
 		return
 	}
@@ -271,10 +262,6 @@ func buildGroupsInfo(
 	for i := range userGroups {
 		g := &userGroups[i]
 		models := modelsByGroup[g.ID]
-		if models == nil {
-			// 永远返回 []，避免 JSON 序列化成 null 让前端 .length 崩溃。
-			models = []userSupportedModel{}
-		}
 		sort.SliceStable(models, func(a, b int) bool { return models[a].Name < models[b].Name })
 		out = append(out, userGroupInfo{
 			ID:               g.ID,

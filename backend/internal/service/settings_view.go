@@ -177,9 +177,6 @@ type SystemSettings struct {
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 
-	// Groups Info feature (user-facing public groups page)
-	GroupsInfoEnabled bool `json:"groups_info_enabled"`
-
 	// Claude Code version check
 	MinClaudeCodeVersion string
 	MaxClaudeCodeVersion string
@@ -290,9 +287,6 @@ type PublicSettings struct {
 
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
-
-	// Groups Info feature (user-facing public groups page)
-	GroupsInfoEnabled bool `json:"groups_info_enabled"`
 
 	// Affiliate (邀请返利) feature toggle
 	AffiliateEnabled bool `json:"affiliate_enabled"`

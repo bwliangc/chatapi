@@ -5544,12 +5544,6 @@ export default {
           enabled: '启用可用渠道',
           enabledHint: '关闭后用户端侧边栏入口隐藏，接口返回空数组。',
         },
-        groupsInfo: {
-          title: '分组信息',
-          description: '向已登录用户展示可绑定的公开分组及其费率、平台与支持模型（卡片视图）。默认关闭。',
-          enabled: '启用分组信息',
-          enabledHint: '关闭后用户端侧边栏入口隐藏，接口返回空数组。',
-        },
         riskControl: {
           title: '风控中心',
           description: '启用内容审计菜单和全端点请求审核入口。默认关闭。',
