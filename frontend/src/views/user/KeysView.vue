@@ -406,9 +406,39 @@
 
         <div>
           <label class="input-label">{{ t('keys.groupLabel') }}</label>
+          <!-- Platform filter chips -->
+          <div v-if="availablePlatforms.length > 1" class="mb-2 flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              @click="modalPlatformFilter = ''"
+              :class="[
+                'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors',
+                modalPlatformFilter === ''
+                  ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300 dark:hover:bg-dark-700'
+              ]"
+            >
+              {{ t('keys.allPlatforms') }}
+            </button>
+            <button
+              v-for="p in availablePlatforms"
+              :key="p"
+              type="button"
+              @click="modalPlatformFilter = p"
+              :class="[
+                'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors',
+                modalPlatformFilter === p
+                  ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300 dark:hover:bg-dark-700'
+              ]"
+            >
+              <PlatformIcon :platform="p" size="sm" />
+              {{ platformLabel(p) }}
+            </button>
+          </div>
           <Select
             v-model="formData.group_id"
-            :options="groupOptions"
+            :options="modalGroupOptions"
             :placeholder="t('keys.selectGroup')"
             :searchable="true"
             :search-placeholder="t('keys.searchGroup')"
@@ -1004,6 +1034,36 @@
               @click.stop
             />
           </div>
+          <!-- Platform filter chips -->
+          <div v-if="availablePlatforms.length > 1" class="mt-2 flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              @click.stop="dropdownPlatformFilter = ''"
+              :class="[
+                'inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-xs font-medium transition-colors',
+                dropdownPlatformFilter === ''
+                  ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300 dark:hover:bg-dark-700'
+              ]"
+            >
+              {{ t('keys.allPlatforms') }}
+            </button>
+            <button
+              v-for="p in availablePlatforms"
+              :key="p"
+              type="button"
+              @click.stop="dropdownPlatformFilter = p"
+              :class="[
+                'inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-xs font-medium transition-colors',
+                dropdownPlatformFilter === p
+                  ? 'border-primary-300 bg-primary-50 text-primary-700 dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300 dark:hover:bg-dark-700'
+              ]"
+            >
+              <PlatformIcon :platform="p" size="sm" />
+              {{ platformLabel(p) }}
+            </button>
+          </div>
         </div>
         <!-- Group list -->
         <div class="max-h-80 overflow-y-auto p-1.5">
@@ -1068,6 +1128,8 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 	import EndpointPopover from '@/components/keys/EndpointPopover.vue'
 	import GroupBadge from '@/components/common/GroupBadge.vue'
 	import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
+	import PlatformIcon from '@/components/common/PlatformIcon.vue'
+	import { platformLabel } from '@/utils/platformColors'
 	import type { ApiKey, Group, PublicSettings, SubscriptionType, GroupPlatform } from '@/types'
 import type { Column } from '@/components/common/types'
 import type { BatchApiKeyUsageStats } from '@/api/usage'
@@ -1254,12 +1316,36 @@ const groupOptions = computed(() =>
   }))
 )
 
-// Group dropdown search
+// Platform filter chips: list only platforms that actually appear among
+// available groups, in stable first-seen order.
+const availablePlatforms = computed<GroupPlatform[]>(() => {
+  const seen = new Set<string>()
+  const out: GroupPlatform[] = []
+  for (const g of groups.value) {
+    if (g.platform && !seen.has(g.platform)) {
+      seen.add(g.platform)
+      out.push(g.platform)
+    }
+  }
+  return out
+})
+
+// Create/edit modal: platform filter applied to the group Select options.
+const modalPlatformFilter = ref<GroupPlatform | ''>('')
+const modalGroupOptions = computed(() =>
+  modalPlatformFilter.value
+    ? groupOptions.value.filter((o) => o.platform === modalPlatformFilter.value)
+    : groupOptions.value
+)
+
+// Inline group-change dropdown: search + platform filter.
 const groupSearchQuery = ref('')
+const dropdownPlatformFilter = ref<GroupPlatform | ''>('')
 const filteredGroupOptions = computed(() => {
   const query = groupSearchQuery.value.trim().toLowerCase()
-  if (!query) return groupOptions.value
   return groupOptions.value.filter((opt) => {
+    if (dropdownPlatformFilter.value && opt.platform !== dropdownPlatformFilter.value) return false
+    if (!query) return true
     return opt.label.toLowerCase().includes(query) ||
       (opt.description && opt.description.toLowerCase().includes(query))
   })
@@ -1389,6 +1475,7 @@ const handleSort = (key: string, order: 'asc' | 'desc') => {
 
 const editKey = (key: ApiKey) => {
   selectedKey.value = key
+  modalPlatformFilter.value = ''
   const hasIPRestriction = (key.ip_whitelist?.length > 0) || (key.ip_blacklist?.length > 0)
   const hasExpiration = !!key.expires_at
   formData.value = {
@@ -1454,6 +1541,7 @@ const openGroupSelector = (key: ApiKey) => {
     }
     groupSelectorKeyId.value = key.id
     groupSearchQuery.value = ''
+    dropdownPlatformFilter.value = ''
   }
 }
 
@@ -1608,6 +1696,7 @@ const closeModals = () => {
   showCreateModal.value = false
   showEditModal.value = false
   selectedKey.value = null
+  modalPlatformFilter.value = ''
   formData.value = {
     name: '',
     group_id: null,

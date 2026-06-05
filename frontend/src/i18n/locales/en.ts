@@ -699,6 +699,7 @@ export default {
     noGroup: 'No group',
     searchGroup: 'Search groups...',
     noGroupFound: 'No groups found',
+    allPlatforms: 'All platforms',
     created: 'Created',
     copyToClipboard: 'Copy to clipboard',
     copied: 'Copied!',
