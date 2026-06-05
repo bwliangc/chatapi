@@ -363,6 +363,11 @@ const (
 	// sidebar entry is hidden. Defaults to false (opt-in feature).
 	SettingKeyAvailableChannelsEnabled = "available_channels_enabled"
 
+	// SettingKeyGroupsInfoEnabled is a DB-backed soft switch for the "Groups Info"
+	// user-facing page (公开分组信息). When false: user endpoint returns an empty
+	// list and the sidebar entry is hidden. Defaults to false (opt-in feature).
+	SettingKeyGroupsInfoEnabled = "groups_info_enabled"
+
 	// =========================
 	// Overload Cooldown (529)
 	// =========================

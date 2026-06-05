@@ -5386,6 +5386,12 @@ export default {
           enabled: 'Enable Available Channels',
           enabledHint: 'When off, the sidebar entry is hidden and the endpoint returns an empty list.',
         },
+        groupsInfo: {
+          title: 'Groups Info',
+          description: 'Show logged-in users the public groups they can bind, with rate, platform and supported models (card view). Disabled by default.',
+          enabled: 'Enable Groups Info',
+          enabledHint: 'When off, the sidebar entry is hidden and the endpoint returns an empty list.',
+        },
         riskControl: {
           title: 'Risk Control',
           description: 'Enable the content moderation menu and gateway audit entry point. Disabled by default.',

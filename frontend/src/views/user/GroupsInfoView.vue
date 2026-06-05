@@ -250,7 +250,9 @@ async function loadGroups() {
         return {} as Record<number, number>
       })
     ])
-    groups.value = list
+    // 兜底：后端理论上恒返回 models: []，这里再 normalize 一次，
+    // 防止任何 null 让 .length / .some 在渲染时崩溃。
+    groups.value = list.map((g) => ({ ...g, models: g.models ?? [] }))
     userGroupRates.value = rates
   } catch (err: unknown) {
     appStore.showError(extractApiErrorMessage(err, t('common.error')))
