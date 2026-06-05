@@ -362,6 +362,7 @@ export default {
     groups: '分组管理',
     channels: '渠道管理',
     availableChannels: '可用渠道',
+    groupsInfo: '分组信息',
     subscriptions: '订阅管理',
     accounts: '账号管理',
     proxies: 'IP管理',
@@ -1020,6 +1021,18 @@ export default {
   },
 
   // Available Channels (user-facing)
+  groupsInfo: {
+    title: '分组信息',
+    description: '查看您可绑定的公开分组及其费率、平台与支持模型',
+    searchPlaceholder: '搜索分组或模型...',
+    allPlatforms: '全部平台',
+    rate: '费率',
+    exclusive: '专属',
+    modelCount: '{count} 个模型',
+    noModels: '未配置模型',
+    empty: '暂无可用分组',
+    emptyDescription: '当前没有可展示的公开分组信息'
+  },
   availableChannels: {
     title: '可用渠道',
     description: '查看您可访问的渠道与其支持的模型、定价',
