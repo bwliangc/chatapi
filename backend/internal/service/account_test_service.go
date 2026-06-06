@@ -192,7 +192,40 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 		return s.routeAntigravityTest(c, account, modelID, prompt)
 	}
 
+	if account.IsCustom() {
+		return s.testCustomAccountConnection(c, account, modelID, prompt)
+	}
+
 	return s.testClaudeAccountConnection(c, account, modelID)
+}
+
+func (s *AccountTestService) testCustomAccountConnection(c *gin.Context, account *Account, modelID string, prompt string) error {
+	if !account.UsesOpenAICompatRawForward() {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Unsupported account type: %s", account.Type))
+	}
+
+	testModelID := strings.TrimSpace(modelID)
+	if testModelID == "" {
+		return s.sendErrorAndEnd(c, "No model selected")
+	}
+	if mapped := strings.TrimSpace(account.GetMappedModel(testModelID)); mapped != "" {
+		testModelID = mapped
+	}
+
+	apiKey := strings.TrimSpace(account.GetCredential("api_key"))
+	if apiKey == "" {
+		return s.sendErrorAndEnd(c, "No API key available")
+	}
+	baseURL := strings.TrimSpace(account.GetCredential("base_url"))
+	if baseURL == "" {
+		return s.sendErrorAndEnd(c, "Base URL is required for OpenAI-compatible upstream")
+	}
+	normalizedBaseURL, err := s.validateUpstreamBaseURL(baseURL)
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Invalid base URL: %s", err.Error()))
+	}
+
+	return s.testOpenAIChatCompletionsConnection(c, account, testModelID, prompt, normalizedBaseURL, apiKey)
 }
 
 // testClaudeAccountConnection tests an Anthropic Claude account's connection
