@@ -42,14 +42,17 @@ type CreateUsageLogRequest struct {
 
 // UsageStats 使用统计
 type UsageStats struct {
-	TotalRequests     int64   `json:"total_requests"`
-	TotalInputTokens  int64   `json:"total_input_tokens"`
-	TotalOutputTokens int64   `json:"total_output_tokens"`
-	TotalCacheTokens  int64   `json:"total_cache_tokens"`
-	TotalTokens       int64   `json:"total_tokens"`
-	TotalCost         float64 `json:"total_cost"`
-	TotalActualCost   float64 `json:"total_actual_cost"`
-	AverageDurationMs float64 `json:"average_duration_ms"`
+	TotalRequests     int64 `json:"total_requests"`
+	TotalInputTokens  int64 `json:"total_input_tokens"`
+	TotalOutputTokens int64 `json:"total_output_tokens"`
+	TotalCacheTokens  int64 `json:"total_cache_tokens"`
+	// 缓存读取/创建拆分值，供前端「缓存命中率」展示（TotalCacheTokens 为两者之和）。
+	TotalCacheReadTokens     int64   `json:"total_cache_read_tokens"`
+	TotalCacheCreationTokens int64   `json:"total_cache_creation_tokens"`
+	TotalTokens              int64   `json:"total_tokens"`
+	TotalCost                float64 `json:"total_cost"`
+	TotalActualCost          float64 `json:"total_actual_cost"`
+	AverageDurationMs        float64 `json:"average_duration_ms"`
 }
 
 // UsageService 使用统计服务
@@ -190,14 +193,16 @@ func (s *UsageService) GetStatsByUser(ctx context.Context, userID int64, startTi
 	}
 
 	return &UsageStats{
-		TotalRequests:     stats.TotalRequests,
-		TotalInputTokens:  stats.TotalInputTokens,
-		TotalOutputTokens: stats.TotalOutputTokens,
-		TotalCacheTokens:  stats.TotalCacheTokens,
-		TotalTokens:       stats.TotalTokens,
-		TotalCost:         stats.TotalCost,
-		TotalActualCost:   stats.TotalActualCost,
-		AverageDurationMs: stats.AverageDurationMs,
+		TotalRequests:            stats.TotalRequests,
+		TotalInputTokens:         stats.TotalInputTokens,
+		TotalOutputTokens:        stats.TotalOutputTokens,
+		TotalCacheTokens:         stats.TotalCacheTokens,
+		TotalCacheReadTokens:     stats.TotalCacheReadTokens,
+		TotalCacheCreationTokens: stats.TotalCacheCreationTokens,
+		TotalTokens:              stats.TotalTokens,
+		TotalCost:                stats.TotalCost,
+		TotalActualCost:          stats.TotalActualCost,
+		AverageDurationMs:        stats.AverageDurationMs,
 	}, nil
 }
 
@@ -209,14 +214,16 @@ func (s *UsageService) GetStatsByAPIKey(ctx context.Context, apiKeyID int64, sta
 	}
 
 	return &UsageStats{
-		TotalRequests:     stats.TotalRequests,
-		TotalInputTokens:  stats.TotalInputTokens,
-		TotalOutputTokens: stats.TotalOutputTokens,
-		TotalCacheTokens:  stats.TotalCacheTokens,
-		TotalTokens:       stats.TotalTokens,
-		TotalCost:         stats.TotalCost,
-		TotalActualCost:   stats.TotalActualCost,
-		AverageDurationMs: stats.AverageDurationMs,
+		TotalRequests:            stats.TotalRequests,
+		TotalInputTokens:         stats.TotalInputTokens,
+		TotalOutputTokens:        stats.TotalOutputTokens,
+		TotalCacheTokens:         stats.TotalCacheTokens,
+		TotalCacheReadTokens:     stats.TotalCacheReadTokens,
+		TotalCacheCreationTokens: stats.TotalCacheCreationTokens,
+		TotalTokens:              stats.TotalTokens,
+		TotalCost:                stats.TotalCost,
+		TotalActualCost:          stats.TotalActualCost,
+		AverageDurationMs:        stats.AverageDurationMs,
 	}, nil
 }
 
@@ -228,14 +235,16 @@ func (s *UsageService) GetStatsByAccount(ctx context.Context, accountID int64, s
 	}
 
 	return &UsageStats{
-		TotalRequests:     stats.TotalRequests,
-		TotalInputTokens:  stats.TotalInputTokens,
-		TotalOutputTokens: stats.TotalOutputTokens,
-		TotalCacheTokens:  stats.TotalCacheTokens,
-		TotalTokens:       stats.TotalTokens,
-		TotalCost:         stats.TotalCost,
-		TotalActualCost:   stats.TotalActualCost,
-		AverageDurationMs: stats.AverageDurationMs,
+		TotalRequests:            stats.TotalRequests,
+		TotalInputTokens:         stats.TotalInputTokens,
+		TotalOutputTokens:        stats.TotalOutputTokens,
+		TotalCacheTokens:         stats.TotalCacheTokens,
+		TotalCacheReadTokens:     stats.TotalCacheReadTokens,
+		TotalCacheCreationTokens: stats.TotalCacheCreationTokens,
+		TotalTokens:              stats.TotalTokens,
+		TotalCost:                stats.TotalCost,
+		TotalActualCost:          stats.TotalActualCost,
+		AverageDurationMs:        stats.AverageDurationMs,
 	}, nil
 }
 
@@ -247,14 +256,16 @@ func (s *UsageService) GetStatsByModel(ctx context.Context, modelName string, st
 	}
 
 	return &UsageStats{
-		TotalRequests:     stats.TotalRequests,
-		TotalInputTokens:  stats.TotalInputTokens,
-		TotalOutputTokens: stats.TotalOutputTokens,
-		TotalCacheTokens:  stats.TotalCacheTokens,
-		TotalTokens:       stats.TotalTokens,
-		TotalCost:         stats.TotalCost,
-		TotalActualCost:   stats.TotalActualCost,
-		AverageDurationMs: stats.AverageDurationMs,
+		TotalRequests:            stats.TotalRequests,
+		TotalInputTokens:         stats.TotalInputTokens,
+		TotalOutputTokens:        stats.TotalOutputTokens,
+		TotalCacheTokens:         stats.TotalCacheTokens,
+		TotalCacheReadTokens:     stats.TotalCacheReadTokens,
+		TotalCacheCreationTokens: stats.TotalCacheCreationTokens,
+		TotalTokens:              stats.TotalTokens,
+		TotalCost:                stats.TotalCost,
+		TotalActualCost:          stats.TotalActualCost,
+		AverageDurationMs:        stats.AverageDurationMs,
 	}, nil
 }
 
