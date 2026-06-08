@@ -280,14 +280,12 @@ type UsageLogFilters struct {
 
 // UsageStats represents usage statistics
 type UsageStats struct {
-	TotalRequests     int64 `json:"total_requests"`
-	TotalInputTokens  int64 `json:"total_input_tokens"`
-	TotalOutputTokens int64 `json:"total_output_tokens"`
-	TotalCacheTokens  int64 `json:"total_cache_tokens"`
-	// 缓存读取/创建拆分值，供前端「缓存命中率」展示使用；
-	// TotalCacheTokens 是两者之和，单独字段用于命中率分母/分子计算。
-	TotalCacheReadTokens     int64          `json:"total_cache_read_tokens"`
+	TotalRequests            int64          `json:"total_requests"`
+	TotalInputTokens         int64          `json:"total_input_tokens"`
+	TotalOutputTokens        int64          `json:"total_output_tokens"`
+	TotalCacheTokens         int64          `json:"total_cache_tokens"`
 	TotalCacheCreationTokens int64          `json:"total_cache_creation_tokens"`
+	TotalCacheReadTokens     int64          `json:"total_cache_read_tokens"`
 	TotalTokens              int64          `json:"total_tokens"`
 	TotalCost                float64        `json:"total_cost"`
 	TotalActualCost          float64        `json:"total_actual_cost"`
