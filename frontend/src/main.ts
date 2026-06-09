@@ -39,8 +39,8 @@ const COSMIC_SPIN_FRAME_MS = 120
 const COSMIC_DISPLACEMENT_MAP_SIZE = 160
 // 旋转帧率上限（~30fps），避免空转时整页 SVG 滤镜被高频重栅格化
 const COSMIC_SPIN_MIN_FRAME_MS = 33
-// 鼠标静止超过该时长后，先平滑收缩再卸下整页滤镜
-const COSMIC_IDLE_TIMEOUT_MS = 3500
+// 鼠标静止超过该时长后，先平滑收缩再卸下整页滤镜（性能模式：从 3500 缩短，更快停止整页 SVG 滤镜空转）
+const COSMIC_IDLE_TIMEOUT_MS = 2000
 const COSMIC_COLLAPSE_MS = 1100
 // 熄火后需累计移动超过该距离才重新唤醒，过滤触控板/鼠标的微小漂移导致的反复点亮
 const COSMIC_WAKE_THRESHOLD_PX = 8
@@ -914,10 +914,47 @@ function initCosmicCursor() {
   root.style.setProperty('--cosmic-cursor-y', `${nextClientY}px`)
 }
 
+// 性能模式：前台长时间无输入时暂停常驻背景动画（星空/流星），消除「页面呆久了」的 idle GPU 空转发热。
+// 独立于宇宙光标，触摸设备同样生效；尊重系统「减少动态效果」偏好（该偏好下 CSS 已关停动画，无需介入）。
+function initBackgroundIdlePause() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+
+  const root = document.documentElement
+  const IDLE_MS = 6000
+  let idleTimer = 0
+
+  const wake = () => {
+    root.classList.remove('cosmic-bg-idle')
+    if (idleTimer) window.clearTimeout(idleTimer)
+    idleTimer = window.setTimeout(() => {
+      idleTimer = 0
+      root.classList.add('cosmic-bg-idle')
+    }, IDLE_MS)
+  }
+
+  const activityEvents = ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'] as const
+  for (const name of activityEvents) {
+    window.addEventListener(name, wake, { passive: true })
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (idleTimer) window.clearTimeout(idleTimer)
+      idleTimer = 0
+      root.classList.add('cosmic-bg-idle')
+    } else {
+      wake()
+    }
+  }, { passive: true })
+
+  wake()
+}
+
 async function bootstrap() {
   // Apply theme class globally before app mount to keep all routes consistent.
   initThemeClass()
   initCosmicCursor()
+  initBackgroundIdlePause()
 
   const app = createApp(App)
   const pinia = createPinia()

@@ -1045,6 +1045,15 @@ html.cosmic-cursor-white-hole .cosmic-cursor-visual::before {
   opacity: 0.3;
 }
 
+/* 性能模式：工作区（AppLayout）的星空已压暗到 0.24~0.4，闪烁/漂移肉眼几乎不可见，
+   直接静止以消除日常停留最久页面的持续 GPU 合成；星点本体仍可见，仅不再动画。 */
+.starfield--subtle .stars-sm,
+.starfield--subtle .stars-md,
+.starfield--subtle .stars-lg,
+.cosmic-backdrop--subtle .meteors .meteor {
+  animation: none !important;
+}
+
 /* ============ 喷流 / 流星：从中心向外辐射 ============ */
 .meteors {
   position: absolute;
@@ -1233,5 +1242,15 @@ html.cosmic-paused .starfield .stars-md,
 html.cosmic-paused .starfield .stars-lg,
 html.cosmic-paused .meteors .meteor,
 html.cosmic-paused .cosmic-cursor-visual::before {
+  animation-play-state: paused !important;
+}
+
+/* 性能模式：标签页虽在前台，但鼠标/键盘长时间无操作时同样冻结背景动画，
+   消除「页面呆久了」的 idle GPU 空转发热；任意输入会立即恢复。 */
+html.cosmic-bg-idle .starfield .stars-sm,
+html.cosmic-bg-idle .starfield .stars-md,
+html.cosmic-bg-idle .starfield .stars-lg,
+html.cosmic-bg-idle .meteors .meteor,
+html.cosmic-bg-idle .cosmic-cursor-visual::before {
   animation-play-state: paused !important;
 }
