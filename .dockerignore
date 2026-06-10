@@ -10,7 +10,7 @@
 # Documentation
 *.md
 !deploy/DOCKER.md
-docs/
+# docs/  (allowed: docs/legal/ needed by frontend build)
 
 # IDE
 .idea/
