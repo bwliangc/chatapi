@@ -400,6 +400,8 @@ export default {
     myAccount: 'My Account',
     lightMode: 'Light Mode',
     darkMode: 'Dark Mode',
+    cursorEffectOn: 'Enable Cursor Effect',
+    cursorEffectOff: 'Disable Cursor Effect',
     collapse: 'Collapse',
     expand: 'Expand',
     logout: 'Logout',

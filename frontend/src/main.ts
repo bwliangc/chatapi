@@ -4,6 +4,7 @@ import App from './App.vue'
 import router from './router'
 import i18n, { initI18n } from './i18n'
 import { useAppStore } from '@/stores/app'
+import { isCosmicCursorEnabled, onCosmicCursorEnabledChange } from '@/utils/cosmicCursor'
 import './style.css'
 
 function initThemeClass() {
@@ -361,7 +362,6 @@ function ensureCosmicDistortionFilter() {
 function initCosmicCursor() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return
 
-  const root = document.documentElement
   const supportsFinePointer =
     typeof window.matchMedia === 'function' && window.matchMedia('(pointer: fine)').matches
   const prefersReducedMotion =
@@ -370,7 +370,25 @@ function initCosmicCursor() {
 
   if (!supportsFinePointer || prefersReducedMotion) return
 
+  // 引擎惰性启动：初始关闭时不创建滤镜/画布等任何资源，首次开启时才初始化
+  let engine: ReturnType<typeof startCosmicCursorEngine> | null = null
+  const applyEnabled = (enabled: boolean) => {
+    if (enabled && !engine) {
+      engine = startCosmicCursorEngine()
+      return
+    }
+    engine?.setEnabled(enabled)
+  }
+
+  applyEnabled(isCosmicCursorEnabled())
+  onCosmicCursorEnabledChange(applyEnabled)
+}
+
+function startCosmicCursorEngine() {
+  const root = document.documentElement
   const { filter, map, displacement, particles, visual } = ensureCosmicDistortionFilter()
+
+  let cursorEnabled = true
 
   let frame = 0
   let pullTimer = 0
@@ -859,6 +877,8 @@ function initCosmicCursor() {
   updateFilterBounds()
 
   window.addEventListener('pointermove', (event) => {
+    if (!cursorEnabled) return
+
     // 熄火状态下，微小漂移不唤醒，避免触控板/鼠标抖动反复点亮整页滤镜
     if (!isActive && !collapseFrame) {
       const wakeDistance = Math.hypot(event.clientX - wakeAnchorX, event.clientY - wakeAnchorY)
@@ -912,6 +932,13 @@ function initCosmicCursor() {
 
   root.style.setProperty('--cosmic-cursor-x', `${nextClientX}px`)
   root.style.setProperty('--cosmic-cursor-y', `${nextClientY}px`)
+
+  return {
+    setEnabled(value: boolean) {
+      cursorEnabled = value
+      if (!value) deactivateCursor()
+    }
+  }
 }
 
 // 性能模式：前台长时间无输入时暂停常驻背景动画（星空/流星），消除「页面呆久了」的 idle GPU 空转发热。

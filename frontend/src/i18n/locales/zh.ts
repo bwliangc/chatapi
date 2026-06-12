@@ -400,6 +400,8 @@ export default {
     myAccount: '我的账户',
     lightMode: '浅色模式',
     darkMode: '深色模式',
+    cursorEffectOn: '开启光标特效',
+    cursorEffectOff: '关闭光标特效',
     collapse: '收起',
     expand: '展开',
     logout: '退出登录',

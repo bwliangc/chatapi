@@ -153,6 +153,23 @@
 
     <!-- Bottom Section -->
     <div class="mt-auto border-t border-gray-100 p-3 dark:border-dark-800">
+      <!-- Cosmic Cursor Toggle（黑/白洞鼠标指针特效，仅精确指针设备显示） -->
+      <button
+        v-if="cosmicCursorSupported"
+        @click="toggleCosmicCursor"
+        class="sidebar-link mb-2 w-full"
+        :class="{ 'sidebar-link-collapsed': sidebarCollapsed }"
+        :title="sidebarCollapsed ? (cosmicCursorEnabled ? t('nav.cursorEffectOff') : t('nav.cursorEffectOn')) : undefined"
+      >
+        <BlackHoleIcon
+          class="h-5 w-5 flex-shrink-0"
+          :class="{ 'text-violet-500': cosmicCursorEnabled }"
+        />
+        <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{
+          cosmicCursorEnabled ? t('nav.cursorEffectOff') : t('nav.cursorEffectOn')
+        }}</span>
+      </button>
+
       <!-- Theme Toggle -->
       <button
         @click="toggleTheme"
@@ -201,6 +218,11 @@ import { sanitizeSvg } from '@/utils/sanitize'
 import { buildEmbeddedUrl } from '@/utils/embedded-url'
 import type { CustomMenuItem } from '@/types'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
+import {
+  isCosmicCursorEnabled,
+  isCosmicCursorSupported,
+  setCosmicCursorEnabled
+} from '@/utils/cosmicCursor'
 
 interface NavItem {
   path: string
@@ -539,6 +561,24 @@ const MoonIcon = {
     )
 }
 
+const BlackHoleIcon = {
+  render: () =>
+    h(
+      'svg',
+      { fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '1.5' },
+      [
+        h('circle', { cx: '12', cy: '12', r: '3.75' }),
+        h('ellipse', {
+          cx: '12',
+          cy: '12',
+          rx: '9.75',
+          ry: '3.4',
+          transform: 'rotate(-22 12 12)'
+        })
+      ]
+    )
+}
+
 const ChevronDoubleLeftIcon = {
   render: () =>
     h(
@@ -844,6 +884,15 @@ function toggleSidebar() {
 
 function toggleTheme() {
   appStore.toggleTheme()
+}
+
+// 黑/白洞鼠标指针特效开关（持久化到 localStorage，特效引擎在 main.ts 中订阅变更）
+const cosmicCursorSupported = isCosmicCursorSupported()
+const cosmicCursorEnabled = ref(isCosmicCursorEnabled())
+
+function toggleCosmicCursor() {
+  cosmicCursorEnabled.value = !cosmicCursorEnabled.value
+  setCosmicCursorEnabled(cosmicCursorEnabled.value)
 }
 
 function closeMobile() {
