@@ -18,12 +18,12 @@ export function isCosmicCursorSupported(): boolean {
   )
 }
 
-/** 默认开启；仅当用户显式关闭过（存储为 'false'）时返回 false。 */
+/** 默认关闭；仅当用户显式开启过（存储为 'true'）时返回 true。 */
 export function isCosmicCursorEnabled(): boolean {
   try {
-    return localStorage.getItem(STORAGE_KEY) !== 'false'
+    return localStorage.getItem(STORAGE_KEY) === 'true'
   } catch {
-    return true
+    return false
   }
 }
 
