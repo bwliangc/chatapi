@@ -1,4 +1,4 @@
--- Migration: 152_channel_monitor_active_window
+-- Migration: 154_channel_monitor_active_window
 -- 渠道监控新增「检测时间窗口」配置（按服务器本地时区判断）：
 -- 仅在窗口内才触发检测，窗口外跳过本轮（不取消任务）。
 -- 结构：{"enabled":bool,"start":"HH:MM","end":"HH:MM","weekdays":[0..6]}
