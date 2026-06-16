@@ -8873,6 +8873,7 @@ type ChannelMonitorMutation struct {
 	addinterval_seconds     *int
 	jitter_seconds          *int
 	addjitter_seconds       *int
+	active_window           *domain.MonitorActiveWindow
 	last_checked_at         *time.Time
 	created_by              *int64
 	addcreated_by           *int64
@@ -9527,6 +9528,55 @@ func (m *ChannelMonitorMutation) ResetJitterSeconds() {
 	m.addjitter_seconds = nil
 }
 
+// SetActiveWindow sets the "active_window" field.
+func (m *ChannelMonitorMutation) SetActiveWindow(daw domain.MonitorActiveWindow) {
+	m.active_window = &daw
+}
+
+// ActiveWindow returns the value of the "active_window" field in the mutation.
+func (m *ChannelMonitorMutation) ActiveWindow() (r domain.MonitorActiveWindow, exists bool) {
+	v := m.active_window
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActiveWindow returns the old "active_window" field's value of the ChannelMonitor entity.
+// If the ChannelMonitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChannelMonitorMutation) OldActiveWindow(ctx context.Context) (v domain.MonitorActiveWindow, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActiveWindow is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActiveWindow requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActiveWindow: %w", err)
+	}
+	return oldValue.ActiveWindow, nil
+}
+
+// ClearActiveWindow clears the value of the "active_window" field.
+func (m *ChannelMonitorMutation) ClearActiveWindow() {
+	m.active_window = nil
+	m.clearedFields[channelmonitor.FieldActiveWindow] = struct{}{}
+}
+
+// ActiveWindowCleared returns if the "active_window" field was cleared in this mutation.
+func (m *ChannelMonitorMutation) ActiveWindowCleared() bool {
+	_, ok := m.clearedFields[channelmonitor.FieldActiveWindow]
+	return ok
+}
+
+// ResetActiveWindow resets all changes to the "active_window" field.
+func (m *ChannelMonitorMutation) ResetActiveWindow() {
+	m.active_window = nil
+	delete(m.clearedFields, channelmonitor.FieldActiveWindow)
+}
+
 // SetLastCheckedAt sets the "last_checked_at" field.
 func (m *ChannelMonitorMutation) SetLastCheckedAt(t time.Time) {
 	m.last_checked_at = &t
@@ -9984,7 +10034,7 @@ func (m *ChannelMonitorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ChannelMonitorMutation) Fields() []string {
-	fields := make([]string, 0, 19)
+	fields := make([]string, 0, 20)
 	if m.created_at != nil {
 		fields = append(fields, channelmonitor.FieldCreatedAt)
 	}
@@ -10023,6 +10073,9 @@ func (m *ChannelMonitorMutation) Fields() []string {
 	}
 	if m.jitter_seconds != nil {
 		fields = append(fields, channelmonitor.FieldJitterSeconds)
+	}
+	if m.active_window != nil {
+		fields = append(fields, channelmonitor.FieldActiveWindow)
 	}
 	if m.last_checked_at != nil {
 		fields = append(fields, channelmonitor.FieldLastCheckedAt)
@@ -10076,6 +10129,8 @@ func (m *ChannelMonitorMutation) Field(name string) (ent.Value, bool) {
 		return m.IntervalSeconds()
 	case channelmonitor.FieldJitterSeconds:
 		return m.JitterSeconds()
+	case channelmonitor.FieldActiveWindow:
+		return m.ActiveWindow()
 	case channelmonitor.FieldLastCheckedAt:
 		return m.LastCheckedAt()
 	case channelmonitor.FieldCreatedBy:
@@ -10123,6 +10178,8 @@ func (m *ChannelMonitorMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldIntervalSeconds(ctx)
 	case channelmonitor.FieldJitterSeconds:
 		return m.OldJitterSeconds(ctx)
+	case channelmonitor.FieldActiveWindow:
+		return m.OldActiveWindow(ctx)
 	case channelmonitor.FieldLastCheckedAt:
 		return m.OldLastCheckedAt(ctx)
 	case channelmonitor.FieldCreatedBy:
@@ -10234,6 +10291,13 @@ func (m *ChannelMonitorMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetJitterSeconds(v)
+		return nil
+	case channelmonitor.FieldActiveWindow:
+		v, ok := value.(domain.MonitorActiveWindow)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActiveWindow(v)
 		return nil
 	case channelmonitor.FieldLastCheckedAt:
 		v, ok := value.(time.Time)
@@ -10349,6 +10413,9 @@ func (m *ChannelMonitorMutation) ClearedFields() []string {
 	if m.FieldCleared(channelmonitor.FieldGroupName) {
 		fields = append(fields, channelmonitor.FieldGroupName)
 	}
+	if m.FieldCleared(channelmonitor.FieldActiveWindow) {
+		fields = append(fields, channelmonitor.FieldActiveWindow)
+	}
 	if m.FieldCleared(channelmonitor.FieldLastCheckedAt) {
 		fields = append(fields, channelmonitor.FieldLastCheckedAt)
 	}
@@ -10374,6 +10441,9 @@ func (m *ChannelMonitorMutation) ClearField(name string) error {
 	switch name {
 	case channelmonitor.FieldGroupName:
 		m.ClearGroupName()
+		return nil
+	case channelmonitor.FieldActiveWindow:
+		m.ClearActiveWindow()
 		return nil
 	case channelmonitor.FieldLastCheckedAt:
 		m.ClearLastCheckedAt()
@@ -10430,6 +10500,9 @@ func (m *ChannelMonitorMutation) ResetField(name string) error {
 		return nil
 	case channelmonitor.FieldJitterSeconds:
 		m.ResetJitterSeconds()
+		return nil
+	case channelmonitor.FieldActiveWindow:
+		m.ResetActiveWindow()
 		return nil
 	case channelmonitor.FieldLastCheckedAt:
 		m.ResetLastCheckedAt()

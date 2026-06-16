@@ -10,6 +10,7 @@ import (
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/lib/pq"
 )
@@ -46,6 +47,7 @@ func (r *channelMonitorRepository) Create(ctx context.Context, m *service.Channe
 		SetEnabled(m.Enabled).
 		SetIntervalSeconds(m.IntervalSeconds).
 		SetJitterSeconds(m.JitterSeconds).
+		SetActiveWindow(activeWindowOrZero(m.ActiveWindow)).
 		SetCreatedBy(m.CreatedBy).
 		SetExtraHeaders(emptyHeadersIfNilRepo(m.ExtraHeaders)).
 		SetBodyOverrideMode(defaultBodyModeRepo(m.BodyOverrideMode))
@@ -90,6 +92,7 @@ func (r *channelMonitorRepository) Update(ctx context.Context, m *service.Channe
 		SetEnabled(m.Enabled).
 		SetIntervalSeconds(m.IntervalSeconds).
 		SetJitterSeconds(m.JitterSeconds).
+		SetActiveWindow(activeWindowOrZero(m.ActiveWindow)).
 		SetExtraHeaders(emptyHeadersIfNilRepo(m.ExtraHeaders)).
 		SetBodyOverrideMode(defaultBodyModeRepo(m.BodyOverrideMode))
 	if m.TemplateID != nil {
@@ -721,6 +724,7 @@ func entToServiceMonitor(row *dbent.ChannelMonitor) *service.ChannelMonitor {
 		Enabled:          row.Enabled,
 		IntervalSeconds:  row.IntervalSeconds,
 		JitterSeconds:    row.JitterSeconds,
+		ActiveWindow:     activeWindowPtr(row.ActiveWindow),
 		LastCheckedAt:    row.LastCheckedAt,
 		CreatedBy:        row.CreatedBy,
 		CreatedAt:        row.CreatedAt,
@@ -765,4 +769,18 @@ func emptySliceIfNil(in []string) []string {
 		return []string{}
 	}
 	return in
+}
+
+// activeWindowOrZero 把 service 层的可空窗口指针归一为可直接落库的值。
+// nil（未配置）→ 零值 {Enabled:false}，即 7×24 全天检测。
+func activeWindowOrZero(w *domain.MonitorActiveWindow) domain.MonitorActiveWindow {
+	if w == nil {
+		return domain.MonitorActiveWindow{}
+	}
+	return *w
+}
+
+// activeWindowPtr 把 ent 读出的值转回 service 层的指针形态（始终非 nil）。
+func activeWindowPtr(w domain.MonitorActiveWindow) *domain.MonitorActiveWindow {
+	return &w
 }

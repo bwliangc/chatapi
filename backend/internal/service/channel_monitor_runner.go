@@ -69,7 +69,8 @@ type scheduledMonitor struct {
 	id       int64
 	name     string
 	interval time.Duration
-	jitter   time.Duration // 每轮 ± [0, jitter] 的均匀随机偏移；0 = 固定间隔
+	jitter   time.Duration       // 每轮 ± [0, jitter] 的均匀随机偏移；0 = 固定间隔
+	window   activeWindowRuntime // 检测时间窗口（本地时区）；零值表示 7×24 全天
 	cancel   context.CancelFunc
 }
 
@@ -162,6 +163,14 @@ func (r *ChannelMonitorRunner) Schedule(m *ChannelMonitor) {
 	if jitter < 0 {
 		jitter = 0
 	}
+	// 解析检测时间窗口。校验链路已保证合法，这里再失败说明 DB 中存在脏数据：
+	// 记 Warn 并退化为"不限制"（全天检测），避免因配置损坏导致监控彻底停摆。
+	window, err := parseActiveWindow(m.ActiveWindow)
+	if err != nil {
+		slog.Warn("channel_monitor: invalid active_window, fallback to 24/7",
+			"monitor_id", m.ID, "name", m.Name, "error", err)
+		window = activeWindowRuntime{}
+	}
 
 	r.mu.Lock()
 	if r.stopped {
@@ -187,6 +196,7 @@ func (r *ChannelMonitorRunner) Schedule(m *ChannelMonitor) {
 		name:     m.Name,
 		interval: interval,
 		jitter:   jitter,
+		window:   window,
 		cancel:   cancel,
 	}
 	r.tasks[m.ID] = task
@@ -257,6 +267,13 @@ func (r *ChannelMonitorRunner) runScheduled(ctx context.Context, task *scheduled
 // 重新启用时立即恢复）；池满或重复在飞时也跳过。
 func (r *ChannelMonitorRunner) fire(ctx context.Context, task *scheduledMonitor) {
 	if r.settingService != nil && !r.settingService.GetChannelMonitorRuntime(ctx).Enabled {
+		return
+	}
+	// 检测时间窗口（本地时区）：不在窗口内则跳过本次，但不取消任务——
+	// 窗口重新打开时下一轮 ticker 自动恢复，与功能开关跳过同样的处理方式。
+	if !task.window.allows(time.Now()) {
+		slog.Debug("channel_monitor: skip outside active window",
+			"monitor_id", task.id, "name", task.name)
 		return
 	}
 	if !r.tryAcquireInFlight(task.id) {

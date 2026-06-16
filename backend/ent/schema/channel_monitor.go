@@ -2,6 +2,7 @@ package schema
 
 import (
 	"github.com/Wei-Shaw/sub2api/ent/schema/mixins"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
@@ -66,6 +67,9 @@ func (ChannelMonitor) Fields() []ent.Field {
 			Default(0).
 			Range(0, 3600).
 			Comment("每次调度在 interval 基础上 ± [0, jitter] 的均匀随机偏移（秒）；0 表示固定间隔。service 层另保证 interval - jitter >= 15"),
+		field.JSON("active_window", domain.MonitorActiveWindow{}).
+			Optional().
+			Comment("检测时间窗口（服务器本地时区）：Enabled=false 表示 7×24 全天检测。仅在窗口内才触发检测"),
 		field.Time("last_checked_at").
 			Optional().
 			Nillable(),

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
 // ChannelMonitor is the model entity for the ChannelMonitor schema.
@@ -45,6 +46,8 @@ type ChannelMonitor struct {
 	IntervalSeconds int `json:"interval_seconds,omitempty"`
 	// 每次调度在 interval 基础上 ± [0, jitter] 的均匀随机偏移（秒）；0 表示固定间隔。service 层另保证 interval - jitter >= 15
 	JitterSeconds int `json:"jitter_seconds,omitempty"`
+	// 检测时间窗口（服务器本地时区）：Enabled=false 表示 7×24 全天检测。仅在窗口内才触发检测
+	ActiveWindow domain.MonitorActiveWindow `json:"active_window,omitempty"`
 	// LastCheckedAt holds the value of the "last_checked_at" field.
 	LastCheckedAt *time.Time `json:"last_checked_at,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
@@ -110,7 +113,7 @@ func (*ChannelMonitor) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case channelmonitor.FieldExtraModels, channelmonitor.FieldExtraHeaders, channelmonitor.FieldBodyOverride:
+		case channelmonitor.FieldExtraModels, channelmonitor.FieldActiveWindow, channelmonitor.FieldExtraHeaders, channelmonitor.FieldBodyOverride:
 			values[i] = new([]byte)
 		case channelmonitor.FieldEnabled:
 			values[i] = new(sql.NullBool)
@@ -220,6 +223,14 @@ func (_m *ChannelMonitor) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field jitter_seconds", values[i])
 			} else if value.Valid {
 				_m.JitterSeconds = int(value.Int64)
+			}
+		case channelmonitor.FieldActiveWindow:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field active_window", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.ActiveWindow); err != nil {
+					return fmt.Errorf("unmarshal field active_window: %w", err)
+				}
 			}
 		case channelmonitor.FieldLastCheckedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -351,6 +362,9 @@ func (_m *ChannelMonitor) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("jitter_seconds=")
 	builder.WriteString(fmt.Sprintf("%v", _m.JitterSeconds))
+	builder.WriteString(", ")
+	builder.WriteString("active_window=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ActiveWindow))
 	builder.WriteString(", ")
 	if v := _m.LastCheckedAt; v != nil {
 		builder.WriteString("last_checked_at=")

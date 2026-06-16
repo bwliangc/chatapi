@@ -41,6 +41,8 @@ const (
 	FieldIntervalSeconds = "interval_seconds"
 	// FieldJitterSeconds holds the string denoting the jitter_seconds field in the database.
 	FieldJitterSeconds = "jitter_seconds"
+	// FieldActiveWindow holds the string denoting the active_window field in the database.
+	FieldActiveWindow = "active_window"
 	// FieldLastCheckedAt holds the string denoting the last_checked_at field in the database.
 	FieldLastCheckedAt = "last_checked_at"
 	// FieldCreatedBy holds the string denoting the created_by field in the database.
@@ -100,6 +102,7 @@ var Columns = []string{
 	FieldEnabled,
 	FieldIntervalSeconds,
 	FieldJitterSeconds,
+	FieldActiveWindow,
 	FieldLastCheckedAt,
 	FieldCreatedBy,
 	FieldTemplateID,

@@ -10,6 +10,19 @@ export type MonitorStatus = 'operational' | 'degraded' | 'failed' | 'error'
 export type BodyOverrideMode = 'off' | 'merge' | 'replace'
 export type APIMode = 'chat_completions' | 'responses'
 
+/**
+ * 检测时间窗口（按服务器本地时区判断）。
+ * enabled=false 表示 7×24 全天检测；仅 enabled=true 时 start/end/weekdays 生效。
+ */
+export interface MonitorActiveWindow {
+  enabled: boolean
+  /** 本地时间 "HH:MM"（24 小时制）。start==end=整天；start>end=跨午夜 */
+  start: string
+  end: string
+  /** 允许检测的星期，0=周日..6=周六；空数组=每天 */
+  weekdays: number[]
+}
+
 export interface ChannelMonitor {
   id: number
   name: string
@@ -30,6 +43,8 @@ export interface ChannelMonitor {
   interval_seconds: number
   /** 每次调度在 interval 基础上 ± [0, jitter] 的随机偏移（秒），0 = 固定间隔 */
   jitter_seconds: number
+  /** 检测时间窗口；enabled=false 或缺省 = 7×24 全天检测 */
+  active_window?: MonitorActiveWindow | null
   last_checked_at: string | null
   created_by: number
   created_at: string
@@ -83,6 +98,7 @@ export interface CreateParams {
   enabled?: boolean
   interval_seconds: number
   jitter_seconds?: number
+  active_window?: MonitorActiveWindow | null
   template_id?: number | null
   extra_headers?: Record<string, string>
   body_override_mode?: BodyOverrideMode

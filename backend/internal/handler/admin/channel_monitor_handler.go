@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
@@ -36,40 +37,42 @@ func NewChannelMonitorHandler(monitorService *service.ChannelMonitorService) *Ch
 // --- Request / Response ---
 
 type channelMonitorCreateRequest struct {
-	Name             string            `json:"name" binding:"required,max=100"`
-	Provider         string            `json:"provider" binding:"required,oneof=openai anthropic gemini"`
-	APIMode          string            `json:"api_mode" binding:"omitempty,oneof=chat_completions responses"`
-	Endpoint         string            `json:"endpoint" binding:"required,max=500"`
-	APIKey           string            `json:"api_key" binding:"required,max=2000"`
-	PrimaryModel     string            `json:"primary_model" binding:"required,max=200"`
-	ExtraModels      []string          `json:"extra_models"`
-	GroupName        string            `json:"group_name" binding:"max=100"`
-	Enabled          *bool             `json:"enabled"`
-	IntervalSeconds  int               `json:"interval_seconds" binding:"required,min=15,max=3600"`
-	JitterSeconds    int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
-	TemplateID       *int64            `json:"template_id"`
-	ExtraHeaders     map[string]string `json:"extra_headers"`
-	BodyOverrideMode string            `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
-	BodyOverride     map[string]any    `json:"body_override"`
+	Name             string                      `json:"name" binding:"required,max=100"`
+	Provider         string                      `json:"provider" binding:"required,oneof=openai anthropic gemini"`
+	APIMode          string                      `json:"api_mode" binding:"omitempty,oneof=chat_completions responses"`
+	Endpoint         string                      `json:"endpoint" binding:"required,max=500"`
+	APIKey           string                      `json:"api_key" binding:"required,max=2000"`
+	PrimaryModel     string                      `json:"primary_model" binding:"required,max=200"`
+	ExtraModels      []string                    `json:"extra_models"`
+	GroupName        string                      `json:"group_name" binding:"max=100"`
+	Enabled          *bool                       `json:"enabled"`
+	IntervalSeconds  int                         `json:"interval_seconds" binding:"required,min=15,max=3600"`
+	JitterSeconds    int                         `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
+	ActiveWindow     *domain.MonitorActiveWindow `json:"active_window"`
+	TemplateID       *int64                      `json:"template_id"`
+	ExtraHeaders     map[string]string           `json:"extra_headers"`
+	BodyOverrideMode string                      `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
+	BodyOverride     map[string]any              `json:"body_override"`
 }
 
 type channelMonitorUpdateRequest struct {
-	Name             *string            `json:"name" binding:"omitempty,max=100"`
-	Provider         *string            `json:"provider" binding:"omitempty,oneof=openai anthropic gemini"`
-	APIMode          *string            `json:"api_mode" binding:"omitempty,oneof=chat_completions responses"`
-	Endpoint         *string            `json:"endpoint" binding:"omitempty,max=500"`
-	APIKey           *string            `json:"api_key" binding:"omitempty,max=2000"`
-	PrimaryModel     *string            `json:"primary_model" binding:"omitempty,max=200"`
-	ExtraModels      *[]string          `json:"extra_models"`
-	GroupName        *string            `json:"group_name" binding:"omitempty,max=100"`
-	Enabled          *bool              `json:"enabled"`
-	IntervalSeconds  *int               `json:"interval_seconds" binding:"omitempty,min=15,max=3600"`
-	JitterSeconds    *int               `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
-	TemplateID       *int64             `json:"template_id"`
-	ClearTemplate    bool               `json:"clear_template"` // true 时把 template_id 置空，忽略 TemplateID
-	ExtraHeaders     *map[string]string `json:"extra_headers"`
-	BodyOverrideMode *string            `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
-	BodyOverride     *map[string]any    `json:"body_override"`
+	Name             *string                     `json:"name" binding:"omitempty,max=100"`
+	Provider         *string                     `json:"provider" binding:"omitempty,oneof=openai anthropic gemini"`
+	APIMode          *string                     `json:"api_mode" binding:"omitempty,oneof=chat_completions responses"`
+	Endpoint         *string                     `json:"endpoint" binding:"omitempty,max=500"`
+	APIKey           *string                     `json:"api_key" binding:"omitempty,max=2000"`
+	PrimaryModel     *string                     `json:"primary_model" binding:"omitempty,max=200"`
+	ExtraModels      *[]string                   `json:"extra_models"`
+	GroupName        *string                     `json:"group_name" binding:"omitempty,max=100"`
+	Enabled          *bool                       `json:"enabled"`
+	IntervalSeconds  *int                        `json:"interval_seconds" binding:"omitempty,min=15,max=3600"`
+	JitterSeconds    *int                        `json:"jitter_seconds" binding:"omitempty,min=0,max=3585"`
+	ActiveWindow     *domain.MonitorActiveWindow `json:"active_window"`
+	TemplateID       *int64                      `json:"template_id"`
+	ClearTemplate    bool                        `json:"clear_template"` // true 时把 template_id 置空，忽略 TemplateID
+	ExtraHeaders     *map[string]string          `json:"extra_headers"`
+	BodyOverrideMode *string                     `json:"body_override_mode" binding:"omitempty,oneof=off merge replace"`
+	BodyOverride     *map[string]any             `json:"body_override"`
 }
 
 type channelMonitorResponse struct {
@@ -86,6 +89,7 @@ type channelMonitorResponse struct {
 	Enabled             bool                                 `json:"enabled"`
 	IntervalSeconds     int                                  `json:"interval_seconds"`
 	JitterSeconds       int                                  `json:"jitter_seconds"`
+	ActiveWindow        *domain.MonitorActiveWindow          `json:"active_window"`
 	LastCheckedAt       *string                              `json:"last_checked_at"`
 	CreatedBy           int64                                `json:"created_by"`
 	CreatedAt           string                               `json:"created_at"`
@@ -154,6 +158,7 @@ func channelMonitorToResponse(m *service.ChannelMonitor) *channelMonitorResponse
 		Enabled:             m.Enabled,
 		IntervalSeconds:     m.IntervalSeconds,
 		JitterSeconds:       m.JitterSeconds,
+		ActiveWindow:        m.ActiveWindow,
 		CreatedBy:           m.CreatedBy,
 		CreatedAt:           m.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:           m.UpdatedAt.UTC().Format(time.RFC3339),
@@ -320,6 +325,7 @@ func (h *ChannelMonitorHandler) Create(c *gin.Context) {
 		Enabled:          enabled,
 		IntervalSeconds:  req.IntervalSeconds,
 		JitterSeconds:    req.JitterSeconds,
+		ActiveWindow:     req.ActiveWindow,
 		CreatedBy:        subject.UserID,
 		TemplateID:       req.TemplateID,
 		ExtraHeaders:     req.ExtraHeaders,
@@ -357,6 +363,7 @@ func (h *ChannelMonitorHandler) Update(c *gin.Context) {
 		Enabled:          req.Enabled,
 		IntervalSeconds:  req.IntervalSeconds,
 		JitterSeconds:    req.JitterSeconds,
+		ActiveWindow:     req.ActiveWindow,
 		TemplateID:       req.TemplateID,
 		ClearTemplate:    req.ClearTemplate,
 		ExtraHeaders:     req.ExtraHeaders,

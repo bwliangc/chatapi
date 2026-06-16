@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/url"
 	"strings"
+
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
 // 渠道监控参数校验与归一化辅助函数。
@@ -50,6 +52,13 @@ func validateJitter(jitterSec, intervalSec int) error {
 		return ErrChannelMonitorInvalidJitter
 	}
 	return nil
+}
+
+// validateActiveWindow 校验检测时间窗口。
+// nil 或 Enabled=false 视为不限制，直接通过；其余复用 parseActiveWindow 的格式/范围校验。
+func validateActiveWindow(w *domain.MonitorActiveWindow) error {
+	_, err := parseActiveWindow(w)
+	return err
 }
 
 // validateEndpoint 校验 endpoint：

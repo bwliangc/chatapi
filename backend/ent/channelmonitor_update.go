@@ -17,6 +17,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
 // ChannelMonitorUpdate is the builder for updating ChannelMonitor entities.
@@ -207,6 +208,26 @@ func (_u *ChannelMonitorUpdate) SetNillableJitterSeconds(v *int) *ChannelMonitor
 // AddJitterSeconds adds value to the "jitter_seconds" field.
 func (_u *ChannelMonitorUpdate) AddJitterSeconds(v int) *ChannelMonitorUpdate {
 	_u.mutation.AddJitterSeconds(v)
+	return _u
+}
+
+// SetActiveWindow sets the "active_window" field.
+func (_u *ChannelMonitorUpdate) SetActiveWindow(v domain.MonitorActiveWindow) *ChannelMonitorUpdate {
+	_u.mutation.SetActiveWindow(v)
+	return _u
+}
+
+// SetNillableActiveWindow sets the "active_window" field if the given value is not nil.
+func (_u *ChannelMonitorUpdate) SetNillableActiveWindow(v *domain.MonitorActiveWindow) *ChannelMonitorUpdate {
+	if v != nil {
+		_u.SetActiveWindow(*v)
+	}
+	return _u
+}
+
+// ClearActiveWindow clears the value of the "active_window" field.
+func (_u *ChannelMonitorUpdate) ClearActiveWindow() *ChannelMonitorUpdate {
+	_u.mutation.ClearActiveWindow()
 	return _u
 }
 
@@ -558,6 +579,12 @@ func (_u *ChannelMonitorUpdate) sqlSave(ctx context.Context) (_node int, err err
 	if value, ok := _u.mutation.AddedJitterSeconds(); ok {
 		_spec.AddField(channelmonitor.FieldJitterSeconds, field.TypeInt, value)
 	}
+	if value, ok := _u.mutation.ActiveWindow(); ok {
+		_spec.SetField(channelmonitor.FieldActiveWindow, field.TypeJSON, value)
+	}
+	if _u.mutation.ActiveWindowCleared() {
+		_spec.ClearField(channelmonitor.FieldActiveWindow, field.TypeJSON)
+	}
 	if value, ok := _u.mutation.LastCheckedAt(); ok {
 		_spec.SetField(channelmonitor.FieldLastCheckedAt, field.TypeTime, value)
 	}
@@ -896,6 +923,26 @@ func (_u *ChannelMonitorUpdateOne) SetNillableJitterSeconds(v *int) *ChannelMoni
 // AddJitterSeconds adds value to the "jitter_seconds" field.
 func (_u *ChannelMonitorUpdateOne) AddJitterSeconds(v int) *ChannelMonitorUpdateOne {
 	_u.mutation.AddJitterSeconds(v)
+	return _u
+}
+
+// SetActiveWindow sets the "active_window" field.
+func (_u *ChannelMonitorUpdateOne) SetActiveWindow(v domain.MonitorActiveWindow) *ChannelMonitorUpdateOne {
+	_u.mutation.SetActiveWindow(v)
+	return _u
+}
+
+// SetNillableActiveWindow sets the "active_window" field if the given value is not nil.
+func (_u *ChannelMonitorUpdateOne) SetNillableActiveWindow(v *domain.MonitorActiveWindow) *ChannelMonitorUpdateOne {
+	if v != nil {
+		_u.SetActiveWindow(*v)
+	}
+	return _u
+}
+
+// ClearActiveWindow clears the value of the "active_window" field.
+func (_u *ChannelMonitorUpdateOne) ClearActiveWindow() *ChannelMonitorUpdateOne {
+	_u.mutation.ClearActiveWindow()
 	return _u
 }
 
@@ -1276,6 +1323,12 @@ func (_u *ChannelMonitorUpdateOne) sqlSave(ctx context.Context) (_node *ChannelM
 	}
 	if value, ok := _u.mutation.AddedJitterSeconds(); ok {
 		_spec.AddField(channelmonitor.FieldJitterSeconds, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ActiveWindow(); ok {
+		_spec.SetField(channelmonitor.FieldActiveWindow, field.TypeJSON, value)
+	}
+	if _u.mutation.ActiveWindowCleared() {
+		_spec.ClearField(channelmonitor.FieldActiveWindow, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.LastCheckedAt(); ok {
 		_spec.SetField(channelmonitor.FieldLastCheckedAt, field.TypeTime, value)

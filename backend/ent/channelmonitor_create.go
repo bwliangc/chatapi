@@ -15,6 +15,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitordailyrollup"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
 // ChannelMonitorCreate is the builder for creating a ChannelMonitor entity.
@@ -147,6 +148,20 @@ func (_c *ChannelMonitorCreate) SetJitterSeconds(v int) *ChannelMonitorCreate {
 func (_c *ChannelMonitorCreate) SetNillableJitterSeconds(v *int) *ChannelMonitorCreate {
 	if v != nil {
 		_c.SetJitterSeconds(*v)
+	}
+	return _c
+}
+
+// SetActiveWindow sets the "active_window" field.
+func (_c *ChannelMonitorCreate) SetActiveWindow(v domain.MonitorActiveWindow) *ChannelMonitorCreate {
+	_c.mutation.SetActiveWindow(v)
+	return _c
+}
+
+// SetNillableActiveWindow sets the "active_window" field if the given value is not nil.
+func (_c *ChannelMonitorCreate) SetNillableActiveWindow(v *domain.MonitorActiveWindow) *ChannelMonitorCreate {
+	if v != nil {
+		_c.SetActiveWindow(*v)
 	}
 	return _c
 }
@@ -509,6 +524,10 @@ func (_c *ChannelMonitorCreate) createSpec() (*ChannelMonitor, *sqlgraph.CreateS
 		_spec.SetField(channelmonitor.FieldJitterSeconds, field.TypeInt, value)
 		_node.JitterSeconds = value
 	}
+	if value, ok := _c.mutation.ActiveWindow(); ok {
+		_spec.SetField(channelmonitor.FieldActiveWindow, field.TypeJSON, value)
+		_node.ActiveWindow = value
+	}
 	if value, ok := _c.mutation.LastCheckedAt(); ok {
 		_spec.SetField(channelmonitor.FieldLastCheckedAt, field.TypeTime, value)
 		_node.LastCheckedAt = &value
@@ -789,6 +808,24 @@ func (u *ChannelMonitorUpsert) UpdateJitterSeconds() *ChannelMonitorUpsert {
 // AddJitterSeconds adds v to the "jitter_seconds" field.
 func (u *ChannelMonitorUpsert) AddJitterSeconds(v int) *ChannelMonitorUpsert {
 	u.Add(channelmonitor.FieldJitterSeconds, v)
+	return u
+}
+
+// SetActiveWindow sets the "active_window" field.
+func (u *ChannelMonitorUpsert) SetActiveWindow(v domain.MonitorActiveWindow) *ChannelMonitorUpsert {
+	u.Set(channelmonitor.FieldActiveWindow, v)
+	return u
+}
+
+// UpdateActiveWindow sets the "active_window" field to the value that was provided on create.
+func (u *ChannelMonitorUpsert) UpdateActiveWindow() *ChannelMonitorUpsert {
+	u.SetExcluded(channelmonitor.FieldActiveWindow)
+	return u
+}
+
+// ClearActiveWindow clears the value of the "active_window" field.
+func (u *ChannelMonitorUpsert) ClearActiveWindow() *ChannelMonitorUpsert {
+	u.SetNull(channelmonitor.FieldActiveWindow)
 	return u
 }
 
@@ -1119,6 +1156,27 @@ func (u *ChannelMonitorUpsertOne) AddJitterSeconds(v int) *ChannelMonitorUpsertO
 func (u *ChannelMonitorUpsertOne) UpdateJitterSeconds() *ChannelMonitorUpsertOne {
 	return u.Update(func(s *ChannelMonitorUpsert) {
 		s.UpdateJitterSeconds()
+	})
+}
+
+// SetActiveWindow sets the "active_window" field.
+func (u *ChannelMonitorUpsertOne) SetActiveWindow(v domain.MonitorActiveWindow) *ChannelMonitorUpsertOne {
+	return u.Update(func(s *ChannelMonitorUpsert) {
+		s.SetActiveWindow(v)
+	})
+}
+
+// UpdateActiveWindow sets the "active_window" field to the value that was provided on create.
+func (u *ChannelMonitorUpsertOne) UpdateActiveWindow() *ChannelMonitorUpsertOne {
+	return u.Update(func(s *ChannelMonitorUpsert) {
+		s.UpdateActiveWindow()
+	})
+}
+
+// ClearActiveWindow clears the value of the "active_window" field.
+func (u *ChannelMonitorUpsertOne) ClearActiveWindow() *ChannelMonitorUpsertOne {
+	return u.Update(func(s *ChannelMonitorUpsert) {
+		s.ClearActiveWindow()
 	})
 }
 
@@ -1631,6 +1689,27 @@ func (u *ChannelMonitorUpsertBulk) AddJitterSeconds(v int) *ChannelMonitorUpsert
 func (u *ChannelMonitorUpsertBulk) UpdateJitterSeconds() *ChannelMonitorUpsertBulk {
 	return u.Update(func(s *ChannelMonitorUpsert) {
 		s.UpdateJitterSeconds()
+	})
+}
+
+// SetActiveWindow sets the "active_window" field.
+func (u *ChannelMonitorUpsertBulk) SetActiveWindow(v domain.MonitorActiveWindow) *ChannelMonitorUpsertBulk {
+	return u.Update(func(s *ChannelMonitorUpsert) {
+		s.SetActiveWindow(v)
+	})
+}
+
+// UpdateActiveWindow sets the "active_window" field to the value that was provided on create.
+func (u *ChannelMonitorUpsertBulk) UpdateActiveWindow() *ChannelMonitorUpsertBulk {
+	return u.Update(func(s *ChannelMonitorUpsert) {
+		s.UpdateActiveWindow()
+	})
+}
+
+// ClearActiveWindow clears the value of the "active_window" field.
+func (u *ChannelMonitorUpsertBulk) ClearActiveWindow() *ChannelMonitorUpsertBulk {
+	return u.Update(func(s *ChannelMonitorUpsert) {
+		s.ClearActiveWindow()
 	})
 }
 

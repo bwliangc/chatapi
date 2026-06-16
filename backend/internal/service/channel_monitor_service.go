@@ -129,6 +129,7 @@ func (s *ChannelMonitorService) Create(ctx context.Context, p ChannelMonitorCrea
 		Enabled:          p.Enabled,
 		IntervalSeconds:  p.IntervalSeconds,
 		JitterSeconds:    p.JitterSeconds,
+		ActiveWindow:     p.ActiveWindow,
 		CreatedBy:        p.CreatedBy,
 		TemplateID:       p.TemplateID,
 		ExtraHeaders:     emptyHeadersIfNil(p.ExtraHeaders),
@@ -159,6 +160,9 @@ func validateCreateParams(p ChannelMonitorCreateParams) error {
 		return err
 	}
 	if err := validateJitter(p.JitterSeconds, p.IntervalSeconds); err != nil {
+		return err
+	}
+	if err := validateActiveWindow(p.ActiveWindow); err != nil {
 		return err
 	}
 	if err := validateEndpoint(p.Endpoint); err != nil {
@@ -521,6 +525,12 @@ func applyMonitorUpdate(existing *ChannelMonitor, p ChannelMonitorUpdateParams) 
 		if err := validateJitter(existing.JitterSeconds, existing.IntervalSeconds); err != nil {
 			return err
 		}
+	}
+	if p.ActiveWindow != nil {
+		if err := validateActiveWindow(p.ActiveWindow); err != nil {
+			return err
+		}
+		existing.ActiveWindow = p.ActiveWindow
 	}
 	return applyMonitorAdvancedUpdate(existing, p, providerChanged)
 }

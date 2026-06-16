@@ -115,6 +115,56 @@
         <p class="mt-1 text-xs text-gray-400">{{ t('admin.channelMonitor.form.jitterSecondsHint') }}</p>
       </div>
 
+      <!-- 检测时间窗口：关闭=7×24 全天；开启后只在所选星期与时段内检测 -->
+      <div class="rounded-lg border border-gray-200 bg-gray-50/50 p-3 dark:border-dark-700 dark:bg-dark-900/30">
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="input-label mb-0">{{ t('admin.channelMonitor.form.activeWindow') }}</label>
+            <p class="mt-1 text-xs text-gray-400">{{ t('admin.channelMonitor.form.activeWindowHint') }}</p>
+          </div>
+          <Toggle v-model="form.active_window.enabled" />
+        </div>
+
+        <div v-if="form.active_window.enabled" class="mt-4 space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="input-label">{{ t('admin.channelMonitor.form.activeWindowStart') }}</label>
+              <input v-model="form.active_window.start" type="time" class="input" />
+            </div>
+            <div>
+              <label class="input-label">{{ t('admin.channelMonitor.form.activeWindowEnd') }}</label>
+              <input v-model="form.active_window.end" type="time" class="input" />
+            </div>
+          </div>
+          <p class="text-xs text-gray-400">{{ t('admin.channelMonitor.form.activeWindowTimeHint') }}</p>
+
+          <div>
+            <label class="input-label">{{ t('admin.channelMonitor.form.activeWindowWeekdays') }}</label>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="d in weekdayOptions"
+                :key="d.value"
+                type="button"
+                class="rounded-md border px-2.5 py-1 text-sm font-medium transition-colors"
+                :class="weekdayChipClass(form.active_window.weekdays.includes(d.value))"
+                @click="toggleWeekday(d.value)"
+              >
+                {{ d.label }}
+              </button>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              <button type="button" class="text-primary-600 hover:underline dark:text-primary-400" @click="setWeekdays([1, 2, 3, 4, 5])">
+                {{ t('admin.channelMonitor.form.activeWindowWeekdaysWorkday') }}
+              </button>
+              <button type="button" class="text-primary-600 hover:underline dark:text-primary-400" @click="setWeekdays([])">
+                {{ t('admin.channelMonitor.form.activeWindowWeekdaysEveryday') }}
+              </button>
+              <span class="text-gray-400">{{ t('admin.channelMonitor.form.activeWindowWeekdaysHint') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="flex items-center justify-between">
         <label class="input-label mb-0">{{ t('admin.channelMonitor.form.enabled') }}</label>
         <Toggle v-model="form.enabled" />
@@ -195,6 +245,7 @@ import type {
   ChannelMonitor,
   CreateParams,
   APIMode,
+  MonitorActiveWindow,
   Provider,
   UpdateParams,
 } from '@/api/admin/channelMonitor'
@@ -261,6 +312,7 @@ interface MonitorForm {
   group_name: string
   interval_seconds: number
   jitter_seconds: number
+  active_window: MonitorActiveWindow
   enabled: boolean
   // 高级设置快照
   template_id: number | null
@@ -280,6 +332,7 @@ const form = reactive<MonitorForm>({
   group_name: '',
   interval_seconds: systemDefaultInterval.value,
   jitter_seconds: 0,
+  active_window: defaultActiveWindow(),
   enabled: true,
   template_id: null,
   extra_headers: {},
@@ -289,6 +342,37 @@ const form = reactive<MonitorForm>({
 
 // jitter 上限与后端校验一致：interval - jitter 不得低于最小检测间隔 15 秒。
 const maxJitterSeconds = computed<number>(() => Math.max(0, (form.interval_seconds || 0) - 15))
+
+// ---- 检测时间窗口 ----
+
+function defaultActiveWindow(): MonitorActiveWindow {
+  return { enabled: false, start: '08:00', end: '18:00', weekdays: [] }
+}
+
+// 星期选项按周一..周日展示；value 取 0=周日..6=周六（与后端 time.Weekday 一致）。
+const weekdayOptions = computed(() =>
+  [1, 2, 3, 4, 5, 6, 0].map(value => ({
+    value,
+    label: t(`admin.channelMonitor.form.weekday${value}`),
+  })),
+)
+
+function toggleWeekday(value: number) {
+  const days = form.active_window.weekdays
+  const idx = days.indexOf(value)
+  if (idx >= 0) days.splice(idx, 1)
+  else days.push(value)
+}
+
+function setWeekdays(values: number[]) {
+  form.active_window.weekdays = [...values]
+}
+
+function weekdayChipClass(active: boolean): string {
+  return active
+    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-500/60 dark:bg-primary-500/15 dark:text-primary-300'
+    : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-dark-700 dark:text-gray-400'
+}
 
 let suppressFormWatchers = false
 
@@ -431,6 +515,7 @@ function resetForm() {
   form.group_name = ''
   form.interval_seconds = systemDefaultInterval.value
   form.jitter_seconds = 0
+  form.active_window = defaultActiveWindow()
   form.enabled = true
   form.template_id = null
   form.extra_headers = {}
@@ -451,6 +536,14 @@ function loadFromMonitor(m: ChannelMonitor) {
   form.group_name = m.group_name || ''
   form.interval_seconds = m.interval_seconds || systemDefaultInterval.value
   form.jitter_seconds = m.jitter_seconds || 0
+  form.active_window = m.active_window
+    ? {
+        enabled: m.active_window.enabled,
+        start: m.active_window.start || '08:00',
+        end: m.active_window.end || '18:00',
+        weekdays: [...(m.active_window.weekdays || [])],
+      }
+    : defaultActiveWindow()
   form.enabled = m.enabled
   form.template_id = m.template_id ?? null
   form.extra_headers = { ...(m.extra_headers || {}) }
@@ -518,6 +611,12 @@ function buildPayload(): CreateParams {
     enabled: form.enabled,
     interval_seconds: form.interval_seconds,
     jitter_seconds: form.jitter_seconds || 0,
+    active_window: {
+      enabled: form.active_window.enabled,
+      start: form.active_window.start,
+      end: form.active_window.end,
+      weekdays: [...form.active_window.weekdays],
+    },
     template_id: form.template_id,
     extra_headers: form.extra_headers,
     body_override_mode: form.body_override_mode,

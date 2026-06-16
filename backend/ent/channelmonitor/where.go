@@ -720,6 +720,16 @@ func JitterSecondsLTE(v int) predicate.ChannelMonitor {
 	return predicate.ChannelMonitor(sql.FieldLTE(FieldJitterSeconds, v))
 }
 
+// ActiveWindowIsNil applies the IsNil predicate on the "active_window" field.
+func ActiveWindowIsNil() predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldIsNull(FieldActiveWindow))
+}
+
+// ActiveWindowNotNil applies the NotNil predicate on the "active_window" field.
+func ActiveWindowNotNil() predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNotNull(FieldActiveWindow))
+}
+
 // LastCheckedAtEQ applies the EQ predicate on the "last_checked_at" field.
 func LastCheckedAtEQ(v time.Time) predicate.ChannelMonitor {
 	return predicate.ChannelMonitor(sql.FieldEQ(FieldLastCheckedAt, v))

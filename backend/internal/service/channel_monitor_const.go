@@ -126,6 +126,9 @@ var (
 	ErrChannelMonitorInvalidJitter = infraerrors.BadRequest(
 		"CHANNEL_MONITOR_INVALID_JITTER", "jitter_seconds must be >= 0 and interval_seconds - jitter_seconds must be >= 15",
 	)
+	ErrChannelMonitorInvalidActiveWindow = infraerrors.BadRequest(
+		"CHANNEL_MONITOR_INVALID_ACTIVE_WINDOW", "active_window start/end must be valid HH:MM and weekdays must be in [0,6]",
+	)
 	ErrChannelMonitorInvalidEndpoint = infraerrors.BadRequest(
 		"CHANNEL_MONITOR_INVALID_ENDPOINT", "endpoint must be a valid https URL",
 	)
