@@ -305,11 +305,12 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 
 		AllowUserViewErrorRequests: settings.AllowUserViewErrorRequests,
 
-		LeaderboardRewardEnabled:          settings.LeaderboardRewardEnabled,
-		LeaderboardRewardPoolRate:         settings.LeaderboardRewardPoolRate,
-		LeaderboardRewardTopN:             settings.LeaderboardRewardTopN,
-		LeaderboardRewardDistributionMode: settings.LeaderboardRewardDistributionMode,
-		LeaderboardRewardWeights:          settings.LeaderboardRewardWeights,
+		LeaderboardRewardEnabled:            settings.LeaderboardRewardEnabled,
+		LeaderboardRewardEmailNotifyEnabled: settings.LeaderboardRewardEmailNotifyEnabled,
+		LeaderboardRewardPoolRate:           settings.LeaderboardRewardPoolRate,
+		LeaderboardRewardTopN:               settings.LeaderboardRewardTopN,
+		LeaderboardRewardDistributionMode:   settings.LeaderboardRewardDistributionMode,
+		LeaderboardRewardWeights:            settings.LeaderboardRewardWeights,
 	}
 
 	// OpenAI fast policy (stored under a dedicated setting key)
@@ -658,11 +659,12 @@ type UpdateSettingsRequest struct {
 	AffiliateEnabled *bool `json:"affiliate_enabled"`
 
 	// Leaderboard reward (排行榜激励) feature
-	LeaderboardRewardEnabled          *bool    `json:"leaderboard_reward_enabled"`
-	LeaderboardRewardPoolRate         *float64 `json:"leaderboard_reward_pool_rate"`
-	LeaderboardRewardTopN             *int     `json:"leaderboard_reward_top_n"`
-	LeaderboardRewardDistributionMode *string  `json:"leaderboard_reward_distribution_mode"`
-	LeaderboardRewardWeights          *string  `json:"leaderboard_reward_weights"`
+	LeaderboardRewardEnabled            *bool    `json:"leaderboard_reward_enabled"`
+	LeaderboardRewardEmailNotifyEnabled *bool    `json:"leaderboard_reward_email_notify_enabled"`
+	LeaderboardRewardPoolRate           *float64 `json:"leaderboard_reward_pool_rate"`
+	LeaderboardRewardTopN               *int     `json:"leaderboard_reward_top_n"`
+	LeaderboardRewardDistributionMode   *string  `json:"leaderboard_reward_distribution_mode"`
+	LeaderboardRewardWeights            *string  `json:"leaderboard_reward_weights"`
 
 	// 风控中心功能开关
 	RiskControlEnabled *bool `json:"risk_control_enabled"`
@@ -1854,6 +1856,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.LeaderboardRewardEnabled
 		}(),
+		LeaderboardRewardEmailNotifyEnabled: func() bool {
+			if req.LeaderboardRewardEmailNotifyEnabled != nil {
+				return *req.LeaderboardRewardEmailNotifyEnabled
+			}
+			return previousSettings.LeaderboardRewardEmailNotifyEnabled
+		}(),
 		RiskControlEnabled: func() bool {
 			if req.RiskControlEnabled != nil {
 				return *req.RiskControlEnabled
@@ -2201,11 +2209,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		CyberSessionBlockTTLSeconds: updatedSettings.CyberSessionBlockTTLSeconds,
 		AllowUserViewErrorRequests:  updatedSettings.AllowUserViewErrorRequests,
 
-		LeaderboardRewardEnabled:          updatedSettings.LeaderboardRewardEnabled,
-		LeaderboardRewardPoolRate:         updatedSettings.LeaderboardRewardPoolRate,
-		LeaderboardRewardTopN:             updatedSettings.LeaderboardRewardTopN,
-		LeaderboardRewardDistributionMode: updatedSettings.LeaderboardRewardDistributionMode,
-		LeaderboardRewardWeights:          updatedSettings.LeaderboardRewardWeights,
+		LeaderboardRewardEnabled:            updatedSettings.LeaderboardRewardEnabled,
+		LeaderboardRewardEmailNotifyEnabled: updatedSettings.LeaderboardRewardEmailNotifyEnabled,
+		LeaderboardRewardPoolRate:           updatedSettings.LeaderboardRewardPoolRate,
+		LeaderboardRewardTopN:               updatedSettings.LeaderboardRewardTopN,
+		LeaderboardRewardDistributionMode:   updatedSettings.LeaderboardRewardDistributionMode,
+		LeaderboardRewardWeights:            updatedSettings.LeaderboardRewardWeights,
 	}
 	if fastPolicy, err := h.settingService.GetOpenAIFastPolicySettings(c.Request.Context()); err != nil {
 		slog.Error("openai_fast_policy_settings_get_failed", "error", err)

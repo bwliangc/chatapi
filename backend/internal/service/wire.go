@@ -200,8 +200,9 @@ func ProvideLeaderboardRewardService(
 	settingService *SettingService,
 	dashboardService *DashboardService,
 	billingCacheService *BillingCacheService,
+	notificationEmailService *NotificationEmailService,
 ) *LeaderboardRewardService {
-	svc := NewLeaderboardRewardService(rewardRepo, settingService, dashboardService, billingCacheService, time.Hour)
+	svc := NewLeaderboardRewardService(rewardRepo, settingService, dashboardService, billingCacheService, time.Hour, notificationEmailService)
 	svc.Start()
 	return svc
 }

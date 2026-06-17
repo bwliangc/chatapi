@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -637,7 +638,73 @@ func (s *RedeemService) GetUserHistory(ctx context.Context, userID int64, limit 
 	if err != nil {
 		return nil, fmt.Errorf("get user redeem history: %w", err)
 	}
-	return codes, nil
+
+	// 追加排行榜激励发放记录（合成为已使用的兑换记录展示），与真实兑换记录按时间合并。
+	rewardCodes, err := s.listLeaderboardRewardHistory(ctx, userID, limit)
+	if err != nil {
+		// 排行榜激励记录获取失败不应阻断兑换历史展示，降级返回真实记录。
+		logger.LegacyPrintf("service.redeem", "[Redeem] list leaderboard reward history for user %d failed: %v", userID, err)
+		return codes, nil
+	}
+	if len(rewardCodes) == 0 {
+		return codes, nil
+	}
+
+	combined := append(append([]RedeemCode{}, codes...), rewardCodes...)
+	sort.SliceStable(combined, func(i, j int) bool {
+		return redeemCodeHistoryTime(combined[i]).After(redeemCodeHistoryTime(combined[j]))
+	})
+	if limit > 0 && len(combined) > limit {
+		combined = combined[:limit]
+	}
+	return combined, nil
+}
+
+// listLeaderboardRewardHistory 读取用户的排行榜激励发放记录并合成为 RedeemCode 历史项。
+func (s *RedeemService) listLeaderboardRewardHistory(ctx context.Context, userID int64, limit int) ([]RedeemCode, error) {
+	if s.entClient == nil || userID <= 0 {
+		return nil, nil
+	}
+	queryLimit := limit
+	if queryLimit <= 0 {
+		queryLimit = 100
+	}
+
+	rows, err := s.entClient.QueryContext(ctx,
+		`SELECT id, reward_amount, reward_date, created_at FROM leaderboard_reward_logs WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
+		userID, queryLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	rewardCodes := make([]RedeemCode, 0, queryLimit)
+	for rows.Next() {
+		var id int64
+		var rewardAmount float64
+		var rewardDate time.Time
+		var createdAt time.Time
+		if err := rows.Scan(&id, &rewardAmount, &rewardDate, &createdAt); err != nil {
+			return nil, err
+		}
+		usedBy := userID
+		usedAt := createdAt
+		rewardCodes = append(rewardCodes, RedeemCode{
+			ID:        -id,
+			Code:      fmt.Sprintf("LB-%s", rewardDate.Format("2006-01-02")),
+			Type:      RedeemTypeLeaderboardReward,
+			Value:     rewardAmount,
+			Status:    StatusUsed,
+			UsedBy:    &usedBy,
+			UsedAt:    &usedAt,
+			CreatedAt: createdAt,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return rewardCodes, nil
 }
 
 // reduceOrCancelSubscription 缩短订阅天数，剩余天数 <= 0 时取消订阅

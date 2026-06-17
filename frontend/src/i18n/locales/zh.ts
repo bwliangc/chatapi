@@ -1189,6 +1189,7 @@ export default {
     concurrencyAddedRedeem: '并发增加（兑换）',
     concurrencyAddedAdmin: '并发增加（管理员）',
     concurrencyReducedAdmin: '并发减少（管理员）',
+    leaderboardReward: '排行榜活动',
     adminAdjustment: '管理员调整',
     subscriptionAssigned: '订阅已分配',
     subscriptionAssignedDesc: '您已获得 {groupName} 的访问权限',
@@ -5649,6 +5650,8 @@ export default {
           modeWeighted: '自定义权重',
           weights: '名次权重',
           weightsHint: '逗号分隔，按名次依次对应，如 50,30,20 表示前 3 名按 5:3:2 分。权重个数不足名额时其余名次不发放。',
+          emailNotifyEnabled: '发放时邮件通知',
+          emailNotifyEnabledHint: '开启后，每日发放排行榜激励时向中奖用户发送邮件通知（需要配置邮件服务）。默认关闭。',
         },
         affiliate: {
           title: '邀请返利',

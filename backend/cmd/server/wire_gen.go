@@ -271,7 +271,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	proxyExpiryService := service.ProvideProxyExpiryService(proxyRepository)
 	subscriptionExpiryService := service.ProvideSubscriptionExpiryService(userSubscriptionRepository, settingRepository, notificationEmailService, leaderLockCache, db)
 	leaderboardRewardRepository := repository.NewLeaderboardRewardRepository(client)
-	leaderboardRewardService := service.ProvideLeaderboardRewardService(leaderboardRewardRepository, settingService, dashboardService, billingCacheService)
+	leaderboardRewardService := service.ProvideLeaderboardRewardService(leaderboardRewardRepository, settingService, dashboardService, billingCacheService, notificationEmailService)
 	scheduledTestRunnerService := service.ProvideScheduledTestRunnerService(scheduledTestPlanRepository, scheduledTestService, accountTestService, rateLimitService, configConfig)
 	paymentOrderExpiryService := service.ProvidePaymentOrderExpiryService(paymentService, leaderLockCache, db)
 	channelMonitorRunner := service.ProvideChannelMonitorRunner(channelMonitorService, settingService)

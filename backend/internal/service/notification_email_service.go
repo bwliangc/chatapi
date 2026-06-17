@@ -27,6 +27,7 @@ const (
 	NotificationEmailEventSubscriptionExpiryReminder  = "subscription.expiry_reminder"
 	NotificationEmailEventBalanceLow                  = "balance.low"
 	NotificationEmailEventBalanceRechargeSuccess      = "balance.recharge_success"
+	NotificationEmailEventLeaderboardReward           = "leaderboard.reward_granted"
 	NotificationEmailEventAccountQuotaAlert           = "account.quota_alert"
 	NotificationEmailEventContentModerationViolation  = "content_moderation.violation_notice"
 	NotificationEmailEventContentModerationDisabled   = "content_moderation.account_disabled"
@@ -945,6 +946,7 @@ var notificationEmailEventOrder = []string{
 	NotificationEmailEventSubscriptionExpiryReminder,
 	NotificationEmailEventBalanceLow,
 	NotificationEmailEventBalanceRechargeSuccess,
+	NotificationEmailEventLeaderboardReward,
 	NotificationEmailEventAccountQuotaAlert,
 	NotificationEmailEventContentModerationViolation,
 	NotificationEmailEventContentModerationDisabled,
@@ -1009,6 +1011,14 @@ var notificationEmailEventDefinitions = map[string]NotificationEmailEventInfo{
 		Category:     "billing",
 		Optional:     false,
 		Placeholders: append(append([]string{}, notificationEmailCommonPlaceholders...), "recharge_amount", "current_balance", "order_id"),
+	},
+	NotificationEmailEventLeaderboardReward: {
+		Event:        NotificationEmailEventLeaderboardReward,
+		Label:        "Leaderboard reward",
+		Description:  "Optional notice when a user receives a leaderboard activity balance reward.",
+		Category:     "billing",
+		Optional:     true,
+		Placeholders: append(append([]string{}, notificationEmailCommonPlaceholders...), "reward_amount", "rank", "reward_date", "unsubscribe_url"),
 	},
 	NotificationEmailEventAccountQuotaAlert: {
 		Event:       NotificationEmailEventAccountQuotaAlert,
@@ -1202,6 +1212,24 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 <p>您的余额充值 <strong>${{recharge_amount}}</strong> 已完成。</p>
 <p>当前余额：<strong>${{current_balance}}</strong></p>
 			<p>订单号：{{order_id}}</p>`),
+		},
+	},
+	NotificationEmailEventLeaderboardReward: {
+		notificationEmailDefaultLocale: {
+			Subject: "[{{site_name}}] You earned a leaderboard reward",
+			HTML: notificationEmailCard("#f59e0b", "Leaderboard reward", `
+<p>Hello {{recipient_name}},</p>
+<p>Congratulations! You ranked <strong>#{{rank}}</strong> in the leaderboard activity on <strong>{{reward_date}}</strong>.</p>
+<p>A balance reward of <strong>${{reward_amount}}</strong> has been credited to your account.</p>
+<p class="muted"><a href="{{unsubscribe_url}}">Unsubscribe from optional leaderboard reward notices</a></p>`),
+		},
+		notificationEmailLocaleChinese: {
+			Subject: "[{{site_name}}] 恭喜获得排行榜活动奖励",
+			HTML: notificationEmailCard("#f59e0b", "排行榜活动奖励", `
+<p>{{recipient_name}}，您好：</p>
+<p>恭喜！您在 <strong>{{reward_date}}</strong> 的排行榜活动中位列第 <strong>{{rank}}</strong> 名。</p>
+<p>奖励余额 <strong>${{reward_amount}}</strong> 已发放至您的账户。</p>
+<p class="muted"><a href="{{unsubscribe_url}}">退订此类排行榜奖励提醒</a></p>`),
 		},
 	},
 	NotificationEmailEventAccountQuotaAlert: {

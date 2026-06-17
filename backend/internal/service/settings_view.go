@@ -154,11 +154,12 @@ type SystemSettings struct {
 	AffiliateRebatePerInviteeCap float64
 
 	// Leaderboard reward (排行榜激励) feature
-	LeaderboardRewardEnabled          bool
-	LeaderboardRewardPoolRate         float64 // 奖池比例（昨日总消费的百分比，0-100）
-	LeaderboardRewardTopN             int     // 奖励前 N 名
-	LeaderboardRewardDistributionMode string  // average / proportional / weighted
-	LeaderboardRewardWeights          string  // 逗号分隔权重，仅 weighted 模式生效
+	LeaderboardRewardEnabled            bool
+	LeaderboardRewardEmailNotifyEnabled bool    // 发放排行榜激励时是否发送邮件通知
+	LeaderboardRewardPoolRate           float64 // 奖池比例（昨日总消费的百分比，0-100）
+	LeaderboardRewardTopN               int     // 奖励前 N 名
+	LeaderboardRewardDistributionMode   string  // average / proportional / weighted
+	LeaderboardRewardWeights            string  // 逗号分隔权重，仅 weighted 模式生效
 
 	DefaultUserRPMLimit  int
 	DefaultSubscriptions []DefaultSubscriptionSetting
