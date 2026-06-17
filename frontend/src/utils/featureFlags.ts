@@ -104,6 +104,11 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Available Channels',
   }),
+  onlinePlayground: defineFlag({
+    key: 'online_playground_enabled',
+    mode: 'opt-in',
+    label: 'Online Playground',
+  }),
   payment: defineFlag({
     key: 'payment_enabled',
     mode: 'opt-out',

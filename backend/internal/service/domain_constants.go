@@ -363,6 +363,13 @@ const (
 	// sidebar entry is hidden. Defaults to false (opt-in feature).
 	SettingKeyAvailableChannelsEnabled = "available_channels_enabled"
 
+	// SettingKeyOnlinePlaygroundEnabled is a DB-backed soft switch for the "Online Playground"
+	// user-facing page (pick own API key + model, chat with image/text-file attachments).
+	// When false the sidebar entry and route are hidden. Defaults to false (opt-in feature).
+	// Purely a UI gate — the playground calls the existing /v1/chat/completions with the
+	// user's own key, so there is no separate backend endpoint to guard.
+	SettingKeyOnlinePlaygroundEnabled = "online_playground_enabled"
+
 	// =========================
 	// Overload Cooldown (529)
 	// =========================

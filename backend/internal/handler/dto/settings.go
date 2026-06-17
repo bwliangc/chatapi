@@ -244,6 +244,9 @@ type SystemSettings struct {
 	// Available Channels feature switch (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 
+	// Online Playground feature switch (user-facing chat page; opt-in)
+	OnlinePlaygroundEnabled bool `json:"online_playground_enabled"`
+
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
 
@@ -322,6 +325,9 @@ type PublicSettings struct {
 	ChannelMonitorDefaultIntervalSeconds int  `json:"channel_monitor_default_interval_seconds"`
 
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+
+	// Online Playground feature switch (user-facing chat page; opt-in)
+	OnlinePlaygroundEnabled bool `json:"online_playground_enabled"`
 
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
