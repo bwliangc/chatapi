@@ -306,6 +306,12 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		AffiliateEnabled: settings.AffiliateEnabled,
 
 		AllowUserViewErrorRequests: settings.AllowUserViewErrorRequests,
+
+		LeaderboardRewardEnabled:          settings.LeaderboardRewardEnabled,
+		LeaderboardRewardPoolRate:         settings.LeaderboardRewardPoolRate,
+		LeaderboardRewardTopN:             settings.LeaderboardRewardTopN,
+		LeaderboardRewardDistributionMode: settings.LeaderboardRewardDistributionMode,
+		LeaderboardRewardWeights:          settings.LeaderboardRewardWeights,
 	}
 
 	// OpenAI fast policy (stored under a dedicated setting key)
@@ -656,6 +662,13 @@ type UpdateSettingsRequest struct {
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled *bool `json:"affiliate_enabled"`
 
+	// Leaderboard reward (排行榜激励) feature
+	LeaderboardRewardEnabled          *bool    `json:"leaderboard_reward_enabled"`
+	LeaderboardRewardPoolRate         *float64 `json:"leaderboard_reward_pool_rate"`
+	LeaderboardRewardTopN             *int     `json:"leaderboard_reward_top_n"`
+	LeaderboardRewardDistributionMode *string  `json:"leaderboard_reward_distribution_mode"`
+	LeaderboardRewardWeights          *string  `json:"leaderboard_reward_weights"`
+
 	// 风控中心功能开关
 	RiskControlEnabled *bool `json:"risk_control_enabled"`
 
@@ -744,6 +757,38 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	}
 	if affiliateRebatePerInviteeCap < 0 {
 		affiliateRebatePerInviteeCap = service.AffiliateRebatePerInviteeCapDefault
+	}
+	// Leaderboard reward (排行榜激励)
+	leaderboardRewardPoolRate := previousSettings.LeaderboardRewardPoolRate
+	if req.LeaderboardRewardPoolRate != nil {
+		leaderboardRewardPoolRate = *req.LeaderboardRewardPoolRate
+	}
+	if leaderboardRewardPoolRate < service.LeaderboardRewardPoolRateMin {
+		leaderboardRewardPoolRate = service.LeaderboardRewardPoolRateMin
+	}
+	if leaderboardRewardPoolRate > service.LeaderboardRewardPoolRateMax {
+		leaderboardRewardPoolRate = service.LeaderboardRewardPoolRateMax
+	}
+	leaderboardRewardTopN := previousSettings.LeaderboardRewardTopN
+	if req.LeaderboardRewardTopN != nil {
+		leaderboardRewardTopN = *req.LeaderboardRewardTopN
+	}
+	if leaderboardRewardTopN < 0 {
+		leaderboardRewardTopN = service.LeaderboardRewardTopNDefault
+	}
+	if leaderboardRewardTopN > service.LeaderboardRewardTopNMax {
+		leaderboardRewardTopN = service.LeaderboardRewardTopNMax
+	}
+	leaderboardRewardDistributionMode := previousSettings.LeaderboardRewardDistributionMode
+	if req.LeaderboardRewardDistributionMode != nil {
+		leaderboardRewardDistributionMode = *req.LeaderboardRewardDistributionMode
+	}
+	if !service.IsValidLeaderboardRewardMode(leaderboardRewardDistributionMode) {
+		leaderboardRewardDistributionMode = service.LeaderboardRewardModeDefault
+	}
+	leaderboardRewardWeights := previousSettings.LeaderboardRewardWeights
+	if req.LeaderboardRewardWeights != nil {
+		leaderboardRewardWeights = strings.TrimSpace(*req.LeaderboardRewardWeights)
 	}
 	// 通用表格配置：兼容旧客户端未传字段时保留当前值。
 	if req.TableDefaultPageSize <= 0 {
@@ -1612,6 +1657,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		AffiliateRebateFreezeHours:             affiliateRebateFreezeHours,
 		AffiliateRebateDurationDays:            affiliateRebateDurationDays,
 		AffiliateRebatePerInviteeCap:           affiliateRebatePerInviteeCap,
+		LeaderboardRewardPoolRate:              leaderboardRewardPoolRate,
+		LeaderboardRewardTopN:                  leaderboardRewardTopN,
+		LeaderboardRewardDistributionMode:      leaderboardRewardDistributionMode,
+		LeaderboardRewardWeights:               leaderboardRewardWeights,
 		DefaultUserRPMLimit:                    req.DefaultUserRPMLimit,
 		DefaultSubscriptions:                   defaultSubscriptions,
 		EnableModelFallback:                    req.EnableModelFallback,
@@ -1816,6 +1865,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 				return *req.AffiliateEnabled
 			}
 			return previousSettings.AffiliateEnabled
+		}(),
+		LeaderboardRewardEnabled: func() bool {
+			if req.LeaderboardRewardEnabled != nil {
+				return *req.LeaderboardRewardEnabled
+			}
+			return previousSettings.LeaderboardRewardEnabled
 		}(),
 		RiskControlEnabled: func() bool {
 			if req.RiskControlEnabled != nil {
@@ -2165,6 +2220,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		CyberSessionBlockEnabled:    updatedSettings.CyberSessionBlockEnabled,
 		CyberSessionBlockTTLSeconds: updatedSettings.CyberSessionBlockTTLSeconds,
 		AllowUserViewErrorRequests:  updatedSettings.AllowUserViewErrorRequests,
+
+		LeaderboardRewardEnabled:          updatedSettings.LeaderboardRewardEnabled,
+		LeaderboardRewardPoolRate:         updatedSettings.LeaderboardRewardPoolRate,
+		LeaderboardRewardTopN:             updatedSettings.LeaderboardRewardTopN,
+		LeaderboardRewardDistributionMode: updatedSettings.LeaderboardRewardDistributionMode,
+		LeaderboardRewardWeights:          updatedSettings.LeaderboardRewardWeights,
 	}
 	if fastPolicy, err := h.settingService.GetOpenAIFastPolicySettings(c.Request.Context()); err != nil {
 		slog.Error("openai_fast_policy_settings_get_failed", "error", err)

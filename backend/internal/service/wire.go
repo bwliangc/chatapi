@@ -193,6 +193,19 @@ func ProvideSubscriptionExpiryService(userSubRepo UserSubscriptionRepository, se
 	return svc
 }
 
+// ProvideLeaderboardRewardService creates and starts LeaderboardRewardService.
+// 每小时巡检一次，结算尚未发放的“昨日”排行榜激励。
+func ProvideLeaderboardRewardService(
+	rewardRepo LeaderboardRewardRepository,
+	settingService *SettingService,
+	dashboardService *DashboardService,
+	billingCacheService *BillingCacheService,
+) *LeaderboardRewardService {
+	svc := NewLeaderboardRewardService(rewardRepo, settingService, dashboardService, billingCacheService, time.Hour)
+	svc.Start()
+	return svc
+}
+
 // ProvideTimingWheelService creates and starts TimingWheelService
 func ProvideTimingWheelService() (*TimingWheelService, error) {
 	svc, err := NewTimingWheelService()
@@ -578,6 +591,7 @@ var ProviderSet = wire.NewSet(
 	ProvideAccountExpiryService,
 	ProvideProxyExpiryService,
 	ProvideSubscriptionExpiryService,
+	ProvideLeaderboardRewardService,
 	ProvideTimingWheelService,
 	ProvideDashboardAggregationService,
 	ProvideUsageCleanupService,

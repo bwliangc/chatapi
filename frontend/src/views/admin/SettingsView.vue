@@ -5621,6 +5621,109 @@
           </div>
         </div>
 
+        <!-- Leaderboard reward (排行榜激励) feature card -->
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.settings.features.leaderboardReward.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.features.leaderboardReward.description') }}
+            </p>
+          </div>
+          <div class="space-y-5 p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.features.leaderboardReward.enabled') }}
+                </label>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.features.leaderboardReward.enabledHint') }}
+                </p>
+              </div>
+              <Toggle v-model="form.leaderboard_reward_enabled" />
+            </div>
+
+            <div v-if="form.leaderboard_reward_enabled" class="space-y-6">
+              <div>
+                <label class="input-label">
+                  {{ t('admin.settings.features.leaderboardReward.poolRate') }}
+                </label>
+                <div class="relative">
+                  <input
+                    v-model.number="form.leaderboard_reward_pool_rate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    class="input pr-8"
+                    placeholder="10"
+                  />
+                  <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+                </div>
+                <p class="mt-1 text-xs text-gray-400">
+                  {{ t('admin.settings.features.leaderboardReward.poolRateHint') }}
+                </p>
+              </div>
+
+              <div>
+                <label class="input-label">
+                  {{ t('admin.settings.features.leaderboardReward.topN') }}
+                </label>
+                <input
+                  v-model.number="form.leaderboard_reward_top_n"
+                  type="number"
+                  step="1"
+                  min="0"
+                  class="input"
+                  placeholder="10"
+                />
+                <p class="mt-1 text-xs text-gray-400">
+                  {{ t('admin.settings.features.leaderboardReward.topNHint') }}
+                </p>
+              </div>
+
+              <div>
+                <label class="input-label">
+                  {{ t('admin.settings.features.leaderboardReward.mode') }}
+                </label>
+                <select
+                  v-model="form.leaderboard_reward_distribution_mode"
+                  class="input"
+                >
+                  <option value="average">
+                    {{ t('admin.settings.features.leaderboardReward.modeAverage') }}
+                  </option>
+                  <option value="proportional">
+                    {{ t('admin.settings.features.leaderboardReward.modeProportional') }}
+                  </option>
+                  <option value="weighted">
+                    {{ t('admin.settings.features.leaderboardReward.modeWeighted') }}
+                  </option>
+                </select>
+                <p class="mt-1 text-xs text-gray-400">
+                  {{ t('admin.settings.features.leaderboardReward.modeHint') }}
+                </p>
+              </div>
+
+              <div v-if="form.leaderboard_reward_distribution_mode === 'weighted'">
+                <label class="input-label">
+                  {{ t('admin.settings.features.leaderboardReward.weights') }}
+                </label>
+                <input
+                  v-model="form.leaderboard_reward_weights"
+                  type="text"
+                  class="input"
+                  placeholder="50,30,20"
+                />
+                <p class="mt-1 text-xs text-gray-400">
+                  {{ t('admin.settings.features.leaderboardReward.weightsHint') }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Affiliate (邀请返利) feature card -->
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
@@ -7923,6 +8026,12 @@ const form = reactive<SettingsForm>({
   affiliate_enabled: false,
   // Allow user view error requests
   allow_user_view_error_requests: false,
+  // Leaderboard reward (排行榜激励) feature
+  leaderboard_reward_enabled: false,
+  leaderboard_reward_pool_rate: 0,
+  leaderboard_reward_top_n: 0,
+  leaderboard_reward_distribution_mode: "average",
+  leaderboard_reward_weights: "",
 });
 
 const authSourceDefaults = reactive<AuthSourceDefaultsState>(
@@ -9104,6 +9213,21 @@ async function saveSettings() {
       // Affiliate (邀请返利) feature switch
       affiliate_enabled: form.affiliate_enabled,
       allow_user_view_error_requests: form.allow_user_view_error_requests,
+      // Leaderboard reward (排行榜激励) feature
+      leaderboard_reward_enabled: form.leaderboard_reward_enabled,
+      leaderboard_reward_pool_rate: Math.min(
+        100,
+        Math.max(0, Number(form.leaderboard_reward_pool_rate) || 0),
+      ),
+      leaderboard_reward_top_n: Math.max(
+        0,
+        Math.floor(Number(form.leaderboard_reward_top_n) || 0),
+      ),
+      leaderboard_reward_distribution_mode:
+        form.leaderboard_reward_distribution_mode,
+      leaderboard_reward_weights: (
+        form.leaderboard_reward_weights || ""
+      ).trim(),
     };
 
     // 仅当 openai_fast_policy_settings 已成功从后端加载时才回写，
