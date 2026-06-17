@@ -254,6 +254,13 @@ type SystemSettings struct {
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
+	// Leaderboard reward (排行榜激励) feature
+	LeaderboardRewardEnabled          bool    `json:"leaderboard_reward_enabled"`
+	LeaderboardRewardPoolRate         float64 `json:"leaderboard_reward_pool_rate"`
+	LeaderboardRewardTopN             int     `json:"leaderboard_reward_top_n"`
+	LeaderboardRewardDistributionMode string  `json:"leaderboard_reward_distribution_mode"`
+	LeaderboardRewardWeights          string  `json:"leaderboard_reward_weights"`
+
 	// OpenAI fast/flex policy
 	OpenAIFastPolicySettings *OpenAIFastPolicySettings `json:"openai_fast_policy_settings,omitempty"`
 

@@ -83,6 +83,7 @@ func provideCleanup(
 	accountExpiry *service.AccountExpiryService,
 	proxyExpiry *service.ProxyExpiryService,
 	subscriptionExpiry *service.SubscriptionExpiryService,
+	leaderboardReward *service.LeaderboardRewardService,
 	usageCleanup *service.UsageCleanupService,
 	idempotencyCleanup *service.IdempotencyCleanupService,
 	pricing *service.PricingService,
@@ -180,6 +181,12 @@ func provideCleanup(
 			}},
 			{"SubscriptionExpiryService", func() error {
 				subscriptionExpiry.Stop()
+				return nil
+			}},
+			{"LeaderboardRewardService", func() error {
+				if leaderboardReward != nil {
+					leaderboardReward.Stop()
+				}
 				return nil
 			}},
 			{"SubscriptionService", func() error {

@@ -1928,6 +1928,23 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 		settings.AffiliateRebatePerInviteeCap = AffiliateRebatePerInviteeCapDefault
 	}
 	updates[SettingKeyAffiliateRebatePerInviteeCap] = strconv.FormatFloat(settings.AffiliateRebatePerInviteeCap, 'f', 8, 64)
+
+	// Leaderboard reward (排行榜激励)
+	updates[SettingKeyLeaderboardRewardEnabled] = strconv.FormatBool(settings.LeaderboardRewardEnabled)
+	settings.LeaderboardRewardPoolRate = clampLeaderboardRewardPoolRate(settings.LeaderboardRewardPoolRate)
+	updates[SettingKeyLeaderboardRewardPoolRate] = strconv.FormatFloat(settings.LeaderboardRewardPoolRate, 'f', 8, 64)
+	if settings.LeaderboardRewardTopN < 0 {
+		settings.LeaderboardRewardTopN = LeaderboardRewardTopNDefault
+	}
+	if settings.LeaderboardRewardTopN > LeaderboardRewardTopNMax {
+		settings.LeaderboardRewardTopN = LeaderboardRewardTopNMax
+	}
+	updates[SettingKeyLeaderboardRewardTopN] = strconv.Itoa(settings.LeaderboardRewardTopN)
+	settings.LeaderboardRewardDistributionMode = normalizeLeaderboardRewardMode(settings.LeaderboardRewardDistributionMode)
+	updates[SettingKeyLeaderboardRewardDistributionMode] = settings.LeaderboardRewardDistributionMode
+	settings.LeaderboardRewardWeights = strings.TrimSpace(settings.LeaderboardRewardWeights)
+	updates[SettingKeyLeaderboardRewardWeights] = settings.LeaderboardRewardWeights
+
 	updates[SettingKeyDefaultUserRPMLimit] = strconv.Itoa(settings.DefaultUserRPMLimit)
 	defaultSubsJSON, err := json.Marshal(settings.DefaultSubscriptions)
 	if err != nil {
@@ -2580,6 +2597,62 @@ func (s *SettingService) GetAffiliateRebatePerInviteeCap(ctx context.Context) fl
 	return cap
 }
 
+// IsLeaderboardRewardEnabled 检查是否启用排行榜激励功能（总开关）。
+func (s *SettingService) IsLeaderboardRewardEnabled(ctx context.Context) bool {
+	value, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardEnabled)
+	if err != nil {
+		return false // 默认关闭
+	}
+	return value == "true"
+}
+
+// GetLeaderboardRewardPoolRate 读取并 clamp 奖池比例（百分比，0-100）。
+func (s *SettingService) GetLeaderboardRewardPoolRate(ctx context.Context) float64 {
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardPoolRate)
+	if err != nil {
+		return LeaderboardRewardPoolRateDefault
+	}
+	rate, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
+	if err != nil {
+		return LeaderboardRewardPoolRateDefault
+	}
+	return clampLeaderboardRewardPoolRate(rate)
+}
+
+// GetLeaderboardRewardTopN 返回奖励名额（前 N 名）。0 表示不发放。
+func (s *SettingService) GetLeaderboardRewardTopN(ctx context.Context) int {
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardTopN)
+	if err != nil {
+		return LeaderboardRewardTopNDefault
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || n < 0 {
+		return LeaderboardRewardTopNDefault
+	}
+	if n > LeaderboardRewardTopNMax {
+		return LeaderboardRewardTopNMax
+	}
+	return n
+}
+
+// GetLeaderboardRewardDistributionMode 返回分配模式（average/proportional/weighted）。
+func (s *SettingService) GetLeaderboardRewardDistributionMode(ctx context.Context) string {
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardDistributionMode)
+	if err != nil {
+		return LeaderboardRewardModeDefault
+	}
+	return normalizeLeaderboardRewardMode(raw)
+}
+
+// GetLeaderboardRewardWeights 返回自定义权重原始字符串（逗号分隔），仅 weighted 模式生效。
+func (s *SettingService) GetLeaderboardRewardWeights(ctx context.Context) string {
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardWeights)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(raw)
+}
+
 // IsPasswordResetEnabled 检查是否启用密码重置功能
 // 要求：必须同时开启邮件验证
 func (s *SettingService) IsPasswordResetEnabled(ctx context.Context) bool {
@@ -2870,6 +2943,11 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyAffiliateRebateFreezeHours:                strconv.Itoa(AffiliateRebateFreezeHoursDefault),
 		SettingKeyAffiliateRebateDurationDays:               strconv.Itoa(AffiliateRebateDurationDaysDefault),
 		SettingKeyAffiliateRebatePerInviteeCap:              strconv.FormatFloat(AffiliateRebatePerInviteeCapDefault, 'f', 2, 64),
+		SettingKeyLeaderboardRewardEnabled:                  strconv.FormatBool(LeaderboardRewardEnabledDefault),
+		SettingKeyLeaderboardRewardPoolRate:                 strconv.FormatFloat(LeaderboardRewardPoolRateDefault, 'f', 8, 64),
+		SettingKeyLeaderboardRewardTopN:                     strconv.Itoa(LeaderboardRewardTopNDefault),
+		SettingKeyLeaderboardRewardDistributionMode:         LeaderboardRewardModeDefault,
+		SettingKeyLeaderboardRewardWeights:                  "",
 		SettingKeyDefaultUserRPMLimit:                       "0",
 		SettingKeyDefaultSubscriptions:                      "[]",
 		SettingKeyAuthSourceDefaultEmailBalance:             "0",
@@ -3064,6 +3142,23 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	if perInviteeCap, err := strconv.ParseFloat(settings[SettingKeyAffiliateRebatePerInviteeCap], 64); err == nil && perInviteeCap >= 0 {
 		result.AffiliateRebatePerInviteeCap = perInviteeCap
 	}
+
+	// Leaderboard reward (排行榜激励)（默认关闭，严格 true 才启用）
+	result.LeaderboardRewardEnabled = settings[SettingKeyLeaderboardRewardEnabled] == "true"
+	if poolRate, err := strconv.ParseFloat(settings[SettingKeyLeaderboardRewardPoolRate], 64); err == nil {
+		result.LeaderboardRewardPoolRate = clampLeaderboardRewardPoolRate(poolRate)
+	} else {
+		result.LeaderboardRewardPoolRate = LeaderboardRewardPoolRateDefault
+	}
+	if topN, err := strconv.Atoi(settings[SettingKeyLeaderboardRewardTopN]); err == nil && topN >= 0 {
+		if topN > LeaderboardRewardTopNMax {
+			topN = LeaderboardRewardTopNMax
+		}
+		result.LeaderboardRewardTopN = topN
+	}
+	result.LeaderboardRewardDistributionMode = normalizeLeaderboardRewardMode(settings[SettingKeyLeaderboardRewardDistributionMode])
+	result.LeaderboardRewardWeights = strings.TrimSpace(settings[SettingKeyLeaderboardRewardWeights])
+
 	result.DefaultSubscriptions = parseDefaultSubscriptions(settings[SettingKeyDefaultSubscriptions])
 
 	// 敏感信息直接返回，方便测试连接时使用
@@ -3549,6 +3644,29 @@ func clampAffiliateRebateRate(value float64) float64 {
 		return AffiliateRebateRateMax
 	}
 	return value
+}
+
+// clampLeaderboardRewardPoolRate 将奖池比例限制在 [0, 100]，非法值回退默认。
+func clampLeaderboardRewardPoolRate(value float64) float64 {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return LeaderboardRewardPoolRateDefault
+	}
+	if value < LeaderboardRewardPoolRateMin {
+		return LeaderboardRewardPoolRateMin
+	}
+	if value > LeaderboardRewardPoolRateMax {
+		return LeaderboardRewardPoolRateMax
+	}
+	return value
+}
+
+// normalizeLeaderboardRewardMode 将分配模式归一化为合法值，非法/空回退默认。
+func normalizeLeaderboardRewardMode(mode string) string {
+	mode = strings.TrimSpace(mode)
+	if IsValidLeaderboardRewardMode(mode) {
+		return mode
+	}
+	return LeaderboardRewardModeDefault
 }
 
 func isFalseSettingValue(value string) bool {

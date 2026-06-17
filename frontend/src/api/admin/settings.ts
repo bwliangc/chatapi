@@ -618,6 +618,13 @@ export interface SystemSettings {
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: boolean;
 
+  // Leaderboard reward (排行榜激励) feature
+  leaderboard_reward_enabled: boolean;
+  leaderboard_reward_pool_rate: number;
+  leaderboard_reward_top_n: number;
+  leaderboard_reward_distribution_mode: string;
+  leaderboard_reward_weights: string;
+
   // OpenAI fast/flex policy
   openai_fast_policy_settings?: OpenAIFastPolicySettings;
 
@@ -858,6 +865,13 @@ export interface UpdateSettingsRequest {
 
   // Affiliate (邀请返利) feature switch
   affiliate_enabled?: boolean;
+
+  // Leaderboard reward (排行榜激励) feature
+  leaderboard_reward_enabled?: boolean;
+  leaderboard_reward_pool_rate?: number;
+  leaderboard_reward_top_n?: number;
+  leaderboard_reward_distribution_mode?: string;
+  leaderboard_reward_weights?: string;
 
   // OpenAI fast/flex policy
   openai_fast_policy_settings?: OpenAIFastPolicySettings;
