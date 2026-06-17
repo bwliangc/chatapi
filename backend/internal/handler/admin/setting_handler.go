@@ -303,6 +303,8 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 
 		OnlinePlaygroundEnabled: settings.OnlinePlaygroundEnabled,
 
+		SubscriptionManagementEnabled: settings.SubscriptionManagementEnabled,
+
 		AffiliateEnabled: settings.AffiliateEnabled,
 
 		AllowUserViewErrorRequests: settings.AllowUserViewErrorRequests,
@@ -659,6 +661,9 @@ type UpdateSettingsRequest struct {
 
 	// Online Playground feature switch (user-facing chat page)
 	OnlinePlaygroundEnabled *bool `json:"online_playground_enabled"`
+
+	// Subscription Management feature switch (admin 订阅管理 + user 我的订阅; opt-out, default true)
+	SubscriptionManagementEnabled *bool `json:"subscription_management_enabled"`
 
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled *bool `json:"affiliate_enabled"`
@@ -1862,6 +1867,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.OnlinePlaygroundEnabled
 		}(),
+		SubscriptionManagementEnabled: func() bool {
+			if req.SubscriptionManagementEnabled != nil {
+				return *req.SubscriptionManagementEnabled
+			}
+			return previousSettings.SubscriptionManagementEnabled
+		}(),
 		AffiliateEnabled: func() bool {
 			if req.AffiliateEnabled != nil {
 				return *req.AffiliateEnabled
@@ -2221,6 +2232,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		AvailableChannelsEnabled: updatedSettings.AvailableChannelsEnabled,
 
 		OnlinePlaygroundEnabled: updatedSettings.OnlinePlaygroundEnabled,
+
+		SubscriptionManagementEnabled: updatedSettings.SubscriptionManagementEnabled,
 
 		AffiliateEnabled: updatedSettings.AffiliateEnabled,
 
@@ -2720,6 +2733,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.OnlinePlaygroundEnabled != after.OnlinePlaygroundEnabled {
 		changed = append(changed, "online_playground_enabled")
+	}
+	if before.SubscriptionManagementEnabled != after.SubscriptionManagementEnabled {
+		changed = append(changed, "subscription_management_enabled")
 	}
 	if before.AffiliateEnabled != after.AffiliateEnabled {
 		changed = append(changed, "affiliate_enabled")

@@ -404,6 +404,14 @@ const (
 	// user's own key, so there is no separate backend endpoint to guard.
 	SettingKeyOnlinePlaygroundEnabled = "online_playground_enabled"
 
+	// SettingKeySubscriptionManagementEnabled is a DB-backed soft switch for the subscription
+	// management UI: the admin "订阅管理" page and the user "我的订阅" page. When false, those
+	// UI entries/routes are hidden on the frontend. Purely a UI gate — the subscription
+	// endpoints stay reachable, mirroring OnlinePlaygroundEnabled / AvailableChannelsEnabled.
+	// Defaults to TRUE (enabled) for backward compatibility — these pages already exist and
+	// were always visible, so this is an opt-out toggle (the opposite of the opt-in toggles).
+	SettingKeySubscriptionManagementEnabled = "subscription_management_enabled"
+
 	// =========================
 	// Overload Cooldown (529)
 	// =========================

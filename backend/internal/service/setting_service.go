@@ -834,6 +834,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyChannelMonitorDefaultIntervalSeconds,
 		SettingKeyAvailableChannelsEnabled,
 		SettingKeyOnlinePlaygroundEnabled,
+		SettingKeySubscriptionManagementEnabled,
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
 		SettingKeyAllowUserViewErrorRequests,
@@ -947,6 +948,9 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		AvailableChannelsEnabled: settings[SettingKeyAvailableChannelsEnabled] == "true",
 
 		OnlinePlaygroundEnabled: settings[SettingKeyOnlinePlaygroundEnabled] == "true",
+
+		// Subscription management feature (default: enabled; only an explicit false-y value disables it)
+		SubscriptionManagementEnabled: !isFalseSettingValue(settings[SettingKeySubscriptionManagementEnabled]),
 
 		AffiliateEnabled: settings[SettingKeyAffiliateEnabled] == "true",
 
@@ -1265,6 +1269,7 @@ type PublicSettingsInjectionPayload struct {
 	ChannelMonitorDefaultIntervalSeconds int  `json:"channel_monitor_default_interval_seconds"`
 	AvailableChannelsEnabled             bool `json:"available_channels_enabled"`
 	OnlinePlaygroundEnabled              bool `json:"online_playground_enabled"`
+	SubscriptionManagementEnabled        bool `json:"subscription_management_enabled"`
 	AffiliateEnabled                     bool `json:"affiliate_enabled"`
 	RiskControlEnabled                   bool `json:"risk_control_enabled"`
 	AllowUserViewErrorRequests           bool `json:"allow_user_view_error_requests"`
@@ -1329,6 +1334,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ChannelMonitorDefaultIntervalSeconds: settings.ChannelMonitorDefaultIntervalSeconds,
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
 		OnlinePlaygroundEnabled:              settings.OnlinePlaygroundEnabled,
+		SubscriptionManagementEnabled:        settings.SubscriptionManagementEnabled,
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		AllowUserViewErrorRequests:           settings.AllowUserViewErrorRequests,
@@ -1988,6 +1994,9 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 
 	// Online playground feature switch
 	updates[SettingKeyOnlinePlaygroundEnabled] = strconv.FormatBool(settings.OnlinePlaygroundEnabled)
+
+	// Subscription management feature switch (admin 订阅管理 + user 我的订阅)
+	updates[SettingKeySubscriptionManagementEnabled] = strconv.FormatBool(settings.SubscriptionManagementEnabled)
 
 	// Affiliate (邀请返利) feature switch
 	updates[SettingKeyAffiliateEnabled] = strconv.FormatBool(settings.AffiliateEnabled)
@@ -3033,6 +3042,9 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		// Online playground feature (default disabled; opt-in)
 		SettingKeyOnlinePlaygroundEnabled: "false",
 
+		// Subscription management feature (default ENABLED; opt-out, backward-compatible)
+		SettingKeySubscriptionManagementEnabled: "true",
+
 		// Affiliate (邀请返利) feature (default disabled; opt-in)
 		SettingKeyAffiliateEnabled: "false",
 
@@ -3566,6 +3578,9 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// Online playground feature (default: disabled; strict true)
 	result.OnlinePlaygroundEnabled = settings[SettingKeyOnlinePlaygroundEnabled] == "true"
+
+	// Subscription management feature (default: ENABLED; only an explicit false-y value disables it)
+	result.SubscriptionManagementEnabled = !isFalseSettingValue(settings[SettingKeySubscriptionManagementEnabled])
 
 	// Affiliate (邀请返利) feature (default: disabled; strict true)
 	result.AffiliateEnabled = settings[SettingKeyAffiliateEnabled] == "true"

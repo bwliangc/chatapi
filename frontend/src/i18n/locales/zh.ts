@@ -5693,6 +5693,12 @@ export default {
           enabled: '启用在线测试',
           enabledHint: '关闭后用户端侧边栏入口隐藏。',
         },
+        subscriptionManagement: {
+          title: '订阅功能',
+          description: '同时控制管理员"订阅管理"页面和用户"我的订阅"页面。默认开启。',
+          enabled: '启用订阅功能',
+          enabledHint: '关闭后，管理员"订阅管理"菜单与用户"我的订阅"菜单/页面均会隐藏并拦截访问。',
+        },
         riskControl: {
           title: '风控中心',
           description: '启用内容审计菜单和全端点请求审核入口。默认关闭。',

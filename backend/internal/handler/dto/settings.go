@@ -252,6 +252,9 @@ type SystemSettings struct {
 	// Online Playground feature switch (user-facing chat page; opt-in)
 	OnlinePlaygroundEnabled bool `json:"online_playground_enabled"`
 
+	// Subscription Management feature switch (admin 订阅管理 + user 我的订阅; opt-out, default true)
+	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
+
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
 
@@ -341,6 +344,9 @@ type PublicSettings struct {
 
 	// Online Playground feature switch (user-facing chat page; opt-in)
 	OnlinePlaygroundEnabled bool `json:"online_playground_enabled"`
+
+	// Subscription Management feature switch (admin 订阅管理 + user 我的订阅; opt-out, default true)
+	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
 
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 

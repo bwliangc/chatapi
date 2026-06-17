@@ -618,6 +618,9 @@ export interface SystemSettings {
   // Online Playground feature switch
   online_playground_enabled: boolean;
 
+  // Subscription Management feature switch (default enabled; opt-out)
+  subscription_management_enabled: boolean;
+
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: boolean;
 
@@ -869,6 +872,9 @@ export interface UpdateSettingsRequest {
 
   // Online Playground feature switch
   online_playground_enabled?: boolean;
+
+  // Subscription Management feature switch (default enabled; opt-out)
+  subscription_management_enabled?: boolean;
 
   // Affiliate (邀请返利) feature switch
   affiliate_enabled?: boolean;

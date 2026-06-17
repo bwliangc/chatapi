@@ -5534,6 +5534,12 @@ export default {
           enabled: 'Enable Online Test',
           enabledHint: 'When off, the user-facing sidebar entry is hidden.',
         },
+        subscriptionManagement: {
+          title: 'Subscription Feature',
+          description: 'Controls both the admin "Subscription Management" page and the user "My Subscriptions" page. Enabled by default.',
+          enabled: 'Enable Subscription Feature',
+          enabledHint: 'When off, the admin "Subscription Management" menu and the user "My Subscriptions" menu/page are hidden and blocked.',
+        },
         riskControl: {
           title: 'Risk Control',
           description: 'Enable the content moderation menu and gateway audit entry point. Disabled by default.',

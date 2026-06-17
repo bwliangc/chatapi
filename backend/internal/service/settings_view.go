@@ -191,6 +191,9 @@ type SystemSettings struct {
 	// Online Playground feature (user-facing chat page; opt-in)
 	OnlinePlaygroundEnabled bool `json:"online_playground_enabled"`
 
+	// Subscription Management feature (admin "订阅管理" + user "我的订阅" pages; opt-out, default true)
+	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
+
 	// Claude Code version check
 	MinClaudeCodeVersion string
 	MaxClaudeCodeVersion string
@@ -310,6 +313,9 @@ type PublicSettings struct {
 
 	// Online Playground feature (user-facing chat page; opt-in)
 	OnlinePlaygroundEnabled bool `json:"online_playground_enabled"`
+
+	// Subscription Management feature (admin "订阅管理" + user "我的订阅" pages; opt-out, default true)
+	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
 
 	// Affiliate (邀请返利) feature toggle
 	AffiliateEnabled bool `json:"affiliate_enabled"`

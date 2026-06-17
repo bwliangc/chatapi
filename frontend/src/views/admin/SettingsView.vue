@@ -5563,6 +5563,31 @@
           </div>
         </div>
 
+        <!-- Subscription Management (订阅功能) feature card -->
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.settings.features.subscriptionManagement.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.features.subscriptionManagement.description') }}
+            </p>
+          </div>
+          <div class="space-y-5 p-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.features.subscriptionManagement.enabled') }}
+                </label>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.features.subscriptionManagement.enabledHint') }}
+                </p>
+              </div>
+              <Toggle v-model="form.subscription_management_enabled" />
+            </div>
+          </div>
+        </div>
+
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -8034,6 +8059,8 @@ const form = reactive<SettingsForm>({
   available_channels_enabled: false,
   // Online Playground feature switch
   online_playground_enabled: false,
+  // Subscription Management feature switch (default enabled; opt-out)
+  subscription_management_enabled: true,
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: false,
   // Allow user view error requests
@@ -9223,6 +9250,8 @@ async function saveSettings() {
       available_channels_enabled: form.available_channels_enabled,
       // Online Playground feature switch
       online_playground_enabled: form.online_playground_enabled,
+      // Subscription Management feature switch
+      subscription_management_enabled: form.subscription_management_enabled,
       // Affiliate (邀请返利) feature switch
       affiliate_enabled: form.affiliate_enabled,
       allow_user_view_error_requests: form.allow_user_view_error_requests,

@@ -286,7 +286,8 @@ const routes: RouteRecordRaw[] = [
       requiresAdmin: false,
       title: 'My Subscriptions',
       titleKey: 'userSubscriptions.title',
-      descriptionKey: 'userSubscriptions.description'
+      descriptionKey: 'userSubscriptions.description',
+      requiresSubscriptionManagement: true
     }
   },
   {
@@ -486,7 +487,8 @@ const routes: RouteRecordRaw[] = [
       requiresAdmin: true,
       title: 'Subscription Management',
       titleKey: 'admin.subscriptions.title',
-      descriptionKey: 'admin.subscriptions.description'
+      descriptionKey: 'admin.subscriptions.description',
+      requiresSubscriptionManagement: true
     }
   },
   {
@@ -860,6 +862,18 @@ router.beforeEach(async (to, _from, next) => {
     const riskControlEnabled = appStore.cachedPublicSettings?.risk_control_enabled === true
     if (!riskControlEnabled) {
       next(authStore.isAdmin ? '/admin/settings' : '/dashboard')
+      return
+    }
+  }
+
+  // Subscription Management is enabled by default (opt-out); only block when
+  // the backend explicitly sends false, so a not-yet-loaded settings object
+  // (undefined) keeps the page reachable and avoids a flash-redirect.
+  if (to.meta.requiresSubscriptionManagement) {
+    const subscriptionManagementEnabled =
+      appStore.cachedPublicSettings?.subscription_management_enabled !== false
+    if (!subscriptionManagementEnabled) {
+      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
       return
     }
   }

@@ -124,6 +124,13 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Affiliate',
   }),
+  // Subscription Management is enabled by default (opt-out) for backward
+  // compatibility — the backend seeds "true" and treats missing as enabled.
+  subscriptionManagement: defineFlag({
+    key: 'subscription_management_enabled',
+    mode: 'opt-out',
+    label: 'Subscription Management',
+  }),
 } as const
 
 export type RegisteredFeatureFlag = keyof typeof FeatureFlags

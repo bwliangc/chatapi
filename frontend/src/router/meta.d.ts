@@ -56,6 +56,12 @@ declare module 'vue-router' {
     requiresRiskControl?: boolean
 
     /**
+     * 是否要求订阅管理功能开关已启用（默认启用，仅当后端显式 false 时拦截）
+     * @default true
+     */
+    requiresSubscriptionManagement?: boolean
+
+    /**
      * i18n key for the page title
      */
     titleKey?: string
