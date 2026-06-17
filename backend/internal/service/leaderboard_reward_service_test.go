@@ -38,22 +38,6 @@ func TestBuildLeaderboardRewardItems_Average(t *testing.T) {
 	}
 }
 
-func TestBuildLeaderboardRewardItems_Proportional(t *testing.T) {
-	got := buildLeaderboardRewardItems(items(40, 30, 20, 10), 4, LeaderboardRewardModeProportional, "", 100)
-	want := []float64{40, 30, 20, 10}
-	if len(got) != 4 {
-		t.Fatalf("want 4 winners, got %d", len(got))
-	}
-	for i, it := range got {
-		if math.Abs(it.Amount-want[i]) > 1e-9 {
-			t.Errorf("proportional rank %d: want %v, got %v", it.Rank, want[i], it.Amount)
-		}
-	}
-	if math.Abs(sumAmounts(got)-100) > 1e-9 {
-		t.Errorf("proportional: pool not conserved, sum=%v", sumAmounts(got))
-	}
-}
-
 func TestBuildLeaderboardRewardItems_Weighted(t *testing.T) {
 	got := buildLeaderboardRewardItems(items(40, 30, 20), 3, LeaderboardRewardModeWeighted, "50,30,20", 100)
 	want := []float64{50, 30, 20}

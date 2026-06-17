@@ -97,7 +97,8 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 
 		OnlinePlaygroundEnabled: settings.OnlinePlaygroundEnabled,
 
-		SubscriptionManagementEnabled: settings.SubscriptionManagementEnabled,
+		SubscriptionManagementEnabled:    settings.SubscriptionManagementEnabled,
+		LeaderboardRankingVisibleEnabled: settings.LeaderboardRankingVisibleEnabled,
 
 		AffiliateEnabled: settings.AffiliateEnabled,
 

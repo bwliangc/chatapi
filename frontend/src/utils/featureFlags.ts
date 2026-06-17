@@ -109,6 +109,11 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Online Playground',
   }),
+  leaderboardRanking: defineFlag({
+    key: 'leaderboard_ranking_visible_enabled',
+    mode: 'opt-in',
+    label: 'Leaderboard Ranking',
+  }),
   payment: defineFlag({
     key: 'payment_enabled',
     mode: 'opt-out',

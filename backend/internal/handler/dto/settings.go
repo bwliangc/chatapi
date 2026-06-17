@@ -254,6 +254,8 @@ type SystemSettings struct {
 
 	// Subscription Management feature switch (admin 订阅管理 + user 我的订阅; opt-out, default true)
 	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
+	// Leaderboard ranking page switch (user-facing spending board; opt-in)
+	LeaderboardRankingVisibleEnabled bool `json:"leaderboard_ranking_visible_enabled"`
 
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
@@ -272,6 +274,7 @@ type SystemSettings struct {
 	LeaderboardRewardTopN               int     `json:"leaderboard_reward_top_n"`
 	LeaderboardRewardDistributionMode   string  `json:"leaderboard_reward_distribution_mode"`
 	LeaderboardRewardWeights            string  `json:"leaderboard_reward_weights"`
+	LeaderboardRewardMinSpend           float64 `json:"leaderboard_reward_min_spend"`
 
 	// OpenAI fast/flex policy
 	OpenAIFastPolicySettings *OpenAIFastPolicySettings `json:"openai_fast_policy_settings,omitempty"`
@@ -347,6 +350,8 @@ type PublicSettings struct {
 
 	// Subscription Management feature switch (admin 订阅管理 + user 我的订阅; opt-out, default true)
 	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
+	// Leaderboard ranking page switch (user-facing spending board; opt-in)
+	LeaderboardRankingVisibleEnabled bool `json:"leaderboard_ranking_visible_enabled"`
 
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 

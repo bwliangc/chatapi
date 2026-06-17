@@ -266,6 +266,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/leaderboard',
+    name: 'Leaderboard',
+    component: () => import('@/views/user/LeaderboardView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Leaderboard',
+      titleKey: 'leaderboard.title',
+      descriptionKey: 'leaderboard.description'
+    }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/user/ProfileView.vue'),

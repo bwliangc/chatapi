@@ -37,23 +37,24 @@ const (
 
 // Leaderboard reward (排行榜激励) settings
 const (
-	LeaderboardRewardEnabledDefault            = false          // 排行榜激励总开关默认关闭
-	LeaderboardRewardEmailNotifyEnabledDefault = false          // 排行榜激励邮件通知默认关闭
-	LeaderboardRewardPoolRateDefault           = 0.0            // 奖池比例默认 0（不发放）
-	LeaderboardRewardPoolRateMin               = 0.0            // 奖池比例下限（%）
-	LeaderboardRewardPoolRateMax               = 100.0          // 奖池比例上限（%）
-	LeaderboardRewardTopNDefault               = 0              // 默认奖励名额 0（不发放）
-	LeaderboardRewardTopNMax                   = 1000           // 奖励名额上限，避免误配置
-	LeaderboardRewardModeAverage               = "average"      // 平均分配：奖池 / N
-	LeaderboardRewardModeProportional          = "proportional" // 按昨日消费占前 N 名总消费的比例分配
-	LeaderboardRewardModeWeighted              = "weighted"     // 按自定义权重数组分配
+	LeaderboardRewardEnabledDefault            = false      // 排行榜激励总开关默认关闭
+	LeaderboardRewardEmailNotifyEnabledDefault = false      // 排行榜激励邮件通知默认关闭
+	LeaderboardRewardPoolRateDefault           = 0.0        // 奖池比例默认 0（不发放）
+	LeaderboardRewardPoolRateMin               = 0.0        // 奖池比例下限（%）
+	LeaderboardRewardPoolRateMax               = 100.0      // 奖池比例上限（%）
+	LeaderboardRewardMinSpendDefault           = 0.0        // 每人参与门槛默认 0（无门槛）
+	LeaderboardRewardMinSpendMin               = 0.0        // 参与门槛下限
+	LeaderboardRewardTopNDefault               = 0          // 默认奖励名额 0（不发放）
+	LeaderboardRewardTopNMax                   = 1000       // 奖励名额上限，避免误配置
+	LeaderboardRewardModeAverage               = "average"  // 平均分配：奖池 / N
+	LeaderboardRewardModeWeighted              = "weighted" // 按自定义权重数组分配
 	LeaderboardRewardModeDefault               = LeaderboardRewardModeAverage
 )
 
 // IsValidLeaderboardRewardMode 报告 mode 是否为合法的奖励分配模式。
 func IsValidLeaderboardRewardMode(mode string) bool {
 	switch mode {
-	case LeaderboardRewardModeAverage, LeaderboardRewardModeProportional, LeaderboardRewardModeWeighted:
+	case LeaderboardRewardModeAverage, LeaderboardRewardModeWeighted:
 		return true
 	default:
 		return false
@@ -166,8 +167,9 @@ const (
 	SettingKeyLeaderboardRewardEmailNotifyEnabled = "leaderboard_reward_email_notify_enabled" // 排行榜激励发放邮件通知开关
 	SettingKeyLeaderboardRewardPoolRate           = "leaderboard_reward_pool_rate"            // 奖池比例（昨日总消费的百分比，0-100）
 	SettingKeyLeaderboardRewardTopN               = "leaderboard_reward_top_n"                // 奖励排行榜前 N 名
-	SettingKeyLeaderboardRewardDistributionMode   = "leaderboard_reward_distribution_mode"    // 分配模式 average/proportional/weighted
+	SettingKeyLeaderboardRewardDistributionMode   = "leaderboard_reward_distribution_mode"    // 分配模式 average/weighted
 	SettingKeyLeaderboardRewardWeights            = "leaderboard_reward_weights"              // 自定义权重（逗号分隔，仅 weighted 模式生效）
+	SettingKeyLeaderboardRewardMinSpend           = "leaderboard_reward_min_spend"            // 每人参与门槛（个人消费≥该值才进入中奖区，0=无门槛）
 	SettingKeyRiskControlEnabled                  = "risk_control_enabled"                    // 是否启用风控中心入口与审计链路
 	SettingKeyContentModerationConfig             = "content_moderation_config"               // 内容审计配置（JSON）
 	SettingKeyCyberSessionBlockEnabled            = "cyber_session_block_enabled"             // cyber 命中后会话级自动屏蔽总开关(默认关)
@@ -411,6 +413,13 @@ const (
 	// Defaults to TRUE (enabled) for backward compatibility — these pages already exist and
 	// were always visible, so this is an opt-out toggle (the opposite of the opt-in toggles).
 	SettingKeySubscriptionManagementEnabled = "subscription_management_enabled"
+	// SettingKeyLeaderboardRankingVisibleEnabled is a DB-backed soft switch for the
+	// user-facing leaderboard ranking page (shows the spending leaderboard with masked
+	// identities + the viewer's own rank). Independent from the reward grant switch
+	// (SettingKeyLeaderboardRewardEnabled): you can show the board without granting, or
+	// grant without showing. When false the sidebar entry, route and /leaderboard endpoint
+	// are hidden. Defaults to false (opt-in feature).
+	SettingKeyLeaderboardRankingVisibleEnabled = "leaderboard_ranking_visible_enabled"
 
 	// =========================
 	// Overload Cooldown (529)

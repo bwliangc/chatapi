@@ -303,7 +303,8 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 
 		OnlinePlaygroundEnabled: settings.OnlinePlaygroundEnabled,
 
-		SubscriptionManagementEnabled: settings.SubscriptionManagementEnabled,
+		SubscriptionManagementEnabled:    settings.SubscriptionManagementEnabled,
+		LeaderboardRankingVisibleEnabled: settings.LeaderboardRankingVisibleEnabled,
 
 		AffiliateEnabled: settings.AffiliateEnabled,
 
@@ -315,6 +316,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		LeaderboardRewardTopN:               settings.LeaderboardRewardTopN,
 		LeaderboardRewardDistributionMode:   settings.LeaderboardRewardDistributionMode,
 		LeaderboardRewardWeights:            settings.LeaderboardRewardWeights,
+		LeaderboardRewardMinSpend:           settings.LeaderboardRewardMinSpend,
 	}
 
 	// OpenAI fast policy (stored under a dedicated setting key)
@@ -664,6 +666,8 @@ type UpdateSettingsRequest struct {
 
 	// Subscription Management feature switch (admin 订阅管理 + user 我的订阅; opt-out, default true)
 	SubscriptionManagementEnabled *bool `json:"subscription_management_enabled"`
+	// Leaderboard ranking page feature switch (user-facing spending board)
+	LeaderboardRankingVisibleEnabled *bool `json:"leaderboard_ranking_visible_enabled"`
 
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled *bool `json:"affiliate_enabled"`
@@ -675,6 +679,7 @@ type UpdateSettingsRequest struct {
 	LeaderboardRewardTopN               *int     `json:"leaderboard_reward_top_n"`
 	LeaderboardRewardDistributionMode   *string  `json:"leaderboard_reward_distribution_mode"`
 	LeaderboardRewardWeights            *string  `json:"leaderboard_reward_weights"`
+	LeaderboardRewardMinSpend           *float64 `json:"leaderboard_reward_min_spend"`
 
 	// 风控中心功能开关
 	RiskControlEnabled *bool `json:"risk_control_enabled"`
@@ -775,6 +780,13 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	}
 	if leaderboardRewardPoolRate > service.LeaderboardRewardPoolRateMax {
 		leaderboardRewardPoolRate = service.LeaderboardRewardPoolRateMax
+	}
+	leaderboardRewardMinSpend := previousSettings.LeaderboardRewardMinSpend
+	if req.LeaderboardRewardMinSpend != nil {
+		leaderboardRewardMinSpend = *req.LeaderboardRewardMinSpend
+	}
+	if leaderboardRewardMinSpend < service.LeaderboardRewardMinSpendMin {
+		leaderboardRewardMinSpend = service.LeaderboardRewardMinSpendMin
 	}
 	leaderboardRewardTopN := previousSettings.LeaderboardRewardTopN
 	if req.LeaderboardRewardTopN != nil {
@@ -1668,6 +1680,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		LeaderboardRewardTopN:                  leaderboardRewardTopN,
 		LeaderboardRewardDistributionMode:      leaderboardRewardDistributionMode,
 		LeaderboardRewardWeights:               leaderboardRewardWeights,
+		LeaderboardRewardMinSpend:              leaderboardRewardMinSpend,
 		DefaultUserRPMLimit:                    req.DefaultUserRPMLimit,
 		DefaultSubscriptions:                   defaultSubscriptions,
 		EnableModelFallback:                    req.EnableModelFallback,
@@ -1872,6 +1885,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 				return *req.SubscriptionManagementEnabled
 			}
 			return previousSettings.SubscriptionManagementEnabled
+		}(),
+		LeaderboardRankingVisibleEnabled: func() bool {
+			if req.LeaderboardRankingVisibleEnabled != nil {
+				return *req.LeaderboardRankingVisibleEnabled
+			}
+			return previousSettings.LeaderboardRankingVisibleEnabled
 		}(),
 		AffiliateEnabled: func() bool {
 			if req.AffiliateEnabled != nil {
@@ -2233,7 +2252,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 
 		OnlinePlaygroundEnabled: updatedSettings.OnlinePlaygroundEnabled,
 
-		SubscriptionManagementEnabled: updatedSettings.SubscriptionManagementEnabled,
+		SubscriptionManagementEnabled:    updatedSettings.SubscriptionManagementEnabled,
+		LeaderboardRankingVisibleEnabled: updatedSettings.LeaderboardRankingVisibleEnabled,
 
 		AffiliateEnabled: updatedSettings.AffiliateEnabled,
 
@@ -2248,6 +2268,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		LeaderboardRewardTopN:               updatedSettings.LeaderboardRewardTopN,
 		LeaderboardRewardDistributionMode:   updatedSettings.LeaderboardRewardDistributionMode,
 		LeaderboardRewardWeights:            updatedSettings.LeaderboardRewardWeights,
+		LeaderboardRewardMinSpend:           updatedSettings.LeaderboardRewardMinSpend,
 	}
 	if fastPolicy, err := h.settingService.GetOpenAIFastPolicySettings(c.Request.Context()); err != nil {
 		slog.Error("openai_fast_policy_settings_get_failed", "error", err)
@@ -2736,6 +2757,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.SubscriptionManagementEnabled != after.SubscriptionManagementEnabled {
 		changed = append(changed, "subscription_management_enabled")
+	}
+	if before.LeaderboardRankingVisibleEnabled != after.LeaderboardRankingVisibleEnabled {
+		changed = append(changed, "leaderboard_ranking_visible_enabled")
 	}
 	if before.AffiliateEnabled != after.AffiliateEnabled {
 		changed = append(changed, "affiliate_enabled")

@@ -122,5 +122,8 @@ func RegisterUserRoutes(
 			monitors.GET("", h.ChannelMonitor.List)
 			monitors.GET("/:id/status", h.ChannelMonitor.GetStatus)
 		}
+
+		// 排行榜（用户只读，受展示开关控制）
+		authenticated.GET("/leaderboard", h.Leaderboard.GetLeaderboard)
 	}
 }

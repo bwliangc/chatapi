@@ -163,7 +163,19 @@ func (s *LeaderboardRewardService) runOnce() {
 		return
 	}
 
-	grantItems := buildLeaderboardRewardItems(items, topN, mode, weights, pool)
+	// 参与门槛：仅个人消费 ≥ 门槛的用户进入中奖区（门槛只过滤获奖资格，奖池仍按全站总消费计）。
+	minSpend := s.settingService.GetLeaderboardRewardMinSpend(ctx)
+	eligible := items
+	if minSpend > 0 {
+		eligible = make([]usagestats.UserBreakdownItem, 0, len(items))
+		for _, it := range items {
+			if it.ActualCost >= minSpend {
+				eligible = append(eligible, it)
+			}
+		}
+	}
+
+	grantItems := buildLeaderboardRewardItems(eligible, topN, mode, weights, pool)
 	if len(grantItems) == 0 {
 		return
 	}
@@ -235,18 +247,6 @@ func buildLeaderboardRewardItems(items []usagestats.UserBreakdownItem, topN int,
 
 	amounts := make([]float64, n)
 	switch mode {
-	case LeaderboardRewardModeProportional:
-		var sumCost float64
-		for _, w := range winners {
-			sumCost += w.ActualCost
-		}
-		if sumCost <= 0 {
-			fillAverage(amounts, pool)
-		} else {
-			for i, w := range winners {
-				amounts[i] = pool * w.ActualCost / sumCost
-			}
-		}
 	case LeaderboardRewardModeWeighted:
 		weights := parseLeaderboardRewardWeights(weightsRaw)
 		ws := make([]float64, n)
@@ -320,4 +320,31 @@ func parseLeaderboardRewardWeights(raw string) []float64 {
 		weights = append(weights, v)
 	}
 	return weights
+}
+
+// LeaderboardWeightedShares 返回 weighted 模式下前 topN 名各自的奖励占比（百分比，0-100，
+// 保留 2 位小数），算法与 buildLeaderboardRewardItems 的 weighted 分支一致：
+// ws[i] = weights[i]（越界或 <=0 记 0），share[i] = ws[i] / Σws * 100。
+// 若 topN<=0 或权重合计 <=0（实际退化为平均分配），返回 nil。
+func LeaderboardWeightedShares(weightsRaw string, topN int) []float64 {
+	if topN <= 0 {
+		return nil
+	}
+	weights := parseLeaderboardRewardWeights(weightsRaw)
+	ws := make([]float64, topN)
+	var sumW float64
+	for i := 0; i < topN; i++ {
+		if i < len(weights) && weights[i] > 0 {
+			ws[i] = weights[i]
+		}
+		sumW += ws[i]
+	}
+	if sumW <= 0 {
+		return nil
+	}
+	shares := make([]float64, topN)
+	for i := 0; i < topN; i++ {
+		shares[i] = roundTo(ws[i]/sumW*100, 2)
+	}
+	return shares
 }

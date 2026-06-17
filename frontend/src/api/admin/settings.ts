@@ -631,6 +631,8 @@ export interface SystemSettings {
   leaderboard_reward_top_n: number;
   leaderboard_reward_distribution_mode: string;
   leaderboard_reward_weights: string;
+  leaderboard_reward_min_spend: number;
+  leaderboard_ranking_visible_enabled: boolean;
 
   // OpenAI fast/flex policy
   openai_fast_policy_settings?: OpenAIFastPolicySettings;
@@ -886,6 +888,8 @@ export interface UpdateSettingsRequest {
   leaderboard_reward_top_n?: number;
   leaderboard_reward_distribution_mode?: string;
   leaderboard_reward_weights?: string;
+  leaderboard_reward_min_spend?: number;
+  leaderboard_ranking_visible_enabled?: boolean;
 
   // OpenAI fast/flex policy
   openai_fast_policy_settings?: OpenAIFastPolicySettings;

@@ -158,8 +158,9 @@ type SystemSettings struct {
 	LeaderboardRewardEmailNotifyEnabled bool    // 发放排行榜激励时是否发送邮件通知
 	LeaderboardRewardPoolRate           float64 // 奖池比例（昨日总消费的百分比，0-100）
 	LeaderboardRewardTopN               int     // 奖励前 N 名
-	LeaderboardRewardDistributionMode   string  // average / proportional / weighted
+	LeaderboardRewardDistributionMode   string  // average / weighted
 	LeaderboardRewardWeights            string  // 逗号分隔权重，仅 weighted 模式生效
+	LeaderboardRewardMinSpend           float64 // 每人参与门槛（个人消费≥该值才进入中奖区，0=无门槛）
 
 	DefaultUserRPMLimit  int
 	DefaultSubscriptions []DefaultSubscriptionSetting
@@ -193,6 +194,8 @@ type SystemSettings struct {
 
 	// Subscription Management feature (admin "订阅管理" + user "我的订阅" pages; opt-out, default true)
 	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
+	// Leaderboard ranking page (user-facing spending board; opt-in)
+	LeaderboardRankingVisibleEnabled bool `json:"leaderboard_ranking_visible_enabled"`
 
 	// Claude Code version check
 	MinClaudeCodeVersion string
@@ -316,6 +319,8 @@ type PublicSettings struct {
 
 	// Subscription Management feature (admin "订阅管理" + user "我的订阅" pages; opt-out, default true)
 	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
+	// Leaderboard ranking page (user-facing spending board; opt-in)
+	LeaderboardRankingVisibleEnabled bool `json:"leaderboard_ranking_visible_enabled"`
 
 	// Affiliate (邀请返利) feature toggle
 	AffiliateEnabled bool `json:"affiliate_enabled"`

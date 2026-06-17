@@ -835,6 +835,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyAvailableChannelsEnabled,
 		SettingKeyOnlinePlaygroundEnabled,
 		SettingKeySubscriptionManagementEnabled,
+		SettingKeyLeaderboardRankingVisibleEnabled,
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
 		SettingKeyAllowUserViewErrorRequests,
@@ -950,7 +951,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		OnlinePlaygroundEnabled: settings[SettingKeyOnlinePlaygroundEnabled] == "true",
 
 		// Subscription management feature (default: enabled; only an explicit false-y value disables it)
-		SubscriptionManagementEnabled: !isFalseSettingValue(settings[SettingKeySubscriptionManagementEnabled]),
+		SubscriptionManagementEnabled:    !isFalseSettingValue(settings[SettingKeySubscriptionManagementEnabled]),
+		LeaderboardRankingVisibleEnabled: settings[SettingKeyLeaderboardRankingVisibleEnabled] == "true",
 
 		AffiliateEnabled: settings[SettingKeyAffiliateEnabled] == "true",
 
@@ -1270,6 +1272,7 @@ type PublicSettingsInjectionPayload struct {
 	AvailableChannelsEnabled             bool `json:"available_channels_enabled"`
 	OnlinePlaygroundEnabled              bool `json:"online_playground_enabled"`
 	SubscriptionManagementEnabled        bool `json:"subscription_management_enabled"`
+	LeaderboardRankingVisibleEnabled     bool `json:"leaderboard_ranking_visible_enabled"`
 	AffiliateEnabled                     bool `json:"affiliate_enabled"`
 	RiskControlEnabled                   bool `json:"risk_control_enabled"`
 	AllowUserViewErrorRequests           bool `json:"allow_user_view_error_requests"`
@@ -1335,6 +1338,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
 		OnlinePlaygroundEnabled:              settings.OnlinePlaygroundEnabled,
 		SubscriptionManagementEnabled:        settings.SubscriptionManagementEnabled,
+		LeaderboardRankingVisibleEnabled:     settings.LeaderboardRankingVisibleEnabled,
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		AllowUserViewErrorRequests:           settings.AllowUserViewErrorRequests,
@@ -1945,6 +1949,8 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyLeaderboardRewardEmailNotifyEnabled] = strconv.FormatBool(settings.LeaderboardRewardEmailNotifyEnabled)
 	settings.LeaderboardRewardPoolRate = clampLeaderboardRewardPoolRate(settings.LeaderboardRewardPoolRate)
 	updates[SettingKeyLeaderboardRewardPoolRate] = strconv.FormatFloat(settings.LeaderboardRewardPoolRate, 'f', 8, 64)
+	settings.LeaderboardRewardMinSpend = clampLeaderboardRewardMinSpend(settings.LeaderboardRewardMinSpend)
+	updates[SettingKeyLeaderboardRewardMinSpend] = strconv.FormatFloat(settings.LeaderboardRewardMinSpend, 'f', 8, 64)
 	if settings.LeaderboardRewardTopN < 0 {
 		settings.LeaderboardRewardTopN = LeaderboardRewardTopNDefault
 	}
@@ -1997,6 +2003,8 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 
 	// Subscription management feature switch (admin 订阅管理 + user 我的订阅)
 	updates[SettingKeySubscriptionManagementEnabled] = strconv.FormatBool(settings.SubscriptionManagementEnabled)
+	// Leaderboard ranking page feature switch
+	updates[SettingKeyLeaderboardRankingVisibleEnabled] = strconv.FormatBool(settings.LeaderboardRankingVisibleEnabled)
 
 	// Affiliate (邀请返利) feature switch
 	updates[SettingKeyAffiliateEnabled] = strconv.FormatBool(settings.AffiliateEnabled)
@@ -2624,6 +2632,15 @@ func (s *SettingService) IsLeaderboardRewardEnabled(ctx context.Context) bool {
 	return value == "true"
 }
 
+// IsLeaderboardRankingVisibleEnabled 检查是否对用户展示排行榜页面（独立于是否发放奖励）。
+func (s *SettingService) IsLeaderboardRankingVisibleEnabled(ctx context.Context) bool {
+	value, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRankingVisibleEnabled)
+	if err != nil {
+		return false // 默认关闭（opt-in）
+	}
+	return value == "true"
+}
+
 // IsLeaderboardRewardEmailNotifyEnabled 检查是否在发放排行榜激励时发送邮件通知。
 func (s *SettingService) IsLeaderboardRewardEmailNotifyEnabled(ctx context.Context) bool {
 	v, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardEmailNotifyEnabled)
@@ -2646,6 +2663,19 @@ func (s *SettingService) GetLeaderboardRewardPoolRate(ctx context.Context) float
 	return clampLeaderboardRewardPoolRate(rate)
 }
 
+// GetLeaderboardRewardMinSpend 读取每人参与门槛（个人消费≥该值才进入中奖区）。0 表示无门槛。
+func (s *SettingService) GetLeaderboardRewardMinSpend(ctx context.Context) float64 {
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardMinSpend)
+	if err != nil {
+		return LeaderboardRewardMinSpendDefault
+	}
+	v, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
+	if err != nil {
+		return LeaderboardRewardMinSpendDefault
+	}
+	return clampLeaderboardRewardMinSpend(v)
+}
+
 // GetLeaderboardRewardTopN 返回奖励名额（前 N 名）。0 表示不发放。
 func (s *SettingService) GetLeaderboardRewardTopN(ctx context.Context) int {
 	raw, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardTopN)
@@ -2662,7 +2692,7 @@ func (s *SettingService) GetLeaderboardRewardTopN(ctx context.Context) int {
 	return n
 }
 
-// GetLeaderboardRewardDistributionMode 返回分配模式（average/proportional/weighted）。
+// GetLeaderboardRewardDistributionMode 返回分配模式（average/weighted）。
 func (s *SettingService) GetLeaderboardRewardDistributionMode(ctx context.Context) string {
 	raw, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardDistributionMode)
 	if err != nil {
@@ -2973,6 +3003,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyLeaderboardRewardEnabled:                  strconv.FormatBool(LeaderboardRewardEnabledDefault),
 		SettingKeyLeaderboardRewardEmailNotifyEnabled:       strconv.FormatBool(LeaderboardRewardEmailNotifyEnabledDefault),
 		SettingKeyLeaderboardRewardPoolRate:                 strconv.FormatFloat(LeaderboardRewardPoolRateDefault, 'f', 8, 64),
+		SettingKeyLeaderboardRewardMinSpend:                 strconv.FormatFloat(LeaderboardRewardMinSpendDefault, 'f', 8, 64),
 		SettingKeyLeaderboardRewardTopN:                     strconv.Itoa(LeaderboardRewardTopNDefault),
 		SettingKeyLeaderboardRewardDistributionMode:         LeaderboardRewardModeDefault,
 		SettingKeyLeaderboardRewardWeights:                  "",
@@ -3044,6 +3075,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 
 		// Subscription management feature (default ENABLED; opt-out, backward-compatible)
 		SettingKeySubscriptionManagementEnabled: "true",
+		// Leaderboard ranking page feature (default disabled; opt-in)
+		SettingKeyLeaderboardRankingVisibleEnabled: "false",
 
 		// Affiliate (邀请返利) feature (default disabled; opt-in)
 		SettingKeyAffiliateEnabled: "false",
@@ -3184,6 +3217,11 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		result.LeaderboardRewardPoolRate = clampLeaderboardRewardPoolRate(poolRate)
 	} else {
 		result.LeaderboardRewardPoolRate = LeaderboardRewardPoolRateDefault
+	}
+	if minSpend, err := strconv.ParseFloat(settings[SettingKeyLeaderboardRewardMinSpend], 64); err == nil {
+		result.LeaderboardRewardMinSpend = clampLeaderboardRewardMinSpend(minSpend)
+	} else {
+		result.LeaderboardRewardMinSpend = LeaderboardRewardMinSpendDefault
 	}
 	if topN, err := strconv.Atoi(settings[SettingKeyLeaderboardRewardTopN]); err == nil && topN >= 0 {
 		if topN > LeaderboardRewardTopNMax {
@@ -3581,6 +3619,8 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// Subscription management feature (default: ENABLED; only an explicit false-y value disables it)
 	result.SubscriptionManagementEnabled = !isFalseSettingValue(settings[SettingKeySubscriptionManagementEnabled])
+	// Leaderboard ranking page feature (default: disabled; strict true)
+	result.LeaderboardRankingVisibleEnabled = settings[SettingKeyLeaderboardRankingVisibleEnabled] == "true"
 
 	// Affiliate (邀请返利) feature (default: disabled; strict true)
 	result.AffiliateEnabled = settings[SettingKeyAffiliateEnabled] == "true"
@@ -3697,6 +3737,14 @@ func clampLeaderboardRewardPoolRate(value float64) float64 {
 	}
 	if value > LeaderboardRewardPoolRateMax {
 		return LeaderboardRewardPoolRateMax
+	}
+	return value
+}
+
+// clampLeaderboardRewardMinSpend 将每人参与门槛限制为非负值，非法值回退默认。
+func clampLeaderboardRewardMinSpend(value float64) float64 {
+	if math.IsNaN(value) || math.IsInf(value, 0) || value < LeaderboardRewardMinSpendMin {
+		return LeaderboardRewardMinSpendDefault
 	}
 	return value
 }

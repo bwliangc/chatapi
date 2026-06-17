@@ -5669,6 +5669,18 @@
               <Toggle v-model="form.leaderboard_reward_enabled" />
             </div>
 
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {{ t('admin.settings.features.leaderboardReward.rankingVisible') }}
+                </label>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('admin.settings.features.leaderboardReward.rankingVisibleHint') }}
+                </p>
+              </div>
+              <Toggle v-model="form.leaderboard_ranking_visible_enabled" />
+            </div>
+
             <div v-if="form.leaderboard_reward_enabled" class="space-y-6">
               <div>
                 <label class="input-label">
@@ -5710,6 +5722,23 @@
 
               <div>
                 <label class="input-label">
+                  {{ t('admin.settings.features.leaderboardReward.minSpend') }}
+                </label>
+                <input
+                  v-model.number="form.leaderboard_reward_min_spend"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  class="input"
+                  placeholder="5"
+                />
+                <p class="mt-1 text-xs text-gray-400">
+                  {{ t('admin.settings.features.leaderboardReward.minSpendHint') }}
+                </p>
+              </div>
+
+              <div>
+                <label class="input-label">
                   {{ t('admin.settings.features.leaderboardReward.mode') }}
                 </label>
                 <select
@@ -5718,9 +5747,6 @@
                 >
                   <option value="average">
                     {{ t('admin.settings.features.leaderboardReward.modeAverage') }}
-                  </option>
-                  <option value="proportional">
-                    {{ t('admin.settings.features.leaderboardReward.modeProportional') }}
                   </option>
                   <option value="weighted">
                     {{ t('admin.settings.features.leaderboardReward.modeWeighted') }}
@@ -8072,6 +8098,8 @@ const form = reactive<SettingsForm>({
   leaderboard_reward_top_n: 0,
   leaderboard_reward_distribution_mode: "average",
   leaderboard_reward_weights: "",
+  leaderboard_reward_min_spend: 0,
+  leaderboard_ranking_visible_enabled: false,
 });
 
 const authSourceDefaults = reactive<AuthSourceDefaultsState>(
@@ -9272,6 +9300,12 @@ async function saveSettings() {
       leaderboard_reward_weights: (
         form.leaderboard_reward_weights || ""
       ).trim(),
+      leaderboard_reward_min_spend: Math.max(
+        0,
+        Number(form.leaderboard_reward_min_spend) || 0,
+      ),
+      leaderboard_ranking_visible_enabled:
+        form.leaderboard_ranking_visible_enabled,
     };
 
     // 仅当 openai_fast_policy_settings 已成功从后端加载时才回写，
