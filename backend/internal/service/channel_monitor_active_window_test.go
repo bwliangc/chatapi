@@ -39,7 +39,7 @@ func TestActiveWindow_SameDayRange(t *testing.T) {
 		want      bool
 	}{
 		{7, 59, false},
-		{8, 0, true},  // 起点含
+		{8, 0, true}, // 起点含
 		{12, 0, true},
 		{17, 59, true},
 		{18, 0, false}, // 终点不含
