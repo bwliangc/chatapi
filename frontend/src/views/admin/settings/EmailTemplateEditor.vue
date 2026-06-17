@@ -352,6 +352,11 @@ const eventDisplayMeta: Record<string, EventDisplayMeta> = {
     timing: "余额充值订单支付完成并入账后发送。",
     categoryLabel: "计费",
   },
+  "leaderboard.reward_granted": {
+    label: "排行榜活动奖励",
+    timing: "后台任务每日按昨日消费排行榜发放余额奖励后，若在邮件设置中开启「排行榜激励邮件通知」，则发送给中奖用户。",
+    categoryLabel: "计费",
+  },
   "account.quota_alert": {
     label: "账号限额告警",
     timing: "上游账号的用量达到配置的额度告警阈值时发送给管理员通知邮箱。",
@@ -413,6 +418,11 @@ const eventDisplayMetaEn: Record<string, EventDisplayMeta> = {
   "balance.recharge_success": {
     label: "Balance Recharge Success",
     timing: "Sent after a balance recharge order is paid and credited.",
+    categoryLabel: "Billing",
+  },
+  "leaderboard.reward_granted": {
+    label: "Leaderboard Reward",
+    timing: "Sent to winners after the daily leaderboard reward is granted, if the leaderboard reward email toggle is enabled in Email settings.",
     categoryLabel: "Billing",
   },
   "account.quota_alert": {
