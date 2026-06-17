@@ -151,7 +151,9 @@ const appStore = useAppStore()
 
 const period = ref<LeaderboardPeriod>('today')
 const loading = ref(false)
-const data = ref<LeaderboardResponse | null>(null)
+// 按周期缓存，切换 tab 时立即显示该周期数据（无需等待请求）。
+const cache = ref<Partial<Record<LeaderboardPeriod, LeaderboardResponse>>>({})
+const data = computed<LeaderboardResponse | null>(() => cache.value[period.value] ?? null)
 
 const showReward = computed(() => !!data.value?.reward_enabled)
 // 本人是否已出现在上方榜单中（用于决定是否在表底用虚线单独补一行本人排名）。
@@ -188,13 +190,14 @@ const distributionText = computed(() => {
   return t('leaderboard.modeAverage')
 })
 
-async function load() {
-  loading.value = true
+async function load(p: LeaderboardPeriod = period.value) {
+  // 仅在该周期尚无缓存时显示加载态，避免切回已缓存周期时闪烁；有缓存则为静默刷新。
+  if (!cache.value[p]) loading.value = true
   try {
-    data.value = await getLeaderboard(period.value)
+    const res = await getLeaderboard(p)
+    cache.value = { ...cache.value, [p]: res }
   } catch (err: unknown) {
     appStore.showError(extractApiErrorMessage(err, t('common.error')))
-    data.value = null
   } finally {
     loading.value = false
   }
@@ -202,8 +205,9 @@ async function load() {
 
 function switchPeriod(p: LeaderboardPeriod) {
   if (period.value === p) return
-  period.value = p
-  load()
+  period.value = p // 立即切到该周期缓存，无需等待
+  // 昨日已结算（静态）：有缓存则不重复请求；今日实时：始终后台刷新。
+  if (p === 'today' || !cache.value[p]) load(p)
 }
 
 function money(n: number): string {
@@ -227,5 +231,5 @@ function rankClass(rank: number, isWinner: boolean): string {
   return 'text-gray-400'
 }
 
-onMounted(load)
+onMounted(() => load())
 </script>
