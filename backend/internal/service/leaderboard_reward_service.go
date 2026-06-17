@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math"
 	"strconv"
@@ -18,6 +19,7 @@ type LeaderboardRewardGrantItem struct {
 	UserID int64
 	Rank   int     // 排行榜名次，从 1 开始
 	Amount float64 // 发放到余额的金额
+	Email  string  // 中奖用户邮箱（用于可选的邮件通知）
 }
 
 // LeaderboardRewardGrant 表示一次每日激励发放的全部信息。
@@ -40,14 +42,15 @@ type LeaderboardRewardRepository interface {
 
 // LeaderboardRewardService 周期性按昨日消费排行榜发放余额奖励。
 type LeaderboardRewardService struct {
-	rewardRepo          LeaderboardRewardRepository
-	settingService      *SettingService
-	dashboardService    *DashboardService
-	billingCacheService *BillingCacheService
-	interval            time.Duration
-	stopCh              chan struct{}
-	stopOnce            sync.Once
-	wg                  sync.WaitGroup
+	rewardRepo               LeaderboardRewardRepository
+	settingService           *SettingService
+	dashboardService         *DashboardService
+	billingCacheService      *BillingCacheService
+	notificationEmailService *NotificationEmailService
+	interval                 time.Duration
+	stopCh                   chan struct{}
+	stopOnce                 sync.Once
+	wg                       sync.WaitGroup
 }
 
 // NewLeaderboardRewardService 构造排行榜激励服务。interval 为巡检间隔（建议 1 小时）。
@@ -57,14 +60,16 @@ func NewLeaderboardRewardService(
 	dashboardService *DashboardService,
 	billingCacheService *BillingCacheService,
 	interval time.Duration,
+	notificationEmailService *NotificationEmailService,
 ) *LeaderboardRewardService {
 	return &LeaderboardRewardService{
-		rewardRepo:          rewardRepo,
-		settingService:      settingService,
-		dashboardService:    dashboardService,
-		billingCacheService: billingCacheService,
-		interval:            interval,
-		stopCh:              make(chan struct{}),
+		rewardRepo:               rewardRepo,
+		settingService:           settingService,
+		dashboardService:         dashboardService,
+		billingCacheService:      billingCacheService,
+		notificationEmailService: notificationEmailService,
+		interval:                 interval,
+		stopCh:                   make(chan struct{}),
 	}
 }
 
@@ -184,6 +189,28 @@ func (s *LeaderboardRewardService) runOnce() {
 		}
 	}
 
+	// 可选：向中奖用户发送邮件通知（受管理员开关控制，发送失败仅记录不影响发放）。
+	if s.notificationEmailService != nil && s.settingService.IsLeaderboardRewardEmailNotifyEnabled(ctx) {
+		for _, it := range grantItems {
+			if strings.TrimSpace(it.Email) == "" {
+				continue
+			}
+			if err := s.notificationEmailService.Send(ctx, NotificationEmailSendInput{
+				Event:          NotificationEmailEventLeaderboardReward,
+				RecipientEmail: it.Email,
+				RecipientName:  it.Email,
+				UserID:         it.UserID,
+				Variables: map[string]string{
+					"reward_amount": fmt.Sprintf("%.2f", it.Amount),
+					"rank":          strconv.Itoa(it.Rank),
+					"reward_date":   rewardDate.Format("2006-01-02"),
+				},
+			}); err != nil {
+				log.Printf("[LeaderboardReward] send reward email to user %d failed: %v", it.UserID, err)
+			}
+		}
+	}
+
 	log.Printf("[LeaderboardReward] settled %s: total_cost=%.6f pool=%.6f winners=%d mode=%s",
 		rewardDate.Format("2006-01-02"), totalCost, pool, granted, mode)
 }
@@ -259,6 +286,7 @@ func buildLeaderboardRewardItems(items []usagestats.UserBreakdownItem, topN int,
 			UserID: winners[i].UserID,
 			Rank:   i + 1,
 			Amount: rounded[i],
+			Email:  winners[i].Email,
 		})
 	}
 	return result

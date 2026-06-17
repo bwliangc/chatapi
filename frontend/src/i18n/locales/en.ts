@@ -1212,6 +1212,7 @@ export default {
     concurrencyAddedRedeem: 'Concurrency Added (Redeem)',
     concurrencyAddedAdmin: 'Concurrency Added (Admin)',
     concurrencyReducedAdmin: 'Concurrency Reduced (Admin)',
+    leaderboardReward: 'Leaderboard Reward',
     adminAdjustment: 'Admin Adjustment',
     subscriptionAssigned: 'Subscription Assigned',
     subscriptionAssignedDesc: 'You have been granted access to {groupName}',
@@ -5559,6 +5560,8 @@ export default {
           modeWeighted: 'Custom Weights',
           weights: 'Rank Weights',
           weightsHint: 'Comma-separated, mapped to ranks in order, e.g. 50,30,20 splits the top 3 as 5:3:2. Ranks beyond the provided weights receive nothing.',
+          emailNotifyEnabled: 'Email Notification on Grant',
+          emailNotifyEnabledHint: 'When on, winners receive an email notification each time the daily leaderboard reward is granted (requires email service configured). Disabled by default.',
         },
         affiliate: {
           title: 'Affiliate (Invite Rebate)',

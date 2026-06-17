@@ -5720,6 +5720,18 @@
                   {{ t('admin.settings.features.leaderboardReward.weightsHint') }}
                 </p>
               </div>
+
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.features.leaderboardReward.emailNotifyEnabled') }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.settings.features.leaderboardReward.emailNotifyEnabledHint') }}
+                  </p>
+                </div>
+                <Toggle v-model="form.leaderboard_reward_email_notify_enabled" />
+              </div>
             </div>
           </div>
         </div>
@@ -8028,6 +8040,7 @@ const form = reactive<SettingsForm>({
   allow_user_view_error_requests: false,
   // Leaderboard reward (排行榜激励) feature
   leaderboard_reward_enabled: false,
+  leaderboard_reward_email_notify_enabled: false,
   leaderboard_reward_pool_rate: 0,
   leaderboard_reward_top_n: 0,
   leaderboard_reward_distribution_mode: "average",
@@ -9215,6 +9228,8 @@ async function saveSettings() {
       allow_user_view_error_requests: form.allow_user_view_error_requests,
       // Leaderboard reward (排行榜激励) feature
       leaderboard_reward_enabled: form.leaderboard_reward_enabled,
+      leaderboard_reward_email_notify_enabled:
+        form.leaderboard_reward_email_notify_enabled,
       leaderboard_reward_pool_rate: Math.min(
         100,
         Math.max(0, Number(form.leaderboard_reward_pool_rate) || 0),

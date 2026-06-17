@@ -1936,6 +1936,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 
 	// Leaderboard reward (排行榜激励)
 	updates[SettingKeyLeaderboardRewardEnabled] = strconv.FormatBool(settings.LeaderboardRewardEnabled)
+	updates[SettingKeyLeaderboardRewardEmailNotifyEnabled] = strconv.FormatBool(settings.LeaderboardRewardEmailNotifyEnabled)
 	settings.LeaderboardRewardPoolRate = clampLeaderboardRewardPoolRate(settings.LeaderboardRewardPoolRate)
 	updates[SettingKeyLeaderboardRewardPoolRate] = strconv.FormatFloat(settings.LeaderboardRewardPoolRate, 'f', 8, 64)
 	if settings.LeaderboardRewardTopN < 0 {
@@ -2614,6 +2615,15 @@ func (s *SettingService) IsLeaderboardRewardEnabled(ctx context.Context) bool {
 	return value == "true"
 }
 
+// IsLeaderboardRewardEmailNotifyEnabled 检查是否在发放排行榜激励时发送邮件通知。
+func (s *SettingService) IsLeaderboardRewardEmailNotifyEnabled(ctx context.Context) bool {
+	v, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardEmailNotifyEnabled)
+	if err != nil {
+		return false
+	}
+	return v == "true"
+}
+
 // GetLeaderboardRewardPoolRate 读取并 clamp 奖池比例（百分比，0-100）。
 func (s *SettingService) GetLeaderboardRewardPoolRate(ctx context.Context) float64 {
 	raw, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardPoolRate)
@@ -2952,6 +2962,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyAffiliateRebateDurationDays:               strconv.Itoa(AffiliateRebateDurationDaysDefault),
 		SettingKeyAffiliateRebatePerInviteeCap:              strconv.FormatFloat(AffiliateRebatePerInviteeCapDefault, 'f', 2, 64),
 		SettingKeyLeaderboardRewardEnabled:                  strconv.FormatBool(LeaderboardRewardEnabledDefault),
+		SettingKeyLeaderboardRewardEmailNotifyEnabled:       strconv.FormatBool(LeaderboardRewardEmailNotifyEnabledDefault),
 		SettingKeyLeaderboardRewardPoolRate:                 strconv.FormatFloat(LeaderboardRewardPoolRateDefault, 'f', 8, 64),
 		SettingKeyLeaderboardRewardTopN:                     strconv.Itoa(LeaderboardRewardTopNDefault),
 		SettingKeyLeaderboardRewardDistributionMode:         LeaderboardRewardModeDefault,
@@ -3156,6 +3167,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// Leaderboard reward (排行榜激励)（默认关闭，严格 true 才启用）
 	result.LeaderboardRewardEnabled = settings[SettingKeyLeaderboardRewardEnabled] == "true"
+	result.LeaderboardRewardEmailNotifyEnabled = settings[SettingKeyLeaderboardRewardEmailNotifyEnabled] == "true"
 	if poolRate, err := strconv.ParseFloat(settings[SettingKeyLeaderboardRewardPoolRate], 64); err == nil {
 		result.LeaderboardRewardPoolRate = clampLeaderboardRewardPoolRate(poolRate)
 	} else {
