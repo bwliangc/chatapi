@@ -1091,6 +1091,7 @@ export default {
     rankShare: '第{rank}名 {pct}%',
     belowThreshold: '未达门槛',
     noWinnersYet: '暂无人上榜',
+    rewardResult: '奖励结果',
     rewardDisabledNote: '当前仅展示消费排行，未开启奖励发放。',
     thresholdNote: '参与门槛：当日消费满 {amount} 才能进入中奖区（前 {topN} 名）。',
     hintToday: '统计今日 0 点至此刻的消费，实时变化。',

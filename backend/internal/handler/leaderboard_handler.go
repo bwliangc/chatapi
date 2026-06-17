@@ -44,6 +44,8 @@ type leaderboardEntry struct {
 	Tokens     int64   `json:"tokens"`
 	IsWinner   bool    `json:"is_winner"` // 是否在中奖区（前 N 名且有消费且开启奖励）
 	IsMe       bool    `json:"is_me"`
+	// RewardAmount 昨日结算的实际发放金额（仅 period=yesterday 的中奖者，>0）。
+	RewardAmount float64 `json:"reward_amount,omitempty"`
 }
 
 type leaderboardResponse struct {
@@ -94,6 +96,8 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 	poolRate := h.settingService.GetLeaderboardRewardPoolRate(ctx)
 	topN := h.settingService.GetLeaderboardRewardTopN(ctx)
 	minSpend := h.settingService.GetLeaderboardRewardMinSpend(ctx)
+	mode := h.settingService.GetLeaderboardRewardDistributionMode(ctx)
+	weights := h.settingService.GetLeaderboardRewardWeights(ctx)
 
 	resp := &leaderboardResponse{
 		Period:           period,
@@ -101,13 +105,12 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		PoolRate:         poolRate,
 		TopN:             topN,
 		MinSpend:         roundLeaderboard(minSpend),
-		DistributionMode: h.settingService.GetLeaderboardRewardDistributionMode(ctx),
+		DistributionMode: mode,
 		Ranking:          []leaderboardEntry{},
 	}
 	// weighted 模式：附带各名次奖励占比，供前端展示实际分配比例。
-	if resp.DistributionMode == service.LeaderboardRewardModeWeighted {
-		resp.DistributionShares = service.LeaderboardWeightedShares(
-			h.settingService.GetLeaderboardRewardWeights(ctx), topN)
+	if mode == service.LeaderboardRewardModeWeighted {
+		resp.DistributionShares = service.LeaderboardWeightedShares(weights, topN)
 	}
 
 	ranking, err := h.dashboardService.GetUserSpendingRanking(ctx, windowStart, windowEnd, leaderboardScanLimit)
@@ -124,6 +127,7 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		// 一定排在更后、金额更小，不存在「跳过未达者再由后面递补」的情况。
 		// 故中奖区 = 前 topN 名且达标；榜单只展示达标用户；本人始终带回全站名次供前端单独展示。
 		applyThreshold := rewardEnabled && minSpend > 0
+		winners := 0
 		for i, item := range ranking.Ranking {
 			rank := i + 1
 			isMe := item.UserID == subject.UserID
@@ -132,13 +136,17 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 				name = item.Email // 本人行展示真实身份
 			}
 			qualified := item.ActualCost >= minSpend && item.ActualCost > 0
+			isWinner := rewardEnabled && topN > 0 && rank <= topN && qualified
+			if isWinner {
+				winners++
+			}
 			entry := leaderboardEntry{
 				Rank:       rank,
 				Name:       name,
 				ActualCost: roundLeaderboard(item.ActualCost),
 				Requests:   item.Requests,
 				Tokens:     item.Tokens,
-				IsWinner:   rewardEnabled && topN > 0 && rank <= topN && qualified,
+				IsWinner:   isWinner,
 				IsMe:       isMe,
 			}
 			if (!applyThreshold || qualified) && len(resp.Ranking) < leaderboardDisplayLimit {
@@ -147,6 +155,19 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 			if isMe {
 				meCopy := entry
 				resp.Me = &meCopy // 本人始终带回（含全站名次），即使未上榜
+			}
+		}
+
+		// 昨日结算：就地按发放算法算出各名次实际奖励（设置不变时与已发放一致），填到中奖者行。
+		if period == "yesterday" && rewardEnabled && winners > 0 && resp.PoolAmount > 0 {
+			amounts := service.LeaderboardRewardAmounts(winners, mode, weights, resp.PoolAmount)
+			for i := range resp.Ranking {
+				if e := &resp.Ranking[i]; e.IsWinner && e.Rank-1 < len(amounts) {
+					e.RewardAmount = amounts[e.Rank-1]
+				}
+			}
+			if resp.Me != nil && resp.Me.IsWinner && resp.Me.Rank-1 < len(amounts) {
+				resp.Me.RewardAmount = amounts[resp.Me.Rank-1]
 			}
 		}
 	}

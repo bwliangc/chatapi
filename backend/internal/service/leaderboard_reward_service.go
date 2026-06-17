@@ -348,3 +348,40 @@ func LeaderboardWeightedShares(weightsRaw string, topN int) []float64 {
 	}
 	return shares
 }
+
+// LeaderboardRewardAmounts 返回前 n 名各自的发放金额（按名次 1..n 顺序），按分配模式分配奖池，
+// 与 buildLeaderboardRewardItems 完全一致（四舍五入到 6 位，取整余数补给第 1 名，总额 == pool）。
+// 用于「昨日结算」展示各名次实际奖励（设置不变时与已发放金额一致）。
+func LeaderboardRewardAmounts(n int, mode, weightsRaw string, pool float64) []float64 {
+	if n <= 0 || pool <= 0 {
+		return nil
+	}
+	amounts := make([]float64, n)
+	if mode == LeaderboardRewardModeWeighted {
+		weights := parseLeaderboardRewardWeights(weightsRaw)
+		ws := make([]float64, n)
+		var sumW float64
+		for i := 0; i < n; i++ {
+			if i < len(weights) && weights[i] > 0 {
+				ws[i] = weights[i]
+			}
+			sumW += ws[i]
+		}
+		if sumW <= 0 {
+			fillAverage(amounts, pool)
+		} else {
+			for i := 0; i < n; i++ {
+				amounts[i] = pool * ws[i] / sumW
+			}
+		}
+	} else {
+		fillAverage(amounts, pool)
+	}
+	var sumRounded float64
+	for i := 0; i < n; i++ {
+		amounts[i] = roundTo(amounts[i], 6)
+		sumRounded += amounts[i]
+	}
+	amounts[0] = roundTo(amounts[0]+roundTo(pool-sumRounded, 6), 6)
+	return amounts
+}

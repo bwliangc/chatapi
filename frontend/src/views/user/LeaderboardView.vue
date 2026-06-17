@@ -71,6 +71,7 @@
               <th class="px-4 py-2 font-medium">{{ t('leaderboard.rankHeader') }}</th>
               <th class="px-4 py-2 font-medium">{{ t('leaderboard.userHeader') }}</th>
               <th class="px-4 py-2 text-right font-medium">{{ t('leaderboard.spendHeader') }}</th>
+              <th v-if="period === 'yesterday'" class="px-4 py-2 text-right font-medium">{{ t('leaderboard.rewardResult') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -100,15 +101,19 @@
                 >🏆</span>
               </td>
               <td class="px-4 py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">{{ money(entry.actual_cost) }}</td>
+              <td v-if="period === 'yesterday'" class="px-4 py-2.5 text-right font-medium">
+                <span v-if="entry.reward_amount" class="text-amber-600 dark:text-amber-400">{{ money(entry.reward_amount) }}</span>
+                <span v-else class="text-gray-400">—</span>
+              </td>
             </tr>
             <!-- 正式榜单为空（无人达门槛）时的占位提示 -->
             <tr v-if="data.ranking.length === 0">
-              <td colspan="3" class="px-4 py-6 text-center text-sm text-gray-400">{{ t('leaderboard.noWinnersYet') }}</td>
+              <td :colspan="period === 'yesterday' ? 4 : 3" class="px-4 py-6 text-center text-sm text-gray-400">{{ t('leaderboard.noWinnersYet') }}</td>
             </tr>
             <!-- 本人排名：若未出现在上方榜单中（未达门槛或不在前列），用虚线分隔后单独展示 -->
             <template v-if="data.me && !meInList">
               <tr aria-hidden="true">
-                <td colspan="3" class="px-4 py-1.5">
+                <td :colspan="period === 'yesterday' ? 4 : 3" class="px-4 py-1.5">
                   <div class="border-t-2 border-dashed border-gray-300 dark:border-gray-600"></div>
                 </td>
               </tr>
@@ -125,6 +130,10 @@
                   <span v-if="data.me.is_winner" class="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">🏆</span>
                 </td>
                 <td class="px-4 py-2.5 text-right font-medium text-gray-900 dark:text-gray-100">{{ money(data.me.actual_cost) }}</td>
+                <td v-if="period === 'yesterday'" class="px-4 py-2.5 text-right font-medium">
+                  <span v-if="data.me.reward_amount" class="text-amber-600 dark:text-amber-400">{{ money(data.me.reward_amount) }}</span>
+                  <span v-else class="text-gray-400">—</span>
+                </td>
               </tr>
             </template>
           </tbody>

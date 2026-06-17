@@ -1087,6 +1087,7 @@ export default {
     rankShare: '#{rank} {pct}%',
     belowThreshold: 'Below threshold',
     noWinnersYet: 'No one on the leaderboard yet',
+    rewardResult: 'Reward',
     rewardDisabledNote: 'Showing the spending ranking only; rewards are not being granted.',
     thresholdNote: 'Qualification: spend at least {amount} that day to enter the winner zone (top {topN}).',
     hintToday: 'Counts spend from 00:00 today until now; updates live.',

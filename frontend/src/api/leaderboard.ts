@@ -10,6 +10,7 @@ export interface LeaderboardEntry {
   tokens: number
   is_winner: boolean
   is_me: boolean
+  reward_amount?: number // 昨日结算的实际发放金额（仅中奖者，>0）
 }
 
 export interface LeaderboardResponse {
