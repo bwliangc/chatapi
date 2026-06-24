@@ -101,6 +101,20 @@
         </div>
 
         <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900">
+          <div class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.errorDetail.businessLimited') }}</div>
+          <div class="mt-1">
+            <span
+              :class="['inline-flex items-center rounded-lg px-2 py-1 text-xs font-black ring-1 ring-inset shadow-sm',
+                detail.is_business_limited
+                  ? 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-500/30'
+                  : 'bg-gray-100 text-gray-600 ring-gray-500/20 dark:bg-dark-800 dark:text-gray-300 dark:ring-dark-600']"
+            >
+              {{ detail.is_business_limited ? t('common.yes') : t('common.no') }}
+            </span>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900">
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.ops.errorDetail.message') }}</div>
           <div class="mt-1 truncate text-sm font-medium text-gray-900 dark:text-white" :title="detail.message">
             {{ detail.message || '—' }}
