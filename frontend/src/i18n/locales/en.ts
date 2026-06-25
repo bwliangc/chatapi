@@ -1846,6 +1846,7 @@ export default {
         user: 'User',
         affCode: 'Invite Code',
         order: 'Order',
+        redeemSource: 'Redeem Code',
         totalRebate: 'Total Rebate',
         orderAmount: 'Top-up Amount',
         payAmount: 'Paid Amount',

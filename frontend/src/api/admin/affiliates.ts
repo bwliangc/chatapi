@@ -60,6 +60,8 @@ export interface AffiliateRebateRecord {
   rebate_amount: number
   payment_type: string
   order_status: string
+  /** 返利来源："order"=支付订单充值，"redeem"=卡密/兑换码充值（无订单）。 */
+  source: 'order' | 'redeem'
   created_at: string
 }
 

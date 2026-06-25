@@ -466,13 +466,14 @@ func (r *affiliateRepository) ListAffiliateRebateRecords(ctx context.Context, fi
 		"inviter.email", "inviter.username", "invitee.email", "invitee.username",
 		"po.id::text", "po.out_trade_no", "po.payment_type", "po.status",
 	})
+	// 返利来源有两类：支付订单充值（source_order_id 有值）与卡密/兑换码充值（source_order_id 为空）。
+	// 用 LEFT JOIN payment_orders 让两类返利都能列出，卡密返利的订单字段以 COALESCE 兜底为空值。
 	baseJoin := `
 FROM user_affiliate_ledger ual
-JOIN payment_orders po ON po.id = ual.source_order_id
+LEFT JOIN payment_orders po ON po.id = ual.source_order_id
 JOIN users invitee ON invitee.id = ual.source_user_id
 JOIN users inviter ON inviter.id = ual.user_id
-WHERE ual.action = 'accrue'
-  AND ual.source_order_id IS NOT NULL`
+WHERE ual.action = 'accrue'`
 	if where != "" {
 		where = strings.Replace(where, "WHERE ", " AND ", 1)
 	}
@@ -495,19 +496,20 @@ WHERE ual.action = 'accrue'
 	}, "ual.created_at")
 	args = append(args, filter.PageSize, (filter.Page-1)*filter.PageSize)
 	rows, err := client.QueryContext(ctx, `
-SELECT po.id,
-       po.out_trade_no,
+SELECT COALESCE(po.id, 0),
+       COALESCE(po.out_trade_no, ''),
        ual.user_id,
        COALESCE(inviter.email, ''),
        COALESCE(inviter.username, ''),
        ual.source_user_id,
        COALESCE(invitee.email, ''),
        COALESCE(invitee.username, ''),
-       po.amount::double precision,
-       po.pay_amount::double precision,
+       COALESCE(po.amount, 0)::double precision,
+       COALESCE(po.pay_amount, 0)::double precision,
        ual.amount::double precision,
-       po.payment_type,
-       po.status,
+       COALESCE(po.payment_type, ''),
+       COALESCE(po.status, ''),
+       CASE WHEN ual.source_order_id IS NULL THEN 'redeem' ELSE 'order' END,
        ual.created_at
 `+baseJoin+where+`
 `+orderBy+`
@@ -534,6 +536,7 @@ LIMIT $`+fmt.Sprint(len(args)-1)+` OFFSET $`+fmt.Sprint(len(args)), args...)
 			&item.RebateAmount,
 			&item.PaymentType,
 			&item.OrderStatus,
+			&item.Source,
 			&item.CreatedAt,
 		); err != nil {
 			return nil, 0, err

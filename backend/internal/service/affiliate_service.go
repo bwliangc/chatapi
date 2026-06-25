@@ -170,7 +170,9 @@ type AffiliateRebateRecord struct {
 	RebateAmount    float64   `json:"rebate_amount"`
 	PaymentType     string    `json:"payment_type"`
 	OrderStatus     string    `json:"order_status"`
-	CreatedAt       time.Time `json:"created_at"`
+	// Source 标识返利来源："order"=支付订单充值，"redeem"=卡密/兑换码充值（无订单）。
+	Source    string    `json:"source"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type AffiliateTransferRecord struct {

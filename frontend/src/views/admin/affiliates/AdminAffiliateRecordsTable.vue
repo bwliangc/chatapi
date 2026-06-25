@@ -57,25 +57,32 @@
             <span class="font-mono text-sm text-gray-700 dark:text-gray-300">{{ row.aff_code || '-' }}</span>
           </template>
           <template #cell-order="{ row }">
-            <div class="space-y-0.5">
+            <div v-if="isRedeemRebate(row)" class="text-sm text-gray-500 dark:text-dark-400">
+              {{ t('admin.affiliates.records.redeemSource') }}
+            </div>
+            <div v-else class="space-y-0.5">
               <div class="font-mono text-sm text-gray-900 dark:text-white">#{{ row.order_id }}</div>
               <div class="max-w-56 truncate text-sm text-gray-500 dark:text-dark-400">{{ row.out_trade_no }}</div>
             </div>
           </template>
           <template #cell-payment_type="{ row }">
-            {{ t('payment.methods.' + row.payment_type, row.payment_type || '-') }}
+            <span v-if="isRedeemRebate(row)" class="text-sm text-gray-400 dark:text-dark-500">-</span>
+            <template v-else>{{ t('payment.methods.' + row.payment_type, row.payment_type || '-') }}</template>
           </template>
           <template #cell-order_status="{ row }">
-            <OrderStatusBadge :status="row.order_status" />
+            <span v-if="isRedeemRebate(row)" class="text-sm text-gray-400 dark:text-dark-500">-</span>
+            <OrderStatusBadge v-else :status="row.order_status" />
           </template>
           <template #cell-total_rebate="{ row }">
             <AmountText :value="row.total_rebate" />
           </template>
           <template #cell-order_amount="{ row }">
-            <AmountText :value="row.order_amount" />
+            <span v-if="isRedeemRebate(row)" class="text-sm text-gray-400 dark:text-dark-500">-</span>
+            <AmountText v-else :value="row.order_amount" />
           </template>
           <template #cell-pay_amount="{ row }">
-            <span class="text-sm text-gray-900 dark:text-white">¥{{ formatAmount(row.pay_amount) }}</span>
+            <span v-if="isRedeemRebate(row)" class="text-sm text-gray-400 dark:text-dark-500">-</span>
+            <span v-else class="text-sm text-gray-900 dark:text-white">¥{{ formatAmount(row.pay_amount) }}</span>
           </template>
           <template #cell-rebate_amount="{ row }">
             <AmountText :value="row.rebate_amount" strong />
@@ -301,6 +308,11 @@ function handleSort(key: string, order: 'asc' | 'desc') {
   sortState.sort_order = order
   pagination.page = 1
   void loadRecords()
+}
+
+// 卡密/兑换码充值产生的返利没有支付订单，订单相关列以占位符展示。
+function isRedeemRebate(row: { source?: string }): boolean {
+  return row?.source === 'redeem'
 }
 
 function formatAmount(value: number | null | undefined): string {
