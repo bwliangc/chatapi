@@ -149,6 +149,19 @@
           </button>
           <button
             type="button"
+            @click="form.platform = 'grok'"
+            :class="[
+              'flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all',
+              form.platform === 'grok'
+                ? 'bg-white text-slate-700 shadow-sm dark:bg-dark-600 dark:text-slate-200'
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+            ]"
+          >
+            <PlatformIcon platform="grok" size="sm" />
+            Grok
+          </button>
+          <button
+            type="button"
             @click="form.platform = 'custom'"
             :class="[
               'flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all',
@@ -172,19 +185,6 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             {{ t('admin.accounts.custom.platformLabel') }}
-          </button>
-          <button
-            type="button"
-            @click="form.platform = 'grok'"
-            :class="[
-              'flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all',
-              form.platform === 'grok'
-                ? 'bg-white text-slate-700 shadow-sm dark:bg-dark-600 dark:text-slate-200'
-                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
-            ]"
-          >
-            <PlatformIcon platform="grok" size="sm" />
-            Grok
           </button>
         </div>
         <!-- 选择自定义平台时，说明其为 OpenAI 兼容格式 -->
