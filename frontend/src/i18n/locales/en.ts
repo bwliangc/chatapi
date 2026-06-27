@@ -10,7 +10,6 @@ export default {
     login: 'Login',
     getStarted: 'Get Started',
     goToDashboard: 'Go to Dashboard',
-    navTagline: 'Price Radar',
     heroSubtitle: 'One Key, All AI Models',
     heroDescription: 'Published official pricing, platform multipliers, and RMB conversion in one place.',
     hero: {

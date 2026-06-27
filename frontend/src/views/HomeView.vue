@@ -57,9 +57,6 @@
             <div class="text-sm font-black tracking-tight text-slate-950 dark:text-white">
               {{ siteName }}
             </div>
-            <div class="text-[11px] uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
-              {{ t('home.navTagline') }}
-            </div>
           </div>
         </div>
 

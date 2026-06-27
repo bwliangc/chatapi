@@ -10,7 +10,6 @@ export default {
     login: '登录',
     getStarted: '立即开始',
     goToDashboard: '进入控制台',
-    navTagline: '价格雷达',
     heroSubtitle: '一个密钥，畅用多个 AI 模型',
     heroDescription: '统一展示官方价格、平台倍率与人民币折算结果。',
     hero: {
