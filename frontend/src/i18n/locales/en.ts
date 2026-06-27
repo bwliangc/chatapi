@@ -10,40 +10,38 @@ export default {
     login: 'Login',
     getStarted: 'Get Started',
     goToDashboard: 'Go to Dashboard',
-    // User-focused value proposition
+    navTagline: 'Price Radar',
     heroSubtitle: 'One Key, All AI Models',
-    heroDescription: 'No need to manage multiple subscriptions. Access Claude, GPT, Gemini and more with a single API key',
+    heroDescription: 'Published official pricing, platform multipliers, and RMB conversion in one place.',
+    hero: {
+      kicker: 'Published pricing',
+      title: 'AI usage costs',
+      titleAccent: 'Calculated by clear public rules',
+      description: 'The home page publishes official input/output prices, platform multipliers, RMB conversion, and ranking activity rules.'
+    },
+    pricingTable: {
+      kicker: 'Transparent pricing',
+      title: 'Official vs actual charge',
+      fixedSubtitle: 'Published home page pricing; actual charges are calculated from official price, multiplier, and RMB exchange ratio.',
+      model: 'Model',
+      official: 'Official input / output / 1M',
+      multiplier: 'Multiplier',
+      cny: 'RMB input / output / 1M',
+      exchangeApplied: 'Converted at ¥15 / $100'
+    },
+    activity: {
+      badge: 'Ranking event',
+      title: 'Today’s spend leaderboard is active.',
+      description: 'Rankings are calculated from each user’s daily actual spend, with rewards distributed after daily settlement.',
+      items: { period: 'Period', pool: 'Reward pool', reward: 'Reward spots', threshold: 'How to join' },
+      values: { period: 'Daily settlement', pool: '20% of sitewide spend', reward: 'Top 3', threshold: 'Use API normally' },
+      ctaGuest: 'Log in to view usage',
+      ctaAuthed: 'View my usage'
+    },
     tags: {
       subscriptionToApi: 'Subscription to API',
       stickySession: 'Session Persistence',
       realtimeBilling: 'Pay As You Go'
-    },
-    // Pain points section
-    painPoints: {
-      title: 'Sound Familiar?',
-      items: {
-        expensive: {
-          title: 'High Subscription Costs',
-          desc: 'Paying for multiple AI subscriptions that add up every month'
-        },
-        complex: {
-          title: 'Account Chaos',
-          desc: 'Managing scattered accounts and API keys across different platforms'
-        },
-        unstable: {
-          title: 'Service Interruptions',
-          desc: 'Single accounts hitting rate limits and disrupting your workflow'
-        },
-        noControl: {
-          title: 'No Usage Control',
-          desc: "Can't track where your money goes or limit team member usage"
-        }
-      }
-    },
-    // Solutions section
-    solutions: {
-      title: 'We Solve These Problems',
-      subtitle: 'Three simple steps to stress-free AI access'
     },
     features: {
       unifiedGateway: 'One-Click Access',
@@ -52,42 +50,6 @@ export default {
       multiAccountDesc: 'Smart routing across multiple upstream accounts with automatic failover. Say goodbye to errors.',
       balanceQuota: 'Pay What You Use',
       balanceQuotaDesc: 'Usage-based billing with quota limits. Full visibility into team consumption.'
-    },
-    // Comparison section
-    comparison: {
-      title: 'Why Choose Us?',
-      headers: {
-        feature: 'Comparison',
-        official: 'Official Subscriptions',
-        us: 'Our Platform'
-      },
-      items: {
-        pricing: {
-          feature: 'Pricing',
-          official: 'Fixed monthly fee, pay even if unused',
-          us: 'Pay only for what you use'
-        },
-        models: {
-          feature: 'Model Selection',
-          official: 'Single provider only',
-          us: 'Switch between models freely'
-        },
-        management: {
-          feature: 'Account Management',
-          official: 'Manage each service separately',
-          us: 'Unified key, one dashboard'
-        },
-        stability: {
-          feature: 'Stability',
-          official: 'Single account rate limits',
-          us: 'Multi-account pool, auto-failover'
-        },
-        control: {
-          feature: 'Usage Control',
-          official: 'Not available',
-          us: 'Quotas & detailed analytics'
-        }
-      }
     },
     providers: {
       title: 'Supported AI Models',
@@ -99,11 +61,10 @@ export default {
       antigravity: 'Antigravity',
       more: 'More'
     },
-    // CTA section
     cta: {
-      title: 'Ready to Get Started?',
-      description: 'Sign up now and get free trial credits to experience seamless AI access',
-      button: 'Sign Up Free'
+      kicker: 'Get started',
+      title: 'Create an API key with transparent usage-based billing.',
+      button: 'Create API key'
     },
     footer: {
       allRightsReserved: 'All rights reserved.'
@@ -6093,9 +6054,9 @@ export default {
         logoTypeError: 'Please select an image file',
         logoReadError: 'Failed to read the image file',
         homeContent: 'Home Page Content',
-        homeContentPlaceholder: 'Enter custom content for the home page. Supports Markdown & HTML. If a URL is entered, it will be displayed as an iframe.',
-        homeContentHint: 'Customize the home page content. Supports Markdown/HTML. If you enter a URL (starting with http:// or https://), it will be used as an iframe src to embed an external page. When set, the default status information will no longer be displayed.',
-        homeContentIframeWarning: '⚠️ iframe mode note: Some websites have X-Frame-Options or CSP security policies that prevent embedding in iframes. If the page appears blank or shows an error, please verify the target website allows embedding, or consider using HTML mode to build your own content.',
+        homeContentPlaceholder: 'Leave empty to use the built-in new home page. Enter a full URL to override the home page with an iframe, or trusted HTML to render a custom page.',
+        homeContentHint: 'Best for temporary campaigns, announcements, or external landing pages. When set, it overrides the default home page; leave it empty to use the built-in pricing and leaderboard home page.',
+        homeContentIframeWarning: '⚠️ Custom home note: iframe mode depends on the target site allowing embedding via X-Frame-Options/CSP; HTML mode renders directly, so only paste trusted content.',
         hideCcsImportButton: 'Hide CCS Import Button',
         hideCcsImportButtonHint: 'When enabled, the "Import to CCS" button will be hidden on the API Keys page'
       },
