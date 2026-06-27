@@ -1014,7 +1014,8 @@ export default {
     providers: {
       openai: 'OpenAI',
       anthropic: 'Anthropic',
-      gemini: 'Gemini'
+      gemini: 'Gemini',
+      custom: 'Custom'
     },
     extraModelsHeader: 'Extra Models',
     extraModelsEmpty: 'No extra models',

@@ -1018,7 +1018,8 @@ export default {
     providers: {
       openai: 'OpenAI',
       anthropic: 'Anthropic',
-      gemini: 'Gemini'
+      gemini: 'Gemini',
+      custom: 'Custom'
     },
     extraModelsHeader: '附加模型',
     extraModelsEmpty: '无附加模型',
