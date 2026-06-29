@@ -9666,6 +9666,9 @@ async function saveSettings() {
         0,
         Number(form.leaderboard_reward_min_spend) || 0,
       ),
+      leaderboard_excluded_emails: (
+        form.leaderboard_excluded_emails || ""
+      ).trim(),
       leaderboard_ranking_visible_enabled:
         form.leaderboard_ranking_visible_enabled,
     };
