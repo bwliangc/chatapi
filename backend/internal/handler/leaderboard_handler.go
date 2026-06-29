@@ -7,6 +7,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
@@ -119,16 +120,36 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		return
 	}
 	if ranking != nil {
-		resp.TotalCost = roundLeaderboard(ranking.TotalActualCost)
+		// 排除名单：名单内用户不上榜、不发奖，且其消耗不计入奖池总额。
+		// ranking.TotalActualCost 由 SQL 在 LIMIT 前对全站求和（含被排除者），
+		// 故从中扣减榜单内可见的被排除者消耗，使总额/奖池口径与展示一致。
+		excluded := h.settingService.GetLeaderboardExcludedEmailSet(ctx)
+		totalCost := ranking.TotalActualCost
+		filtered := ranking.Ranking
+		if len(excluded) > 0 {
+			filtered = make([]usagestats.UserSpendingRankingItem, 0, len(ranking.Ranking))
+			for _, item := range ranking.Ranking {
+				if service.IsLeaderboardEmailExcluded(item.Email, excluded) {
+					totalCost -= item.ActualCost
+					continue
+				}
+				filtered = append(filtered, item)
+			}
+			if totalCost < 0 {
+				totalCost = 0
+			}
+		}
+
+		resp.TotalCost = roundLeaderboard(totalCost)
 		if rewardEnabled && poolRate > 0 {
-			resp.PoolAmount = roundLeaderboard(ranking.TotalActualCost * poolRate / 100.0)
+			resp.PoolAmount = roundLeaderboard(totalCost * poolRate / 100.0)
 		}
 		// 榜单按消费降序：达标用户（actual_cost ≥ 门槛）必然是顶部连续的一段，未达门槛者
 		// 一定排在更后、金额更小，不存在「跳过未达者再由后面递补」的情况。
 		// 故中奖区 = 前 topN 名且达标；榜单只展示达标用户；本人始终带回全站名次供前端单独展示。
 		applyThreshold := rewardEnabled && minSpend > 0
 		winners := 0
-		for i, item := range ranking.Ranking {
+		for i, item := range filtered {
 			rank := i + 1
 			isMe := item.UserID == subject.UserID
 			name := maskLeaderboardEmail(item.Email)

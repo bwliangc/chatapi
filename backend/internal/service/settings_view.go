@@ -161,6 +161,7 @@ type SystemSettings struct {
 	LeaderboardRewardDistributionMode   string  // average / weighted
 	LeaderboardRewardWeights            string  // 逗号分隔权重，仅 weighted 模式生效
 	LeaderboardRewardMinSpend           float64 // 每人参与门槛（个人消费≥该值才进入中奖区，0=无门槛）
+	LeaderboardExcludedEmails           string  // 排除名单（邮箱，逗号/换行分隔；名单内用户不上榜、不发奖、消耗不计入奖池）
 
 	DefaultUserRPMLimit  int
 	DefaultSubscriptions []DefaultSubscriptionSetting

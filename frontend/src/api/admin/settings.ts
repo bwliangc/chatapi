@@ -638,6 +638,7 @@ export interface SystemSettings {
   leaderboard_reward_distribution_mode: string;
   leaderboard_reward_weights: string;
   leaderboard_reward_min_spend: number;
+  leaderboard_excluded_emails: string;
   leaderboard_ranking_visible_enabled: boolean;
 
   // OpenAI fast/flex policy
@@ -901,6 +902,7 @@ export interface UpdateSettingsRequest {
   leaderboard_reward_distribution_mode?: string;
   leaderboard_reward_weights?: string;
   leaderboard_reward_min_spend?: number;
+  leaderboard_excluded_emails?: string;
   leaderboard_ranking_visible_enabled?: boolean;
 
   // OpenAI fast/flex policy

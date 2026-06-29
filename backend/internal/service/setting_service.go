@@ -2172,6 +2172,9 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyLeaderboardRewardDistributionMode] = settings.LeaderboardRewardDistributionMode
 	settings.LeaderboardRewardWeights = strings.TrimSpace(settings.LeaderboardRewardWeights)
 	updates[SettingKeyLeaderboardRewardWeights] = settings.LeaderboardRewardWeights
+	// 排行榜排除名单：规范化（小写、去重、去空白）后以逗号连接存储。
+	settings.LeaderboardExcludedEmails = strings.Join(ParseLeaderboardExcludedEmails(settings.LeaderboardExcludedEmails), ",")
+	updates[SettingKeyLeaderboardExcludedEmails] = settings.LeaderboardExcludedEmails
 
 	updates[SettingKeyDefaultUserRPMLimit] = strconv.Itoa(settings.DefaultUserRPMLimit)
 	defaultSubsJSON, err := json.Marshal(settings.DefaultSubscriptions)
@@ -2924,6 +2927,56 @@ func (s *SettingService) GetLeaderboardRewardWeights(ctx context.Context) string
 	return strings.TrimSpace(raw)
 }
 
+// GetLeaderboardExcludedEmailSet 返回排行榜排除名单（小写邮箱集合）。
+// 名单内用户不上榜、不发奖，且其消耗不计入奖池总额。空集合表示不排除任何人。
+func (s *SettingService) GetLeaderboardExcludedEmailSet(ctx context.Context) map[string]struct{} {
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardExcludedEmails)
+	if err != nil {
+		return map[string]struct{}{}
+	}
+	emails := ParseLeaderboardExcludedEmails(raw)
+	set := make(map[string]struct{}, len(emails))
+	for _, e := range emails {
+		set[e] = struct{}{}
+	}
+	return set
+}
+
+// ParseLeaderboardExcludedEmails 把逗号/换行/空白分隔的原始字符串解析为去重后的规范化邮箱列表
+// （小写、去空白）。非邮箱形态的片段保留原样小写化，便于宽松匹配。
+func ParseLeaderboardExcludedEmails(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return []string{}
+	}
+	fields := strings.FieldsFunc(raw, func(r rune) bool {
+		return r == ',' || r == '\n' || r == '\r' || r == ';' || r == ' ' || r == '\t'
+	})
+	seen := make(map[string]struct{}, len(fields))
+	out := make([]string, 0, len(fields))
+	for _, f := range fields {
+		e := strings.ToLower(strings.TrimSpace(f))
+		if e == "" {
+			continue
+		}
+		if _, ok := seen[e]; ok {
+			continue
+		}
+		seen[e] = struct{}{}
+		out = append(out, e)
+	}
+	return out
+}
+
+// IsLeaderboardEmailExcluded 报告 email 是否在排除名单内（大小写不敏感）。
+func IsLeaderboardEmailExcluded(email string, excluded map[string]struct{}) bool {
+	if len(excluded) == 0 {
+		return false
+	}
+	_, ok := excluded[strings.ToLower(strings.TrimSpace(email))]
+	return ok
+}
+
 // IsPasswordResetEnabled 检查是否启用密码重置功能
 // 要求：必须同时开启邮件验证
 func (s *SettingService) IsPasswordResetEnabled(ctx context.Context) bool {
@@ -3221,6 +3274,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyLeaderboardRewardTopN:                     strconv.Itoa(LeaderboardRewardTopNDefault),
 		SettingKeyLeaderboardRewardDistributionMode:         LeaderboardRewardModeDefault,
 		SettingKeyLeaderboardRewardWeights:                  "",
+		SettingKeyLeaderboardExcludedEmails:                 LeaderboardExcludedEmailsDefault,
 		SettingKeyDefaultUserRPMLimit:                       "0",
 		SettingKeyDefaultSubscriptions:                      "[]",
 		SettingKeyAuthSourceDefaultEmailBalance:             "0",
@@ -3453,6 +3507,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	}
 	result.LeaderboardRewardDistributionMode = normalizeLeaderboardRewardMode(settings[SettingKeyLeaderboardRewardDistributionMode])
 	result.LeaderboardRewardWeights = strings.TrimSpace(settings[SettingKeyLeaderboardRewardWeights])
+	result.LeaderboardExcludedEmails = strings.Join(ParseLeaderboardExcludedEmails(settings[SettingKeyLeaderboardExcludedEmails]), ",")
 
 	result.DefaultSubscriptions = parseDefaultSubscriptions(settings[SettingKeyDefaultSubscriptions])
 

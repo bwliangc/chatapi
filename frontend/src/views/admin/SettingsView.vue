@@ -5918,6 +5918,21 @@
               <Toggle v-model="form.leaderboard_ranking_visible_enabled" />
             </div>
 
+            <div>
+              <label class="input-label">
+                {{ t('admin.settings.features.leaderboardReward.excludedEmails') }}
+              </label>
+              <textarea
+                v-model="form.leaderboard_excluded_emails"
+                rows="3"
+                class="input"
+                placeholder="admin@example.com, ops@example.com"
+              />
+              <p class="mt-1 text-xs text-gray-400">
+                {{ t('admin.settings.features.leaderboardReward.excludedEmailsHint') }}
+              </p>
+            </div>
+
             <div v-if="form.leaderboard_reward_enabled" class="space-y-6">
               <div>
                 <label class="input-label">
@@ -8348,6 +8363,7 @@ const form = reactive<SettingsForm>({
   leaderboard_reward_distribution_mode: "average",
   leaderboard_reward_weights: "",
   leaderboard_reward_min_spend: 0,
+  leaderboard_excluded_emails: "",
   leaderboard_ranking_visible_enabled: false,
 });
 

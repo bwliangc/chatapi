@@ -148,6 +148,18 @@ func (s *LeaderboardRewardService) runOnce() {
 		return
 	}
 
+	// 排除名单：名单内用户不发奖，且其消耗不计入奖池总额（与展示口径一致）。
+	if excluded := s.settingService.GetLeaderboardExcludedEmailSet(ctx); len(excluded) > 0 {
+		kept := make([]usagestats.UserBreakdownItem, 0, len(items))
+		for _, it := range items {
+			if IsLeaderboardEmailExcluded(it.Email, excluded) {
+				continue
+			}
+			kept = append(kept, it)
+		}
+		items = kept
+	}
+
 	var totalCost float64
 	for _, it := range items {
 		if it.ActualCost > 0 {

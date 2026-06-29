@@ -282,6 +282,7 @@ type SystemSettings struct {
 	LeaderboardRewardDistributionMode   string  `json:"leaderboard_reward_distribution_mode"`
 	LeaderboardRewardWeights            string  `json:"leaderboard_reward_weights"`
 	LeaderboardRewardMinSpend           float64 `json:"leaderboard_reward_min_spend"`
+	LeaderboardExcludedEmails           string  `json:"leaderboard_excluded_emails"`
 
 	// OpenAI fast/flex policy
 	OpenAIFastPolicySettings *OpenAIFastPolicySettings `json:"openai_fast_policy_settings,omitempty"`

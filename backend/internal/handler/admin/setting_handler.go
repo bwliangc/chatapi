@@ -322,6 +322,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		LeaderboardRewardDistributionMode:   settings.LeaderboardRewardDistributionMode,
 		LeaderboardRewardWeights:            settings.LeaderboardRewardWeights,
 		LeaderboardRewardMinSpend:           settings.LeaderboardRewardMinSpend,
+		LeaderboardExcludedEmails:           settings.LeaderboardExcludedEmails,
 	}
 
 	// OpenAI fast policy (stored under a dedicated setting key)
@@ -692,6 +693,7 @@ type UpdateSettingsRequest struct {
 	LeaderboardRewardDistributionMode   *string  `json:"leaderboard_reward_distribution_mode"`
 	LeaderboardRewardWeights            *string  `json:"leaderboard_reward_weights"`
 	LeaderboardRewardMinSpend           *float64 `json:"leaderboard_reward_min_spend"`
+	LeaderboardExcludedEmails           *string  `json:"leaderboard_excluded_emails"`
 
 	// 风控中心功能开关
 	RiskControlEnabled *bool `json:"risk_control_enabled"`
@@ -820,6 +822,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	leaderboardRewardWeights := previousSettings.LeaderboardRewardWeights
 	if req.LeaderboardRewardWeights != nil {
 		leaderboardRewardWeights = strings.TrimSpace(*req.LeaderboardRewardWeights)
+	}
+	leaderboardExcludedEmails := previousSettings.LeaderboardExcludedEmails
+	if req.LeaderboardExcludedEmails != nil {
+		leaderboardExcludedEmails = *req.LeaderboardExcludedEmails
 	}
 	// 通用表格配置：兼容旧客户端未传字段时保留当前值。
 	if req.TableDefaultPageSize <= 0 {
@@ -1721,6 +1727,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		LeaderboardRewardDistributionMode:      leaderboardRewardDistributionMode,
 		LeaderboardRewardWeights:               leaderboardRewardWeights,
 		LeaderboardRewardMinSpend:              leaderboardRewardMinSpend,
+		LeaderboardExcludedEmails:              leaderboardExcludedEmails,
 		DefaultUserRPMLimit:                    req.DefaultUserRPMLimit,
 		DefaultSubscriptions:                   defaultSubscriptions,
 		EnableModelFallback:                    req.EnableModelFallback,
@@ -2319,6 +2326,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		LeaderboardRewardDistributionMode:   updatedSettings.LeaderboardRewardDistributionMode,
 		LeaderboardRewardWeights:            updatedSettings.LeaderboardRewardWeights,
 		LeaderboardRewardMinSpend:           updatedSettings.LeaderboardRewardMinSpend,
+		LeaderboardExcludedEmails:           updatedSettings.LeaderboardExcludedEmails,
 	}
 	if fastPolicy, err := h.settingService.GetOpenAIFastPolicySettings(c.Request.Context()); err != nil {
 		slog.Error("openai_fast_policy_settings_get_failed", "error", err)

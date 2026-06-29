@@ -5624,6 +5624,8 @@ export default {
           minSpendHint: 'A user must spend at least this amount (USD) that day to be eligible for the winner zone (top N); 0 = no threshold. The pool is still based on total site spend; the threshold only decides who can win.',
           rankingVisible: 'Show Leaderboard to Users',
           rankingVisibleHint: 'When on, users get a "Leaderboard" sidebar entry showing the masked spending board and their own rank. Independent from whether rewards are granted. Disabled by default.',
+          excludedEmails: 'Exclusion List (Emails)',
+          excludedEmailsHint: 'Users on this list never appear on the board, never receive rewards, and their spend is not counted toward the prize pool. Separate multiple emails with commas, semicolons, or newlines. Useful for excluding admin/test/ops accounts. Leave empty to exclude no one.',
         },
         affiliate: {
           title: 'Affiliate (Invite Rebate)',

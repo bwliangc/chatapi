@@ -49,6 +49,7 @@ const (
 	LeaderboardRewardModeAverage               = "average"  // 平均分配：奖池 / N
 	LeaderboardRewardModeWeighted              = "weighted" // 按自定义权重数组分配
 	LeaderboardRewardModeDefault               = LeaderboardRewardModeAverage
+	LeaderboardExcludedEmailsDefault           = "" // 排行榜排除名单默认空（不排除任何人）
 )
 
 // IsValidLeaderboardRewardMode 报告 mode 是否为合法的奖励分配模式。
@@ -172,6 +173,7 @@ const (
 	SettingKeyLeaderboardRewardDistributionMode   = "leaderboard_reward_distribution_mode"    // 分配模式 average/weighted
 	SettingKeyLeaderboardRewardWeights            = "leaderboard_reward_weights"              // 自定义权重（逗号分隔，仅 weighted 模式生效）
 	SettingKeyLeaderboardRewardMinSpend           = "leaderboard_reward_min_spend"            // 每人参与门槛（个人消费≥该值才进入中奖区，0=无门槛）
+	SettingKeyLeaderboardExcludedEmails           = "leaderboard_excluded_emails"             // 排行榜排除名单（邮箱，逗号/换行分隔；名单内用户不上榜、不发奖、消耗不计入奖池）
 	SettingKeyRiskControlEnabled                  = "risk_control_enabled"                    // 是否启用风控中心入口与审计链路
 	SettingKeyContentModerationConfig             = "content_moderation_config"               // 内容审计配置（JSON）
 	SettingKeyCyberSessionBlockEnabled            = "cyber_session_block_enabled"             // cyber 命中后会话级自动屏蔽总开关(默认关)
