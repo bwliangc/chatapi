@@ -123,13 +123,19 @@
                     {{ t('admin.costCalculator.platform') }}
                   </th>
                   <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                    {{ t('admin.costCalculator.monthlyFixedCost') }}
-                  </th>
-                  <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                    {{ t('admin.costCalculator.usageCostRate') }}
+                    {{ t('admin.costCalculator.income') }}
                   </th>
                   <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
                     {{ t('admin.costCalculator.periodUsageCost') }}
+                  </th>
+                  <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
+                    {{ t('admin.costCalculator.fixedCost') }}
+                  </th>
+                  <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
+                    {{ t('admin.costCalculator.cost') }}
+                  </th>
+                  <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
+                    {{ t('admin.costCalculator.profit') }}
                   </th>
                   <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
                     {{ t('admin.costCalculator.costNote') }}
@@ -138,12 +144,12 @@
               </thead>
               <tbody class="divide-y divide-gray-100 bg-white/60 dark:divide-dark-700 dark:bg-dark-800/30">
                 <tr v-if="settingsLoading">
-                  <td colspan="6" class="px-5 py-8 text-center text-sm text-gray-500 dark:text-dark-400">
+                  <td colspan="8" class="px-5 py-8 text-center text-sm text-gray-500 dark:text-dark-400">
                     {{ t('common.loading') }}
                   </td>
                 </tr>
                 <tr v-else-if="accountRows.length === 0">
-                  <td colspan="6" class="px-5 py-8 text-center text-sm text-gray-500 dark:text-dark-400">
+                  <td colspan="8" class="px-5 py-8 text-center text-sm text-gray-500 dark:text-dark-400">
                     {{ t('admin.costCalculator.noAccounts') }}
                   </td>
                 </tr>
@@ -158,16 +164,24 @@
                     {{ row.platform }}
                   </td>
                   <td class="whitespace-nowrap px-5 py-3 text-right font-mono text-sm text-gray-900 dark:text-white">
-                    {{ formatActualMoney(row.monthly_fixed_cost) }}
-                  </td>
-                  <td class="whitespace-nowrap px-5 py-3 text-right font-mono text-sm text-gray-600 dark:text-dark-300">
-                    {{ formatCompositeUsageRate(row.usage_cost_rate) }}
+                    {{ formatActualMoney(row.period_income) }}
                   </td>
                   <td class="whitespace-nowrap px-5 py-3 text-right font-mono text-sm text-gray-900 dark:text-white">
                     {{ formatActualMoney(row.period_usage_cost) }}
                   </td>
+                  <td class="whitespace-nowrap px-5 py-3 text-right font-mono text-sm text-gray-900 dark:text-white">
+                    <div>{{ formatActualMoney(row.period_fixed_cost) }}</div>
+                    <div class="text-xs text-gray-500 dark:text-dark-400">{{ formatActualMoney(row.monthly_fixed_cost) }}/月</div>
+                  </td>
+                  <td class="whitespace-nowrap px-5 py-3 text-right font-mono text-sm text-gray-900 dark:text-white">
+                    {{ formatActualMoney(row.total_cost) }}
+                  </td>
+                  <td class="whitespace-nowrap px-5 py-3 text-right font-mono text-sm" :class="profitToneClass(row.profit)">
+                    {{ formatActualMoney(row.profit) }}
+                  </td>
                   <td class="px-5 py-3 text-sm text-gray-600 dark:text-dark-300">
-                    {{ row.note || '-' }}
+                    <div>{{ row.note || '-' }}</div>
+                    <div class="text-xs text-gray-500 dark:text-dark-400">{{ formatCompositeUsageRate(row.usage_cost_rate) }}</div>
                   </td>
                 </tr>
               </tbody>
@@ -198,84 +212,6 @@
               :label="t('admin.costCalculator.balanceLiabilityFormula')"
               :value="t('admin.costCalculator.balanceLiabilityFormulaValue')"
             />
-          </div>
-        </section>
-      </div>
-
-      <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <section class="card overflow-hidden">
-          <div class="border-b border-gray-200 px-5 py-4 dark:border-dark-700">
-            <h2 class="text-base font-semibold text-gray-900 dark:text-white">
-              {{ t('admin.costCalculator.groupProfitTitle') }}
-            </h2>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-700">
-              <thead class="bg-gray-50 dark:bg-dark-800/70">
-                <tr>
-                  <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                    {{ t('admin.costCalculator.group') }}
-                  </th>
-                  <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                    {{ t('admin.costCalculator.income') }}
-                  </th>
-                  <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                    {{ t('admin.costCalculator.cost') }}
-                  </th>
-                  <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                    {{ t('admin.costCalculator.profit') }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100 bg-white/60 dark:divide-dark-700 dark:bg-dark-800/30">
-                <tr v-for="group in topGroupRows" :key="group.group_id">
-                  <td class="px-5 py-3 text-sm font-medium text-gray-900 dark:text-white">{{ group.group_name || t('admin.dashboard.noGroup') }}</td>
-                  <td class="px-5 py-3 text-right font-mono text-sm">{{ formatActualMoney(rowIncome(group)) }}</td>
-                  <td class="px-5 py-3 text-right font-mono text-sm">{{ formatActualMoney(rowCost(group)) }}</td>
-                  <td class="px-5 py-3 text-right font-mono text-sm" :class="profitToneClass(rowProfit(group))">
-                    {{ formatActualMoney(rowProfit(group)) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="card overflow-hidden">
-          <div class="border-b border-gray-200 px-5 py-4 dark:border-dark-700">
-            <h2 class="text-base font-semibold text-gray-900 dark:text-white">
-              {{ t('admin.costCalculator.modelProfitTitle') }}
-            </h2>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-700">
-              <thead class="bg-gray-50 dark:bg-dark-800/70">
-                <tr>
-                  <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                    {{ t('admin.dashboard.model') }}
-                  </th>
-                  <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                    {{ t('admin.costCalculator.income') }}
-                  </th>
-                  <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                    {{ t('admin.costCalculator.cost') }}
-                  </th>
-                  <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                    {{ t('admin.costCalculator.profit') }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100 bg-white/60 dark:divide-dark-700 dark:bg-dark-800/30">
-                <tr v-for="model in topModelRows" :key="model.model">
-                  <td class="px-5 py-3 text-sm font-medium text-gray-900 dark:text-white">{{ model.model || '-' }}</td>
-                  <td class="px-5 py-3 text-right font-mono text-sm">{{ formatActualMoney(rowIncome(model)) }}</td>
-                  <td class="px-5 py-3 text-right font-mono text-sm">{{ formatActualMoney(rowCost(model)) }}</td>
-                  <td class="px-5 py-3 text-right font-mono text-sm" :class="profitToneClass(rowProfit(model))">
-                    {{ formatActualMoney(rowProfit(model)) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </section>
       </div>
@@ -576,8 +512,6 @@ import {
   type CostCalculatorBalanceRechargePackage,
   type CostCalculatorBalanceRechargeSummary,
   type CostCalculatorConfig,
-  type CostCalculatorGroupUsage,
-  type CostCalculatorModelUsage,
   type CostCalculatorUsageSummary
 } from '@/api/admin/costCalculator'
 import { useAppStore } from '@/stores/app'
@@ -591,7 +525,11 @@ interface AccountCostRow {
   type: string
   monthly_fixed_cost: number
   usage_cost_rate: number
+  period_income: number
   period_usage_cost: number
+  period_fixed_cost: number
+  total_cost: number
+  profit: number
   note: string
 }
 
@@ -599,8 +537,6 @@ interface MetricToneClasses {
   value: string
   accent: string
 }
-
-type ProfitStat = Pick<CostCalculatorGroupUsage | CostCalculatorModelUsage, 'actual_cost' | 'usage_cost' | 'total_tokens'>
 
 const MetricCard = defineComponent({
   name: 'MetricCard',
@@ -663,8 +599,6 @@ const settingsSaving = ref(false)
 const showSettingsDialog = ref(false)
 const selectedAccountId = ref(0)
 const usageSummary = ref<CostCalculatorUsageSummary | null>(null)
-const groups = ref<CostCalculatorGroupUsage[]>([])
-const models = ref<CostCalculatorModelUsage[]>([])
 const users = ref<AdminUser[]>([])
 const accounts = ref<Account[]>([])
 const balanceRechargeSummary = ref<CostCalculatorBalanceRechargeSummary | null>(null)
@@ -750,16 +684,6 @@ const balanceLiabilitySourceLabel = computed(() => {
   }
 })
 
-const topGroupRows = computed(() =>
-  [...groups.value]
-    .sort((a, b) => rowProfit(b) - rowProfit(a))
-    .slice(0, 8)
-)
-const topModelRows = computed(() =>
-  [...models.value]
-    .sort((a, b) => rowProfit(b) - rowProfit(a))
-    .slice(0, 8)
-)
 const topBalanceUsers = computed(() =>
   [...filteredUsers.value]
     .sort((a, b) => toFinite(b.balance) - toFinite(a.balance))
@@ -776,20 +700,39 @@ const accountsById = computed(() => {
   return map
 })
 
-const accountRows = computed<AccountCostRow[]>(() => config.account_costs.map(item => {
-  const account = accountsById.value.get(item.account_id)
-  const usage = accountUsageById.value.get(item.account_id)
-  return {
-    id: item.account_id,
-    name: item.account_name || account?.name || `#${item.account_id}`,
-    platform: item.platform || account?.platform || '-',
-    type: account?.type || '-',
-    monthly_fixed_cost: nonNegativeOrDefault(item.monthly_cost, 0),
-    usage_cost_rate: accountUsageCostRate(item),
-    period_usage_cost: toFinite(usage?.usage_cost),
-    note: item.monthly_cost_label || ''
+const accountRows = computed<AccountCostRow[]>(() => {
+  const accountIds = new Set<number>()
+  for (const item of config.account_costs) {
+    if (item.account_id > 0) accountIds.add(item.account_id)
   }
-}))
+  for (const usage of usageSummary.value?.accounts || []) {
+    if (usage.account_id > 0) accountIds.add(usage.account_id)
+  }
+  return [...accountIds].map(accountId => {
+    const configured = config.account_costs.find(item => item.account_id === accountId)
+    const account = accountsById.value.get(accountId)
+    const usage = accountUsageById.value.get(accountId)
+    const monthlyFixedCost = nonNegativeOrDefault(configured?.monthly_cost, 0)
+    const periodFixedCost = monthlyFixedCost / 30 * selectedDays.value
+    const periodUsageCost = toFinite(usage?.usage_cost)
+    const periodIncome = balanceToRevenue(usage?.actual_cost)
+    const totalCost = periodUsageCost + periodFixedCost
+    return {
+      id: accountId,
+      name: configured?.account_name || usage?.account_name || account?.name || `#${accountId}`,
+      platform: configured?.platform || usage?.platform || account?.platform || '-',
+      type: account?.type || '-',
+      monthly_fixed_cost: monthlyFixedCost,
+      usage_cost_rate: accountUsageCostRate(configured || {}),
+      period_income: periodIncome,
+      period_usage_cost: periodUsageCost,
+      period_fixed_cost: periodFixedCost,
+      total_cost: totalCost,
+      profit: periodIncome - totalCost,
+      note: configured?.monthly_cost_label || ''
+    }
+  }).sort((a, b) => b.total_cost - a.total_cost || b.period_income - a.period_income || a.id - b.id)
+})
 
 const accountUsageById = computed(() => {
   const map = new Map<number, CostCalculatorAccountUsage>()
@@ -832,8 +775,6 @@ async function loadUsageFinance() {
   const params = buildAccountingStatsParams()
   const summary = await costCalculatorAPI.getUsageSummary(params)
   usageSummary.value = summary
-  groups.value = summary.groups || []
-  models.value = summary.models || []
 }
 
 async function loadUsers() {
@@ -896,20 +837,8 @@ function profitToneClass(value: number): string {
   return value >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
 }
 
-function rowIncome(row: ProfitStat): number {
-  return balanceToRevenue(row.actual_cost)
-}
-
-function rowCost(row: ProfitStat): number {
-  return toFinite(row.usage_cost)
-}
-
-function rowProfit(row: ProfitStat): number {
-  return rowIncome(row) - rowCost(row)
-}
-
 // 把「平台余额额度」按售价折算成人民币收入/机会成本。
-// 用于：分组/模型收入、顶部用户计费、排行榜奖励成本（送出额度的机会成本）。
+// 用于：账号收入、顶部用户计费、排行榜奖励成本（送出额度的机会成本）。
 // 收入侧统一用售价单价（salePriceUnitCost），区别于负债估值口径。
 function balanceToRevenue(value: unknown): number {
   return toFinite(value) * salePriceUnitCost.value
