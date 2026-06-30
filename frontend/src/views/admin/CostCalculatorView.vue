@@ -1091,12 +1091,14 @@ function formatPercent(value: number): string {
 
 function defaultStartDate(): string {
   const d = new Date()
-  d.setDate(d.getDate() - 29)
+  d.setDate(d.getDate() - 1)
   return formatDate(d)
 }
 
 function defaultEndDate(): string {
-  return formatDate(new Date())
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  return formatDate(d)
 }
 
 function formatDate(date: Date): string {
