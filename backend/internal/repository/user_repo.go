@@ -178,6 +178,40 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*service
 	return out, nil
 }
 
+func (r *userRepository) GetCostCalculatorBalanceLiabilitySummary(ctx context.Context, excludeAdmins bool) (*service.CostCalculatorBalanceLiabilitySummary, error) {
+	args := []any{0}
+	query := `
+SELECT COUNT(*)::bigint, COALESCE(SUM(balance), 0)::double precision
+FROM users
+WHERE deleted_at IS NULL AND balance > $1`
+	if excludeAdmins {
+		args = append(args, service.RoleAdmin)
+		query += `
+  AND role <> $2`
+	}
+
+	rows, err := r.sql.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	summary := &service.CostCalculatorBalanceLiabilitySummary{}
+	var total sql.NullFloat64
+	if rows.Next() {
+		if err := rows.Scan(&summary.PositiveUserCount, &total); err != nil {
+			return nil, err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if total.Valid {
+		summary.TotalBalance = total.Float64
+	}
+	return summary, nil
+}
+
 func (r *userRepository) Update(ctx context.Context, userIn *service.User) error {
 	if userIn == nil {
 		return nil

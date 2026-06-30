@@ -102,6 +102,19 @@ export interface CostCalculatorBalanceRechargeSummary {
   }>
 }
 
+export interface CostCalculatorBalanceLiabilitySummary {
+  total_balance: number
+  positive_user_count: number
+  estimated_actual_liability: number
+  estimated_unit_cost: number
+  valuation_source: 'matched_recharge_history' | 'package_table' | 'unavailable' | string
+  matched_balance_amount: number
+  matched_actual_revenue: number
+  unmatched_balance_amount: number
+  leaderboard_reward_amount: number
+  leaderboard_reward_count: number
+}
+
 export async function getConfig(): Promise<CostCalculatorConfig> {
   const { data } = await apiClient.get<CostCalculatorConfig>('/admin/cost-calculator/config')
   return data
@@ -122,11 +135,17 @@ export async function getBalanceRechargeSummary(params?: CostCalculatorUsagePara
   return data
 }
 
+export async function getBalanceLiabilitySummary(params?: CostCalculatorUsageParams): Promise<CostCalculatorBalanceLiabilitySummary> {
+  const { data } = await apiClient.get<CostCalculatorBalanceLiabilitySummary>('/admin/cost-calculator/balance-liability-summary', { params })
+  return data
+}
+
 export const costCalculatorAPI = {
   getConfig,
   updateConfig,
   getUsageSummary,
-  getBalanceRechargeSummary
+  getBalanceRechargeSummary,
+  getBalanceLiabilitySummary
 }
 
 export default costCalculatorAPI

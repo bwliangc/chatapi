@@ -59,8 +59,8 @@
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           :label="t('admin.costCalculator.userBalanceLiability')"
-          :value="formatActualMoney(balanceLiability)"
-          :hint="t('admin.costCalculator.userBalanceLiabilityHint', { count: filteredUsers.length })"
+          :value="formatPlatformBalance(balanceLiabilityBalance)"
+          :hint="t('admin.costCalculator.userBalanceLiabilityHint', { count: balanceLiabilityUserCount, estimated: formatEstimatedBalanceLiability(), source: balanceLiabilitySourceLabel })"
         />
         <MetricCard
           :label="t('admin.costCalculator.balanceRechargeRevenue')"
@@ -324,7 +324,7 @@
                   <div class="text-xs text-gray-500 dark:text-dark-400">#{{ user.id }}</div>
                 </td>
                 <td class="px-5 py-3 text-right font-mono text-sm text-gray-900 dark:text-white">
-                  {{ formatUsd(user.balance) }}
+                  {{ formatPlatformBalance(user.balance) }}
                 </td>
                 <td class="px-5 py-3 text-right font-mono text-sm text-gray-600 dark:text-dark-300">
                   {{ user.subscriptions?.length || 0 }}
@@ -572,6 +572,7 @@ import {
   costCalculatorAPI,
   type CostCalculatorAccountCost,
   type CostCalculatorAccountUsage,
+  type CostCalculatorBalanceLiabilitySummary,
   type CostCalculatorBalanceRechargePackage,
   type CostCalculatorBalanceRechargeSummary,
   type CostCalculatorConfig,
@@ -667,6 +668,7 @@ const models = ref<CostCalculatorModelUsage[]>([])
 const users = ref<AdminUser[]>([])
 const accounts = ref<Account[]>([])
 const balanceRechargeSummary = ref<CostCalculatorBalanceRechargeSummary | null>(null)
+const balanceLiabilitySummary = ref<CostCalculatorBalanceLiabilitySummary | null>(null)
 const config = reactive<CostCalculatorConfig>(defaultCostCalculatorConfig())
 const settingsForm = reactive<CostCalculatorConfig>(defaultCostCalculatorConfig())
 
@@ -683,7 +685,7 @@ const selectedDays = computed(() => {
 })
 
 const rawUserBilling = computed(() => toFinite(usageSummary.value?.total_actual_cost))
-const userBillingRevenue = computed(() => usdToRmb(rawUserBilling.value))
+const userBillingRevenue = computed(() => platformBalanceToActual(rawUserBilling.value))
 const upstreamCost = computed(() => toFinite(usageSummary.value?.total_usage_cost))
 const usageGrossProfit = computed(() => userBillingRevenue.value - upstreamCost.value)
 const usageGrossMargin = computed(() => {
@@ -694,7 +696,7 @@ const monthlyFixedCost = computed(() =>
 )
 const proratedFixedCost = computed(() => monthlyFixedCost.value / 30 * selectedDays.value)
 const leaderboardRewardAmount = computed(() => toFinite(balanceRechargeSummary.value?.leaderboard_reward_amount))
-const leaderboardRewardCost = computed(() => usdToRmb(leaderboardRewardAmount.value))
+const leaderboardRewardCost = computed(() => platformBalanceToActual(leaderboardRewardAmount.value))
 const leaderboardRewardCount = computed(() => toFinite(balanceRechargeSummary.value?.leaderboard_reward_count))
 const netProfitAfterFixedCost = computed(() => usageGrossProfit.value - proratedFixedCost.value - leaderboardRewardCost.value)
 const configuredCostAccounts = computed(() => accountRows.value.length)
@@ -709,9 +711,24 @@ const unmatchedBalanceRecordCount = computed(() => toFinite(balanceRechargeSumma
 const balanceRechargeRecordCount = computed(() => toFinite(balanceRechargeSummary.value?.record_count))
 const redeemRechargeCount = computed(() => toFinite(balanceRechargeSummary.value?.redeem_count))
 const adminBalanceAdjustmentCount = computed(() => toFinite(balanceRechargeSummary.value?.admin_count))
-const balanceLiability = computed(() =>
-  filteredUsers.value.reduce((sum, user) => sum + usdToRmb(Math.max(0, toFinite(user.balance))), 0)
-)
+const balanceLiabilityBalance = computed(() => toFinite(balanceLiabilitySummary.value?.total_balance))
+const balanceLiabilityEstimatedActual = computed(() => toFinite(balanceLiabilitySummary.value?.estimated_actual_liability))
+const balanceLiabilityEstimatedUnitCost = computed(() => toFinite(balanceLiabilitySummary.value?.estimated_unit_cost))
+const balanceLiabilityUserCount = computed(() => toFinite(balanceLiabilitySummary.value?.positive_user_count))
+const hasBalanceLiabilityValuation = computed(() => {
+  const source = balanceLiabilitySummary.value?.valuation_source
+  return source === 'matched_recharge_history' || source === 'package_table'
+})
+const balanceLiabilitySourceLabel = computed(() => {
+  switch (balanceLiabilitySummary.value?.valuation_source) {
+    case 'matched_recharge_history':
+      return t('admin.costCalculator.balanceLiabilitySourceMatched')
+    case 'package_table':
+      return t('admin.costCalculator.balanceLiabilitySourcePackage')
+    default:
+      return t('admin.costCalculator.balanceLiabilitySourceUnavailable')
+  }
+})
 
 const topGroupRows = computed(() =>
   [...groups.value]
@@ -781,7 +798,8 @@ async function refreshData() {
       loadUsageFinance(),
       loadUsers(),
       loadAccounts(),
-      loadBalanceRechargeSummary()
+      loadBalanceRechargeSummary(),
+      loadBalanceLiabilitySummary()
     ])
   } catch (err: unknown) {
     appStore.showError(extractApiErrorMessage(err, t('common.error')))
@@ -837,6 +855,14 @@ async function loadBalanceRechargeSummary() {
   }
 }
 
+async function loadBalanceLiabilitySummary() {
+  try {
+    balanceLiabilitySummary.value = await costCalculatorAPI.getBalanceLiabilitySummary(buildAccountingStatsParams())
+  } catch {
+    balanceLiabilitySummary.value = null
+  }
+}
+
 function buildAccountingStatsParams() {
   return {
     start_date: startDate.value,
@@ -851,7 +877,7 @@ function profitToneClass(value: number): string {
 }
 
 function rowIncome(row: ProfitStat): number {
-  return usdToRmb(row.actual_cost)
+  return platformBalanceToActual(row.actual_cost)
 }
 
 function rowCost(row: ProfitStat): number {
@@ -864,6 +890,13 @@ function rowProfit(row: ProfitStat): number {
 
 function usdToRmb(value: unknown): number {
   return toFinite(value) * positiveOrDefault(config.balance_exchange_rate, 1)
+}
+
+function platformBalanceToActual(value: unknown): number {
+  if (hasBalanceLiabilityValuation.value) {
+    return toFinite(value) * balanceLiabilityEstimatedUnitCost.value
+  }
+  return usdToRmb(value)
 }
 
 function openSettingsDialog() {
@@ -956,7 +989,7 @@ async function saveSettings() {
     showSettingsDialog.value = false
     appStore.showSuccess(t('admin.costCalculator.settingsSaved'))
     try {
-      await Promise.all([loadUsageFinance(), loadBalanceRechargeSummary()])
+      await Promise.all([loadUsageFinance(), loadBalanceRechargeSummary(), loadBalanceLiabilitySummary()])
     } catch (err: unknown) {
       appStore.showError(extractApiErrorMessage(err, t('admin.costCalculator.usageSummaryLoadFailed')))
     }
@@ -1083,14 +1116,17 @@ function formatActualMoney(value: unknown): string {
   return `¥${n.toFixed(digits)}`
 }
 
-function formatUsd(value: unknown): string {
-  return formatActualMoney(usdToRmb(value))
-}
-
 function formatPlatformBalance(value: unknown): string {
   const n = toFinite(value)
   const digits = Math.abs(n) >= 1000 ? 2 : 4
   return `$${n.toFixed(digits)}`
+}
+
+function formatEstimatedBalanceLiability(): string {
+  if (!hasBalanceLiabilityValuation.value) {
+    return '-'
+  }
+  return `${formatActualMoney(balanceLiabilityEstimatedActual.value)} (${formatActualMoney(balanceLiabilityEstimatedUnitCost.value)}/余额)`
 }
 
 function formatCompositeUsageRate(value: unknown): string {

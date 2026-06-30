@@ -119,6 +119,7 @@ func registerCostCalculatorRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		costCalculator.PUT("/config", h.Admin.CostCalculator.UpdateConfig)
 		costCalculator.GET("/usage-summary", h.Admin.CostCalculator.GetUsageSummary)
 		costCalculator.GET("/balance-recharge-summary", h.Admin.CostCalculator.GetBalanceRechargeSummary)
+		costCalculator.GET("/balance-liability-summary", h.Admin.CostCalculator.GetBalanceLiabilitySummary)
 	}
 }
 

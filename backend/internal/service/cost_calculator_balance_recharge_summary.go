@@ -28,3 +28,16 @@ type CostCalculatorBalanceRechargeSummary struct {
 	AdminCount              int64                                      `json:"admin_count"`
 	PackageStats            []CostCalculatorBalanceRechargePackageStat `json:"package_stats"`
 }
+
+type CostCalculatorBalanceLiabilitySummary struct {
+	TotalBalance             float64 `json:"total_balance"`
+	PositiveUserCount        int64   `json:"positive_user_count"`
+	EstimatedActualLiability float64 `json:"estimated_actual_liability"`
+	EstimatedUnitCost        float64 `json:"estimated_unit_cost"`
+	ValuationSource          string  `json:"valuation_source"`
+	MatchedBalanceAmount     float64 `json:"matched_balance_amount"`
+	MatchedActualRevenue     float64 `json:"matched_actual_revenue"`
+	UnmatchedBalanceAmount   float64 `json:"unmatched_balance_amount"`
+	LeaderboardRewardAmount  float64 `json:"leaderboard_reward_amount"`
+	LeaderboardRewardCount   int64   `json:"leaderboard_reward_count"`
+}
