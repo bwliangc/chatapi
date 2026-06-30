@@ -32,16 +32,17 @@ type dashboardTrendCacheKey struct {
 }
 
 type dashboardModelGroupCacheKey struct {
-	StartTime   string `json:"start_time"`
-	EndTime     string `json:"end_time"`
-	UserID      int64  `json:"user_id"`
-	APIKeyID    int64  `json:"api_key_id"`
-	AccountID   int64  `json:"account_id"`
-	GroupID     int64  `json:"group_id"`
-	ModelSource string `json:"model_source,omitempty"`
-	RequestType *int16 `json:"request_type"`
-	Stream      *bool  `json:"stream"`
-	BillingType *int8  `json:"billing_type"`
+	StartTime     string `json:"start_time"`
+	EndTime       string `json:"end_time"`
+	UserID        int64  `json:"user_id"`
+	APIKeyID      int64  `json:"api_key_id"`
+	AccountID     int64  `json:"account_id"`
+	GroupID       int64  `json:"group_id"`
+	ModelSource   string `json:"model_source,omitempty"`
+	RequestType   *int16 `json:"request_type"`
+	Stream        *bool  `json:"stream"`
+	BillingType   *int8  `json:"billing_type"`
+	ExcludeAdmins bool   `json:"exclude_admins"`
 }
 
 type dashboardEntityTrendCacheKey struct {
@@ -116,21 +117,23 @@ func (h *DashboardHandler) getModelStatsCached(
 	requestType *int16,
 	stream *bool,
 	billingType *int8,
+	excludeAdmins bool,
 ) ([]usagestats.ModelStat, bool, error) {
 	key := mustMarshalDashboardCacheKey(dashboardModelGroupCacheKey{
-		StartTime:   startTime.UTC().Format(time.RFC3339),
-		EndTime:     endTime.UTC().Format(time.RFC3339),
-		UserID:      userID,
-		APIKeyID:    apiKeyID,
-		AccountID:   accountID,
-		GroupID:     groupID,
-		ModelSource: usagestats.NormalizeModelSource(modelSource),
-		RequestType: requestType,
-		Stream:      stream,
-		BillingType: billingType,
+		StartTime:     startTime.UTC().Format(time.RFC3339),
+		EndTime:       endTime.UTC().Format(time.RFC3339),
+		UserID:        userID,
+		APIKeyID:      apiKeyID,
+		AccountID:     accountID,
+		GroupID:       groupID,
+		ModelSource:   usagestats.NormalizeModelSource(modelSource),
+		RequestType:   requestType,
+		Stream:        stream,
+		BillingType:   billingType,
+		ExcludeAdmins: excludeAdmins,
 	})
 	entry, hit, err := dashboardModelStatsCache.GetOrLoad(key, func() (any, error) {
-		return h.dashboardService.GetModelStatsWithFiltersBySource(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, modelSource)
+		return h.dashboardService.GetModelStatsWithFiltersBySourceWithOptions(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, modelSource, excludeAdmins)
 	})
 	if err != nil {
 		return nil, hit, err
@@ -146,20 +149,22 @@ func (h *DashboardHandler) getGroupStatsCached(
 	requestType *int16,
 	stream *bool,
 	billingType *int8,
+	excludeAdmins bool,
 ) ([]usagestats.GroupStat, bool, error) {
 	key := mustMarshalDashboardCacheKey(dashboardModelGroupCacheKey{
-		StartTime:   startTime.UTC().Format(time.RFC3339),
-		EndTime:     endTime.UTC().Format(time.RFC3339),
-		UserID:      userID,
-		APIKeyID:    apiKeyID,
-		AccountID:   accountID,
-		GroupID:     groupID,
-		RequestType: requestType,
-		Stream:      stream,
-		BillingType: billingType,
+		StartTime:     startTime.UTC().Format(time.RFC3339),
+		EndTime:       endTime.UTC().Format(time.RFC3339),
+		UserID:        userID,
+		APIKeyID:      apiKeyID,
+		AccountID:     accountID,
+		GroupID:       groupID,
+		RequestType:   requestType,
+		Stream:        stream,
+		BillingType:   billingType,
+		ExcludeAdmins: excludeAdmins,
 	})
 	entry, hit, err := dashboardGroupStatsCache.GetOrLoad(key, func() (any, error) {
-		return h.dashboardService.GetGroupStatsWithFilters(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType)
+		return h.dashboardService.GetGroupStatsWithFiltersWithOptions(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, excludeAdmins)
 	})
 	if err != nil {
 		return nil, hit, err

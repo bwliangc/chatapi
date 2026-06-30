@@ -133,24 +133,54 @@ func (s *DashboardService) GetUsageTrendWithFilters(ctx context.Context, startTi
 }
 
 func (s *DashboardService) GetModelStatsWithFilters(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8) ([]usagestats.ModelStat, error) {
-	stats, err := s.usageRepo.GetModelStatsWithFilters(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType)
+	stats, err := s.GetModelStatsWithFiltersWithOptions(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, false)
 	if err != nil {
 		return nil, fmt.Errorf("get model stats with filters: %w", err)
 	}
 	return stats, nil
 }
 
+func (s *DashboardService) GetModelStatsWithFiltersWithOptions(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, excludeAdmins bool) ([]usagestats.ModelStat, error) {
+	type modelStatsRepoWithOptions interface {
+		GetModelStatsWithFiltersWithOptions(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, excludeAdmins bool) ([]usagestats.ModelStat, error)
+	}
+
+	if repo, ok := s.usageRepo.(modelStatsRepoWithOptions); ok {
+		stats, err := repo.GetModelStatsWithFiltersWithOptions(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, excludeAdmins)
+		if err != nil {
+			return nil, err
+		}
+		return stats, nil
+	}
+
+	return s.usageRepo.GetModelStatsWithFilters(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType)
+}
+
 func (s *DashboardService) GetModelStatsWithFiltersBySource(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, modelSource string) ([]usagestats.ModelStat, error) {
+	return s.GetModelStatsWithFiltersBySourceWithOptions(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, modelSource, false)
+}
+
+func (s *DashboardService) GetModelStatsWithFiltersBySourceWithOptions(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, modelSource string, excludeAdmins bool) ([]usagestats.ModelStat, error) {
 	normalizedSource := usagestats.NormalizeModelSource(modelSource)
 	if normalizedSource == usagestats.ModelSourceRequested {
-		return s.GetModelStatsWithFilters(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType)
+		return s.GetModelStatsWithFiltersWithOptions(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, excludeAdmins)
 	}
 
 	type modelStatsBySourceRepo interface {
 		GetModelStatsWithFiltersBySource(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, source string) ([]usagestats.ModelStat, error)
 	}
+	type modelStatsBySourceRepoWithOptions interface {
+		GetModelStatsWithFiltersBySourceWithOptions(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, source string, excludeAdmins bool) ([]usagestats.ModelStat, error)
+	}
 
-	if sourceRepo, ok := s.usageRepo.(modelStatsBySourceRepo); ok {
+	if sourceRepo, ok := s.usageRepo.(modelStatsBySourceRepoWithOptions); ok {
+		stats, err := sourceRepo.GetModelStatsWithFiltersBySourceWithOptions(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, normalizedSource, excludeAdmins)
+		if err != nil {
+			return nil, fmt.Errorf("get model stats with filters by source: %w", err)
+		}
+		return stats, nil
+	}
+	if sourceRepo, ok := s.usageRepo.(modelStatsBySourceRepo); ok && !excludeAdmins {
 		stats, err := sourceRepo.GetModelStatsWithFiltersBySource(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, normalizedSource)
 		if err != nil {
 			return nil, fmt.Errorf("get model stats with filters by source: %w", err)
@@ -158,15 +188,31 @@ func (s *DashboardService) GetModelStatsWithFiltersBySource(ctx context.Context,
 		return stats, nil
 	}
 
-	return s.GetModelStatsWithFilters(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType)
+	return s.GetModelStatsWithFiltersWithOptions(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, excludeAdmins)
 }
 
 func (s *DashboardService) GetGroupStatsWithFilters(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8) ([]usagestats.GroupStat, error) {
-	stats, err := s.usageRepo.GetGroupStatsWithFilters(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType)
+	stats, err := s.GetGroupStatsWithFiltersWithOptions(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, false)
 	if err != nil {
 		return nil, fmt.Errorf("get group stats with filters: %w", err)
 	}
 	return stats, nil
+}
+
+func (s *DashboardService) GetGroupStatsWithFiltersWithOptions(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, excludeAdmins bool) ([]usagestats.GroupStat, error) {
+	type groupStatsRepoWithOptions interface {
+		GetGroupStatsWithFiltersWithOptions(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, excludeAdmins bool) ([]usagestats.GroupStat, error)
+	}
+
+	if repo, ok := s.usageRepo.(groupStatsRepoWithOptions); ok {
+		stats, err := repo.GetGroupStatsWithFiltersWithOptions(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, excludeAdmins)
+		if err != nil {
+			return nil, err
+		}
+		return stats, nil
+	}
+
+	return s.usageRepo.GetGroupStatsWithFilters(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType)
 }
 
 // GetGroupUsageSummary returns today's and cumulative cost for all groups.

@@ -6,6 +6,7 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -56,13 +57,35 @@ func (h *PaymentHandler) ListOrders(c *gin.Context) {
 			userID = v
 		}
 	}
+	var startTime, endTime *time.Time
+	userTZ := c.Query("timezone")
+	if startDate := c.Query("start_date"); startDate != "" {
+		t, err := timezone.ParseInUserLocation("2006-01-02", startDate, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
+			return
+		}
+		startTime = &t
+	}
+	if endDate := c.Query("end_date"); endDate != "" {
+		t, err := timezone.ParseInUserLocation("2006-01-02", endDate, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
+			return
+		}
+		t = t.AddDate(0, 0, 1)
+		endTime = &t
+	}
 	orders, total, err := h.paymentService.AdminListOrders(c.Request.Context(), userID, service.OrderListParams{
-		Page:        page,
-		PageSize:    pageSize,
-		Status:      c.Query("status"),
-		OrderType:   c.Query("order_type"),
-		PaymentType: c.Query("payment_type"),
-		Keyword:     c.Query("keyword"),
+		Page:          page,
+		PageSize:      pageSize,
+		Status:        c.Query("status"),
+		OrderType:     c.Query("order_type"),
+		PaymentType:   c.Query("payment_type"),
+		Keyword:       c.Query("keyword"),
+		StartTime:     startTime,
+		EndTime:       endTime,
+		ExcludeAdmins: parseBoolQueryWithDefault(c.Query("exclude_admins"), false),
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)

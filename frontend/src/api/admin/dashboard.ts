@@ -87,6 +87,7 @@ export interface ModelStatsParams {
   request_type?: UsageRequestType
   stream?: boolean
   billing_type?: number | null
+  exclude_admins?: boolean
 }
 
 export interface ModelStatsResponse {
@@ -115,6 +116,7 @@ export interface GroupStatsParams {
   request_type?: UsageRequestType
   stream?: boolean
   billing_type?: number | null
+  exclude_admins?: boolean
 }
 
 export interface GroupStatsResponse {

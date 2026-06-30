@@ -330,8 +330,9 @@ func (h *DashboardHandler) GetModelStats(c *gin.Context) {
 			return
 		}
 	}
+	excludeAdmins := parseBoolQueryWithDefault(c.Query("exclude_admins"), false)
 
-	stats, hit, err := h.getModelStatsCached(c.Request.Context(), startTime, endTime, userID, apiKeyID, accountID, groupID, modelSource, requestType, stream, billingType)
+	stats, hit, err := h.getModelStatsCached(c.Request.Context(), startTime, endTime, userID, apiKeyID, accountID, groupID, modelSource, requestType, stream, billingType, excludeAdmins)
 	if err != nil {
 		response.Error(c, 500, "Failed to get model statistics")
 		return
@@ -401,8 +402,9 @@ func (h *DashboardHandler) GetGroupStats(c *gin.Context) {
 			return
 		}
 	}
+	excludeAdmins := parseBoolQueryWithDefault(c.Query("exclude_admins"), false)
 
-	stats, hit, err := h.getGroupStatsCached(c.Request.Context(), startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType)
+	stats, hit, err := h.getGroupStatsCached(c.Request.Context(), startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, excludeAdmins)
 	if err != nil {
 		response.Error(c, 500, "Failed to get group statistics")
 		return

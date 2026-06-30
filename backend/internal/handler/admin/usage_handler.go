@@ -311,18 +311,20 @@ func (h *UsageHandler) Stats(c *gin.Context) {
 	}
 
 	// Build filters and call GetStatsWithFilters
+	excludeAdmins := parseBoolQueryWithDefault(c.Query("exclude_admins"), false)
 	filters := usagestats.UsageLogFilters{
-		UserID:      userID,
-		APIKeyID:    apiKeyID,
-		AccountID:   accountID,
-		GroupID:     groupID,
-		Model:       model,
-		RequestType: requestType,
-		Stream:      stream,
-		BillingType: billingType,
-		BillingMode: billingMode,
-		StartTime:   &startTime,
-		EndTime:     &endTime,
+		UserID:        userID,
+		APIKeyID:      apiKeyID,
+		AccountID:     accountID,
+		GroupID:       groupID,
+		Model:         model,
+		RequestType:   requestType,
+		Stream:        stream,
+		BillingType:   billingType,
+		BillingMode:   billingMode,
+		StartTime:     &startTime,
+		EndTime:       &endTime,
+		ExcludeAdmins: excludeAdmins,
 	}
 
 	var stats *usagestats.UsageStats

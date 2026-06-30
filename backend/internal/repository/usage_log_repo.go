@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -2813,6 +2814,7 @@ func (r *usageLogRepository) ListWithFilters(ctx context.Context, params paginat
 		args = append(args, int16(*filters.BillingType))
 	}
 	conditions, args = appendUsageLogBillingModeWhereCondition(conditions, args, filters.BillingMode)
+	conditions, args = appendExcludeAdminUsersWhereCondition(conditions, args, "usage_logs.user_id", filters.ExcludeAdmins)
 	if filters.StartTime != nil {
 		conditions = append(conditions, fmt.Sprintf("created_at >= $%d", len(args)+1))
 		args = append(args, *filters.StartTime)
@@ -3163,16 +3165,26 @@ func (r *usageLogRepository) getUsageTrendFromAggregates(ctx context.Context, st
 
 // GetModelStatsWithFilters returns model statistics with optional filters
 func (r *usageLogRepository) GetModelStatsWithFilters(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8) (results []ModelStat, err error) {
-	return r.getModelStatsWithFiltersBySource(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, usagestats.ModelSourceRequested)
+	return r.getModelStatsWithFiltersBySource(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, usagestats.ModelSourceRequested, false)
+}
+
+// GetModelStatsWithFiltersWithOptions returns model statistics with optional admin-user exclusion.
+func (r *usageLogRepository) GetModelStatsWithFiltersWithOptions(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, excludeAdmins bool) (results []ModelStat, err error) {
+	return r.getModelStatsWithFiltersBySource(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, usagestats.ModelSourceRequested, excludeAdmins)
 }
 
 // GetModelStatsWithFiltersBySource returns model statistics with optional filters and model source dimension.
 // source: requested | upstream | mapping.
 func (r *usageLogRepository) GetModelStatsWithFiltersBySource(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, source string) (results []ModelStat, err error) {
-	return r.getModelStatsWithFiltersBySource(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, source)
+	return r.getModelStatsWithFiltersBySource(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, source, false)
 }
 
-func (r *usageLogRepository) getModelStatsWithFiltersBySource(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, source string) (results []ModelStat, err error) {
+// GetModelStatsWithFiltersBySourceWithOptions returns model statistics with optional admin-user exclusion.
+func (r *usageLogRepository) GetModelStatsWithFiltersBySourceWithOptions(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, source string, excludeAdmins bool) (results []ModelStat, err error) {
+	return r.getModelStatsWithFiltersBySource(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, source, excludeAdmins)
+}
+
+func (r *usageLogRepository) getModelStatsWithFiltersBySource(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, source string, excludeAdmins bool) (results []ModelStat, err error) {
 	actualCostExpr := "COALESCE(SUM(actual_cost), 0) as actual_cost"
 	// 当仅按 account_id 聚合时，实际费用使用账号倍率（total_cost * account_rate_multiplier）。
 	if accountID > 0 && userID == 0 && apiKeyID == 0 {
@@ -3219,6 +3231,7 @@ func (r *usageLogRepository) getModelStatsWithFiltersBySource(ctx context.Contex
 		query += fmt.Sprintf(" AND billing_type = $%d", len(args)+1)
 		args = append(args, int16(*billingType))
 	}
+	query, args = appendExcludeAdminUsersQueryFilter(query, args, "user_id", excludeAdmins)
 	query += fmt.Sprintf(" GROUP BY %s ORDER BY total_tokens DESC", modelExpr)
 
 	rows, err := r.sql.QueryContext(ctx, query, args...)
@@ -3243,6 +3256,11 @@ func (r *usageLogRepository) getModelStatsWithFiltersBySource(ctx context.Contex
 
 // GetGroupStatsWithFilters returns group usage statistics with optional filters
 func (r *usageLogRepository) GetGroupStatsWithFilters(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8) (results []usagestats.GroupStat, err error) {
+	return r.GetGroupStatsWithFiltersWithOptions(ctx, startTime, endTime, userID, apiKeyID, accountID, groupID, requestType, stream, billingType, false)
+}
+
+// GetGroupStatsWithFiltersWithOptions returns group usage statistics with optional admin-user exclusion.
+func (r *usageLogRepository) GetGroupStatsWithFiltersWithOptions(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, requestType *int16, stream *bool, billingType *int8, excludeAdmins bool) (results []usagestats.GroupStat, err error) {
 	query := `
 		SELECT
 			COALESCE(ul.group_id, 0) as group_id,
@@ -3279,6 +3297,7 @@ func (r *usageLogRepository) GetGroupStatsWithFilters(ctx context.Context, start
 		query += fmt.Sprintf(" AND ul.billing_type = $%d", len(args)+1)
 		args = append(args, int16(*billingType))
 	}
+	query, args = appendExcludeAdminUsersQueryFilter(query, args, "ul.user_id", excludeAdmins)
 	query += " GROUP BY ul.group_id, g.name ORDER BY total_tokens DESC"
 
 	rows, err := r.sql.QueryContext(ctx, query, args...)
@@ -3477,6 +3496,61 @@ func resolveModelDimensionExpression(modelType string) string {
 	}
 }
 
+func resolveModelDimensionExpressionWithAlias(modelType string, alias string) string {
+	prefix := ""
+	if strings.TrimSpace(alias) != "" {
+		prefix = strings.TrimSpace(alias) + "."
+	}
+	requestedExpr := fmt.Sprintf("COALESCE(NULLIF(TRIM(%srequested_model), ''), %smodel)", prefix, prefix)
+	switch usagestats.NormalizeModelSource(modelType) {
+	case usagestats.ModelSourceUpstream:
+		return fmt.Sprintf("COALESCE(NULLIF(TRIM(%supstream_model), ''), %s)", prefix, requestedExpr)
+	case usagestats.ModelSourceMapping:
+		return fmt.Sprintf("(%s || ' -> ' || COALESCE(NULLIF(TRIM(%supstream_model), ''), %s))", requestedExpr, prefix, requestedExpr)
+	default:
+		return requestedExpr
+	}
+}
+
+func buildCostCalculatorUsageCostExpression(alias string, args []any, accountUsageRates map[int64]float64, defaultUsageRate float64) (string, []any) {
+	prefix := ""
+	if strings.TrimSpace(alias) != "" {
+		prefix = strings.TrimSpace(alias) + "."
+	}
+	if defaultUsageRate < 0 {
+		defaultUsageRate = 0
+	}
+	args = append(args, defaultUsageRate)
+	defaultRatePlaceholder := fmt.Sprintf("$%d::numeric", len(args))
+
+	ids := make([]int64, 0, len(accountUsageRates))
+	for accountID, rate := range accountUsageRates {
+		if accountID > 0 && rate >= 0 {
+			ids = append(ids, accountID)
+		}
+	}
+	sort.Slice(ids, func(i, j int) bool {
+		return ids[i] < ids[j]
+	})
+
+	rateExpr := defaultRatePlaceholder
+	if len(ids) > 0 {
+		var builder strings.Builder
+		builder.WriteString("CASE")
+		for _, accountID := range ids {
+			args = append(args, accountID)
+			accountPlaceholder := fmt.Sprintf("$%d::bigint", len(args))
+			args = append(args, accountUsageRates[accountID])
+			ratePlaceholder := fmt.Sprintf("$%d::numeric", len(args))
+			builder.WriteString(fmt.Sprintf(" WHEN %saccount_id = %s THEN %s", prefix, accountPlaceholder, ratePlaceholder))
+		}
+		builder.WriteString(fmt.Sprintf(" ELSE %s END", defaultRatePlaceholder))
+		rateExpr = builder.String()
+	}
+
+	return fmt.Sprintf("COALESCE(%saccount_stats_cost, %stotal_cost) * (%s)", prefix, prefix, rateExpr), args
+}
+
 // resolveEndpointColumn maps endpoint type to the corresponding DB column name.
 func resolveEndpointColumn(endpointType string) string {
 	switch endpointType {
@@ -3552,6 +3626,7 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 		args = append(args, int16(*filters.BillingType))
 	}
 	conditions, args = appendUsageLogBillingModeWhereCondition(conditions, args, filters.BillingMode)
+	conditions, args = appendExcludeAdminUsersWhereCondition(conditions, args, "user_id", filters.ExcludeAdmins)
 	if filters.StartTime != nil {
 		conditions = append(conditions, fmt.Sprintf("created_at >= $%d", len(args)+1))
 		args = append(args, *filters.StartTime)
@@ -3609,7 +3684,7 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 	}
 	// endpoint 明细:best-effort(失败 log + 返空),不致命。
 	runEndpoints := func(c context.Context) {
-		res, err := r.GetEndpointStatsWithFilters(c, start, end, filters.UserID, filters.APIKeyID, filters.AccountID, filters.GroupID, filters.Model, filters.RequestType, filters.Stream, filters.BillingType)
+		res, err := r.getEndpointStatsByColumnWithFilters(c, "inbound_endpoint", start, end, filters.UserID, filters.APIKeyID, filters.AccountID, filters.GroupID, filters.Model, filters.RequestType, filters.Stream, filters.BillingType, filters.ExcludeAdmins)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				logger.LegacyPrintf("repository.usage_log", "GetEndpointStatsWithFilters failed in GetStatsWithFilters: %v", err)
@@ -3619,7 +3694,7 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 		endpoints = res
 	}
 	runUpstream := func(c context.Context) {
-		res, err := r.GetUpstreamEndpointStatsWithFilters(c, start, end, filters.UserID, filters.APIKeyID, filters.AccountID, filters.GroupID, filters.Model, filters.RequestType, filters.Stream, filters.BillingType)
+		res, err := r.getEndpointStatsByColumnWithFilters(c, "upstream_endpoint", start, end, filters.UserID, filters.APIKeyID, filters.AccountID, filters.GroupID, filters.Model, filters.RequestType, filters.Stream, filters.BillingType, filters.ExcludeAdmins)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				logger.LegacyPrintf("repository.usage_log", "GetUpstreamEndpointStatsWithFilters failed in GetStatsWithFilters: %v", err)
@@ -3629,7 +3704,7 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 		upstreamEndpoints = res
 	}
 	runPaths := func(c context.Context) {
-		res, err := r.getEndpointPathStatsWithFilters(c, start, end, filters.UserID, filters.APIKeyID, filters.AccountID, filters.GroupID, filters.Model, filters.RequestType, filters.Stream, filters.BillingType)
+		res, err := r.getEndpointPathStatsWithFilters(c, start, end, filters.UserID, filters.APIKeyID, filters.AccountID, filters.GroupID, filters.Model, filters.RequestType, filters.Stream, filters.BillingType, filters.ExcludeAdmins)
 		if err != nil {
 			if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 				logger.LegacyPrintf("repository.usage_log", "getEndpointPathStatsWithFilters failed in GetStatsWithFilters: %v", err)
@@ -3680,7 +3755,211 @@ type AccountUsageStatsResponse = usagestats.AccountUsageStatsResponse
 // EndpointStat represents endpoint usage statistics row.
 type EndpointStat = usagestats.EndpointStat
 
-func (r *usageLogRepository) getEndpointStatsByColumnWithFilters(ctx context.Context, endpointColumn string, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8) (results []EndpointStat, err error) {
+func (r *usageLogRepository) GetCostCalculatorUsageSummary(ctx context.Context, startTime, endTime time.Time, accountUsageRates map[int64]float64, defaultUsageRate float64, excludeAdmins bool) (*service.CostCalculatorUsageSummary, error) {
+	summary := &service.CostCalculatorUsageSummary{
+		Groups:   []service.CostCalculatorGroupUsage{},
+		Models:   []service.CostCalculatorModelUsage{},
+		Accounts: []service.CostCalculatorAccountUsage{},
+	}
+
+	totalUsageCostExpr, totalArgs := buildCostCalculatorUsageCostExpression("ul", []any{startTime, endTime}, accountUsageRates, defaultUsageRate)
+	totalQuery := fmt.Sprintf(`
+		SELECT
+			COUNT(*) as total_requests,
+			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) as total_tokens,
+			COALESCE(SUM(ul.total_cost), 0) as total_standard_cost,
+			COALESCE(SUM(ul.actual_cost), 0) as total_actual_cost,
+			COALESCE(SUM(%s), 0) as total_usage_cost
+		FROM usage_logs ul
+		WHERE ul.created_at >= $1 AND ul.created_at < $2
+	`, totalUsageCostExpr)
+	totalQuery, totalArgs = appendExcludeAdminUsersQueryFilter(totalQuery, totalArgs, "ul.user_id", excludeAdmins)
+	if err := scanSingleRow(
+		ctx,
+		r.sql,
+		totalQuery,
+		totalArgs,
+		&summary.TotalRequests,
+		&summary.TotalTokens,
+		&summary.TotalStandardCost,
+		&summary.TotalActualCost,
+		&summary.TotalUsageCost,
+	); err != nil {
+		return nil, fmt.Errorf("cost calculator total usage summary: %w", err)
+	}
+
+	groups, err := r.getCostCalculatorGroupUsage(ctx, startTime, endTime, accountUsageRates, defaultUsageRate, excludeAdmins)
+	if err != nil {
+		return nil, fmt.Errorf("cost calculator group usage summary: %w", err)
+	}
+	models, err := r.getCostCalculatorModelUsage(ctx, startTime, endTime, accountUsageRates, defaultUsageRate, excludeAdmins)
+	if err != nil {
+		return nil, fmt.Errorf("cost calculator model usage summary: %w", err)
+	}
+	accounts, err := r.getCostCalculatorAccountUsage(ctx, startTime, endTime, accountUsageRates, defaultUsageRate, excludeAdmins)
+	if err != nil {
+		return nil, fmt.Errorf("cost calculator account usage summary: %w", err)
+	}
+	summary.Groups = groups
+	summary.Models = models
+	summary.Accounts = accounts
+	return summary, nil
+}
+
+func (r *usageLogRepository) getCostCalculatorGroupUsage(ctx context.Context, startTime, endTime time.Time, accountUsageRates map[int64]float64, defaultUsageRate float64, excludeAdmins bool) (results []service.CostCalculatorGroupUsage, err error) {
+	usageCostExpr, args := buildCostCalculatorUsageCostExpression("ul", []any{startTime, endTime}, accountUsageRates, defaultUsageRate)
+	query := fmt.Sprintf(`
+		SELECT
+			COALESCE(ul.group_id, 0) as group_id,
+			COALESCE(g.name, '') as group_name,
+			COUNT(*) as requests,
+			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) as total_tokens,
+			COALESCE(SUM(ul.total_cost), 0) as standard_cost,
+			COALESCE(SUM(ul.actual_cost), 0) as actual_cost,
+			COALESCE(SUM(%s), 0) as usage_cost
+		FROM usage_logs ul
+		LEFT JOIN groups g ON g.id = ul.group_id
+		WHERE ul.created_at >= $1 AND ul.created_at < $2
+	`, usageCostExpr)
+	query, args = appendExcludeAdminUsersQueryFilter(query, args, "ul.user_id", excludeAdmins)
+	query += " GROUP BY ul.group_id, g.name ORDER BY usage_cost DESC, total_tokens DESC"
+
+	rows, err := r.sql.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+			results = nil
+		}
+	}()
+
+	results = make([]service.CostCalculatorGroupUsage, 0)
+	for rows.Next() {
+		var row service.CostCalculatorGroupUsage
+		if err := rows.Scan(
+			&row.GroupID,
+			&row.GroupName,
+			&row.Requests,
+			&row.TotalTokens,
+			&row.StandardCost,
+			&row.ActualCost,
+			&row.UsageCost,
+		); err != nil {
+			return nil, err
+		}
+		results = append(results, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func (r *usageLogRepository) getCostCalculatorModelUsage(ctx context.Context, startTime, endTime time.Time, accountUsageRates map[int64]float64, defaultUsageRate float64, excludeAdmins bool) (results []service.CostCalculatorModelUsage, err error) {
+	usageCostExpr, args := buildCostCalculatorUsageCostExpression("ul", []any{startTime, endTime}, accountUsageRates, defaultUsageRate)
+	modelExpr := resolveModelDimensionExpressionWithAlias(usagestats.ModelSourceRequested, "ul")
+	query := fmt.Sprintf(`
+		SELECT
+			%s as model,
+			COUNT(*) as requests,
+			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) as total_tokens,
+			COALESCE(SUM(ul.total_cost), 0) as standard_cost,
+			COALESCE(SUM(ul.actual_cost), 0) as actual_cost,
+			COALESCE(SUM(%s), 0) as usage_cost
+		FROM usage_logs ul
+		WHERE ul.created_at >= $1 AND ul.created_at < $2
+	`, modelExpr, usageCostExpr)
+	query, args = appendExcludeAdminUsersQueryFilter(query, args, "ul.user_id", excludeAdmins)
+	query += fmt.Sprintf(" GROUP BY %s ORDER BY usage_cost DESC, total_tokens DESC", modelExpr)
+
+	rows, err := r.sql.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+			results = nil
+		}
+	}()
+
+	results = make([]service.CostCalculatorModelUsage, 0)
+	for rows.Next() {
+		var row service.CostCalculatorModelUsage
+		if err := rows.Scan(
+			&row.Model,
+			&row.Requests,
+			&row.TotalTokens,
+			&row.StandardCost,
+			&row.ActualCost,
+			&row.UsageCost,
+		); err != nil {
+			return nil, err
+		}
+		results = append(results, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func (r *usageLogRepository) getCostCalculatorAccountUsage(ctx context.Context, startTime, endTime time.Time, accountUsageRates map[int64]float64, defaultUsageRate float64, excludeAdmins bool) (results []service.CostCalculatorAccountUsage, err error) {
+	usageCostExpr, args := buildCostCalculatorUsageCostExpression("ul", []any{startTime, endTime}, accountUsageRates, defaultUsageRate)
+	query := fmt.Sprintf(`
+		SELECT
+			COALESCE(ul.account_id, 0) as account_id,
+			COALESCE(a.name, '') as account_name,
+			COALESCE(a.platform, '') as platform,
+			COUNT(*) as requests,
+			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) as total_tokens,
+			COALESCE(SUM(ul.total_cost), 0) as standard_cost,
+			COALESCE(SUM(ul.actual_cost), 0) as actual_cost,
+			COALESCE(SUM(%s), 0) as usage_cost
+		FROM usage_logs ul
+		LEFT JOIN accounts a ON a.id = ul.account_id
+		WHERE ul.created_at >= $1 AND ul.created_at < $2
+	`, usageCostExpr)
+	query, args = appendExcludeAdminUsersQueryFilter(query, args, "ul.user_id", excludeAdmins)
+	query += " GROUP BY ul.account_id, a.name, a.platform ORDER BY usage_cost DESC, total_tokens DESC"
+
+	rows, err := r.sql.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+			results = nil
+		}
+	}()
+
+	results = make([]service.CostCalculatorAccountUsage, 0)
+	for rows.Next() {
+		var row service.CostCalculatorAccountUsage
+		if err := rows.Scan(
+			&row.AccountID,
+			&row.AccountName,
+			&row.Platform,
+			&row.Requests,
+			&row.TotalTokens,
+			&row.StandardCost,
+			&row.ActualCost,
+			&row.UsageCost,
+		); err != nil {
+			return nil, err
+		}
+		results = append(results, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func (r *usageLogRepository) getEndpointStatsByColumnWithFilters(ctx context.Context, endpointColumn string, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8, excludeAdmins bool) (results []EndpointStat, err error) {
 	actualCostExpr := "COALESCE(SUM(actual_cost), 0) as actual_cost"
 	if accountID > 0 && userID == 0 && apiKeyID == 0 {
 		actualCostExpr = "COALESCE(SUM(COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1)), 0) as actual_cost"
@@ -3720,6 +3999,7 @@ func (r *usageLogRepository) getEndpointStatsByColumnWithFilters(ctx context.Con
 		query += fmt.Sprintf(" AND billing_type = $%d", len(args)+1)
 		args = append(args, int16(*billingType))
 	}
+	query, args = appendExcludeAdminUsersQueryFilter(query, args, "user_id", excludeAdmins)
 	query += " GROUP BY endpoint ORDER BY requests DESC"
 
 	rows, err := r.sql.QueryContext(ctx, query, args...)
@@ -3747,7 +4027,7 @@ func (r *usageLogRepository) getEndpointStatsByColumnWithFilters(ctx context.Con
 	return results, nil
 }
 
-func (r *usageLogRepository) getEndpointPathStatsWithFilters(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8) (results []EndpointStat, err error) {
+func (r *usageLogRepository) getEndpointPathStatsWithFilters(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8, excludeAdmins bool) (results []EndpointStat, err error) {
 	actualCostExpr := "COALESCE(SUM(actual_cost), 0) as actual_cost"
 	if accountID > 0 && userID == 0 && apiKeyID == 0 {
 		actualCostExpr = "COALESCE(SUM(COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1)), 0) as actual_cost"
@@ -3791,6 +4071,7 @@ func (r *usageLogRepository) getEndpointPathStatsWithFilters(ctx context.Context
 		query += fmt.Sprintf(" AND billing_type = $%d", len(args)+1)
 		args = append(args, int16(*billingType))
 	}
+	query, args = appendExcludeAdminUsersQueryFilter(query, args, "user_id", excludeAdmins)
 	query += " GROUP BY endpoint ORDER BY requests DESC"
 
 	rows, err := r.sql.QueryContext(ctx, query, args...)
@@ -3820,12 +4101,12 @@ func (r *usageLogRepository) getEndpointPathStatsWithFilters(ctx context.Context
 
 // GetEndpointStatsWithFilters returns inbound endpoint statistics with optional filters.
 func (r *usageLogRepository) GetEndpointStatsWithFilters(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8) ([]EndpointStat, error) {
-	return r.getEndpointStatsByColumnWithFilters(ctx, "inbound_endpoint", startTime, endTime, userID, apiKeyID, accountID, groupID, model, requestType, stream, billingType)
+	return r.getEndpointStatsByColumnWithFilters(ctx, "inbound_endpoint", startTime, endTime, userID, apiKeyID, accountID, groupID, model, requestType, stream, billingType, false)
 }
 
 // GetUpstreamEndpointStatsWithFilters returns upstream endpoint statistics with optional filters.
 func (r *usageLogRepository) GetUpstreamEndpointStatsWithFilters(ctx context.Context, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8) ([]EndpointStat, error) {
-	return r.getEndpointStatsByColumnWithFilters(ctx, "upstream_endpoint", startTime, endTime, userID, apiKeyID, accountID, groupID, model, requestType, stream, billingType)
+	return r.getEndpointStatsByColumnWithFilters(ctx, "upstream_endpoint", startTime, endTime, userID, apiKeyID, accountID, groupID, model, requestType, stream, billingType, false)
 }
 
 // GetAccountUsageStats returns comprehensive usage statistics for an account over a time range
@@ -4575,6 +4856,24 @@ func appendRequestTypeOrStreamQueryFilter(query string, args []any, requestType 
 		query += fmt.Sprintf(" AND stream = $%d", len(args)+1)
 		args = append(args, *stream)
 	}
+	return query, args
+}
+
+func appendExcludeAdminUsersWhereCondition(conditions []string, args []any, userIDExpr string, excludeAdmins bool) ([]string, []any) {
+	if !excludeAdmins {
+		return conditions, args
+	}
+	conditions = append(conditions, fmt.Sprintf("EXISTS (SELECT 1 FROM users cost_calc_u WHERE cost_calc_u.id = %s AND cost_calc_u.role <> $%d)", userIDExpr, len(args)+1))
+	args = append(args, service.RoleAdmin)
+	return conditions, args
+}
+
+func appendExcludeAdminUsersQueryFilter(query string, args []any, userIDExpr string, excludeAdmins bool) (string, []any) {
+	if !excludeAdmins {
+		return query, args
+	}
+	query += fmt.Sprintf(" AND EXISTS (SELECT 1 FROM users cost_calc_u WHERE cost_calc_u.id = %s AND cost_calc_u.role <> $%d)", userIDExpr, len(args)+1)
+	args = append(args, service.RoleAdmin)
 	return query, args
 }
 

@@ -88,6 +88,22 @@ export interface AdminUsageQueryParams extends UsageQueryParams {
   sort_order?: 'asc' | 'desc'
 }
 
+export interface AdminUsageStatsParams {
+  user_id?: number
+  api_key_id?: number
+  account_id?: number
+  group_id?: number
+  model?: string
+  request_type?: UsageRequestType
+  stream?: boolean
+  period?: string
+  start_date?: string
+  end_date?: string
+  timezone?: string
+  nocache?: number
+  exclude_admins?: boolean
+}
+
 // ==================== API Functions ====================
 
 /**
@@ -111,20 +127,7 @@ export async function list(
  * @param params - Query parameters for filtering
  * @returns Usage statistics
  */
-export async function getStats(params: {
-  user_id?: number
-  api_key_id?: number
-  account_id?: number
-  group_id?: number
-  model?: string
-  request_type?: UsageRequestType
-  stream?: boolean
-  period?: string
-  start_date?: string
-  end_date?: string
-  timezone?: string
-  nocache?: number
-}): Promise<AdminUsageStatsResponse> {
+export async function getStats(params: AdminUsageStatsParams): Promise<AdminUsageStatsResponse> {
   const { data } = await apiClient.get<AdminUsageStatsResponse>('/admin/usage/stats', {
     params
   })

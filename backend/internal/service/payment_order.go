@@ -13,6 +13,7 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
+	dbuser "github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/payment/provider"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
@@ -837,6 +838,15 @@ func (s *PaymentService) AdminListOrders(ctx context.Context, userID int64, p Or
 	}
 	if p.PaymentType != "" {
 		q = q.Where(paymentorder.PaymentTypeEQ(p.PaymentType))
+	}
+	if p.StartTime != nil {
+		q = q.Where(paymentorder.PaidAtGTE(*p.StartTime))
+	}
+	if p.EndTime != nil {
+		q = q.Where(paymentorder.PaidAtLT(*p.EndTime))
+	}
+	if p.ExcludeAdmins {
+		q = q.Where(paymentorder.HasUserWith(dbuser.RoleNEQ(RoleAdmin)))
 	}
 	if p.Keyword != "" {
 		q = q.Where(paymentorder.Or(

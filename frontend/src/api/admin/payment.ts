@@ -84,6 +84,7 @@ export const adminPaymentAPI = {
     start_date?: string
     end_date?: string
     order_type?: string
+    exclude_admins?: boolean
   }) {
     return apiClient.get<BasePaginationResponse<PaymentOrder>>('/admin/payment/orders', { params })
   },

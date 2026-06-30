@@ -2,10 +2,13 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"sort"
 	"strings"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
+	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -406,6 +409,213 @@ func (r *redeemCodeRepository) SumPositiveBalanceByUser(ctx context.Context, use
 		return 0, nil
 	}
 	return result[0].Sum, nil
+}
+
+func (r *redeemCodeRepository) GetCostCalculatorBalanceRechargeSummary(ctx context.Context, startTime, endTime time.Time, excludeAdmins bool) (*service.CostCalculatorBalanceRechargeSummary, error) {
+	return r.GetCostCalculatorBalanceRechargeSummaryWithPackages(ctx, startTime, endTime, nil, excludeAdmins)
+}
+
+func (r *redeemCodeRepository) GetCostCalculatorBalanceRechargeSummaryWithPackages(ctx context.Context, startTime, endTime time.Time, packages []service.CostCalculatorBalanceRechargePackage, excludeAdmins bool) (*service.CostCalculatorBalanceRechargeSummary, error) {
+	summary := &service.CostCalculatorBalanceRechargeSummary{
+		PackageStats: []service.CostCalculatorBalanceRechargePackageStat{},
+	}
+	packageByAmount := make(map[int64]service.CostCalculatorBalanceRechargePackage, len(packages))
+	packageStats := make(map[int64]*service.CostCalculatorBalanceRechargePackageStat, len(packages))
+	for _, item := range packages {
+		if item.BalanceAmount <= 0 || item.ActualAmount < 0 {
+			continue
+		}
+		key := costCalculatorPackageKey(item.BalanceAmount)
+		packageByAmount[key] = item
+	}
+
+	rows, err := r.queryCostCalculatorBalanceRechargeGroups(ctx, startTime, endTime, excludeAdmins)
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		amount := row.Total
+		summary.TotalAmount += amount
+		summary.RecordCount += row.Count
+
+		switch row.Type {
+		case service.RedeemTypeBalance:
+			summary.RedeemAmount += amount
+			summary.RedeemCount += row.Count
+		case service.AdjustmentTypeAdminBalance:
+			summary.AdminNetAmount += amount
+			summary.AdminCount += row.Count
+			if row.Value > 0 {
+				summary.AdminAddedAmount += amount
+			} else if row.Value < 0 {
+				summary.AdminDeductedAmount += -amount
+			}
+		}
+
+		if row.Value <= 0 {
+			continue
+		}
+		pkg, ok := packageByAmount[costCalculatorPackageKey(row.Value)]
+		if !ok {
+			summary.UnmatchedBalanceAmount += amount
+			summary.UnmatchedRecordCount += row.Count
+			continue
+		}
+
+		actualTotal := pkg.ActualAmount * float64(row.Count)
+		summary.ActualRevenue += actualTotal
+		summary.MatchedBalanceAmount += amount
+		summary.MatchedRecordCount += row.Count
+		if row.Type == service.RedeemTypeBalance {
+			summary.RedeemActualRevenue += actualTotal
+		} else if row.Type == service.AdjustmentTypeAdminBalance {
+			summary.AdminActualRevenue += actualTotal
+		}
+
+		key := costCalculatorPackageKey(pkg.BalanceAmount)
+		stat := packageStats[key]
+		if stat == nil {
+			stat = &service.CostCalculatorBalanceRechargePackageStat{
+				BalanceAmount: pkg.BalanceAmount,
+				ActualAmount:  pkg.ActualAmount,
+			}
+			packageStats[key] = stat
+		}
+		stat.Count += row.Count
+		stat.BalanceTotal += amount
+		stat.ActualTotal += actualTotal
+	}
+
+	for _, stat := range packageStats {
+		summary.PackageStats = append(summary.PackageStats, *stat)
+	}
+	sort.Slice(summary.PackageStats, func(i, j int) bool {
+		return summary.PackageStats[i].BalanceAmount < summary.PackageStats[j].BalanceAmount
+	})
+
+	rewardAmount, rewardCount, err := r.getCostCalculatorLeaderboardRewardSummary(ctx, startTime, endTime, excludeAdmins)
+	if err != nil {
+		return nil, err
+	}
+	summary.LeaderboardRewardAmount = rewardAmount
+	summary.LeaderboardRewardCount = rewardCount
+	return summary, nil
+}
+
+func (r *redeemCodeRepository) sumAndCountRedeemCodeValues(ctx context.Context, predicates ...predicate.RedeemCode) (float64, int64, error) {
+	count, err := r.client.RedeemCode.Query().Where(predicates...).Count(ctx)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	var result []struct {
+		Sum sql.NullFloat64 `json:"sum"`
+	}
+	err = r.client.RedeemCode.Query().
+		Where(predicates...).
+		Aggregate(dbent.As(dbent.Sum(redeemcode.FieldValue), "sum")).
+		Scan(ctx, &result)
+	if err != nil {
+		return 0, 0, err
+	}
+	if len(result) == 0 || !result[0].Sum.Valid {
+		return 0, int64(count), nil
+	}
+	return result[0].Sum.Float64, int64(count), nil
+}
+
+type costCalculatorBalanceRechargeGroup struct {
+	Type  string
+	Value float64
+	Total float64
+	Count int64
+}
+
+func (r *redeemCodeRepository) queryCostCalculatorBalanceRechargeGroups(ctx context.Context, startTime, endTime time.Time, excludeAdmins bool) ([]costCalculatorBalanceRechargeGroup, error) {
+	args := []any{service.StatusUsed, startTime, endTime, service.RedeemTypeBalance, service.AdjustmentTypeAdminBalance}
+	query := `
+SELECT rc.type, rc.value::double precision, COUNT(*)::bigint, COALESCE(SUM(rc.value), 0)::double precision
+FROM redeem_codes rc
+WHERE rc.status = $1
+  AND rc.used_at IS NOT NULL
+  AND rc.used_at >= $2
+  AND rc.used_at < $3
+  AND rc.type IN ($4, $5)`
+	if excludeAdmins {
+		args = append(args, service.RoleAdmin)
+		query += `
+  AND EXISTS (
+    SELECT 1 FROM users cost_calc_u
+    WHERE cost_calc_u.id = rc.used_by AND cost_calc_u.role <> $6
+  )`
+	}
+	query += `
+GROUP BY rc.type, rc.value
+ORDER BY rc.type, rc.value`
+
+	rows, err := r.client.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	results := make([]costCalculatorBalanceRechargeGroup, 0)
+	for rows.Next() {
+		var row costCalculatorBalanceRechargeGroup
+		var total sql.NullFloat64
+		if err := rows.Scan(&row.Type, &row.Value, &row.Count, &total); err != nil {
+			return nil, err
+		}
+		if total.Valid {
+			row.Total = total.Float64
+		}
+		results = append(results, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func (r *redeemCodeRepository) getCostCalculatorLeaderboardRewardSummary(ctx context.Context, startTime, endTime time.Time, excludeAdmins bool) (float64, int64, error) {
+	args := []any{startTime, endTime}
+	query := `
+SELECT COUNT(*)::bigint, COALESCE(SUM(l.reward_amount), 0)::double precision
+FROM leaderboard_reward_logs l
+WHERE l.created_at >= $1 AND l.created_at < $2`
+	if excludeAdmins {
+		args = append(args, service.RoleAdmin)
+		query += `
+  AND EXISTS (
+    SELECT 1 FROM users cost_calc_u
+    WHERE cost_calc_u.id = l.user_id AND cost_calc_u.role <> $3
+  )`
+	}
+
+	rows, err := r.client.QueryContext(ctx, query, args...)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var count int64
+	var amount sql.NullFloat64
+	if rows.Next() {
+		if err := rows.Scan(&count, &amount); err != nil {
+			return 0, 0, err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, 0, err
+	}
+	if !amount.Valid {
+		return 0, count, nil
+	}
+	return amount.Float64, count, nil
+}
+
+func costCalculatorPackageKey(value float64) int64 {
+	return int64(value*1_000_000 + 0.5)
 }
 
 func redeemCodeEntityToService(m *dbent.RedeemCode) *service.RedeemCode {
