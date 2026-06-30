@@ -685,7 +685,7 @@ const selectedDays = computed(() => {
 })
 
 const rawUserBilling = computed(() => toFinite(usageSummary.value?.total_actual_cost))
-const userBillingRevenue = computed(() => platformBalanceToActual(rawUserBilling.value))
+const userBillingRevenue = computed(() => balanceToRevenue(rawUserBilling.value))
 const upstreamCost = computed(() => toFinite(usageSummary.value?.total_usage_cost))
 const usageGrossProfit = computed(() => userBillingRevenue.value - upstreamCost.value)
 const usageGrossMargin = computed(() => {
@@ -696,7 +696,7 @@ const monthlyFixedCost = computed(() =>
 )
 const proratedFixedCost = computed(() => monthlyFixedCost.value / 30 * selectedDays.value)
 const leaderboardRewardAmount = computed(() => toFinite(balanceRechargeSummary.value?.leaderboard_reward_amount))
-const leaderboardRewardCost = computed(() => platformBalanceToActual(leaderboardRewardAmount.value))
+const leaderboardRewardCost = computed(() => balanceToRevenue(leaderboardRewardAmount.value))
 const leaderboardRewardCount = computed(() => toFinite(balanceRechargeSummary.value?.leaderboard_reward_count))
 const netProfitAfterFixedCost = computed(() => usageGrossProfit.value - proratedFixedCost.value - leaderboardRewardCost.value)
 const configuredCostAccounts = computed(() => accountRows.value.length)
@@ -714,6 +714,26 @@ const adminBalanceAdjustmentCount = computed(() => toFinite(balanceRechargeSumma
 const balanceLiabilityBalance = computed(() => toFinite(balanceLiabilitySummary.value?.total_balance))
 const balanceLiabilityEstimatedActual = computed(() => toFinite(balanceLiabilitySummary.value?.estimated_actual_liability))
 const balanceLiabilityEstimatedUnitCost = computed(() => toFinite(balanceLiabilitySummary.value?.estimated_unit_cost))
+// 套餐价格表的加权售价单价（Σ实付 / Σ面额），用于把「平台余额额度」折算成人民币收入。
+// 收入口径必须用售价，而非负债估值单价（EstimatedUnitCost）——后者是全平台历史均价，
+// 拿来当各分组收入单价会在售价/成本结构不同的分组间产生假性盈亏。
+const salePriceUnitCost = computed(() => {
+  let balanceTotal = 0
+  let actualTotal = 0
+  for (const item of config.balance_recharge_packages) {
+    const balance = toFinite(item.balance_amount)
+    const actual = toFinite(item.actual_amount)
+    if (balance <= 0 || actual < 0) continue
+    balanceTotal += balance
+    actualTotal += actual
+  }
+  if (balanceTotal > 0) return actualTotal / balanceTotal
+  // 套餐表不可用时回退到负债估值单价，再回退到汇率。
+  if (hasBalanceLiabilityValuation.value && balanceLiabilityEstimatedUnitCost.value > 0) {
+    return balanceLiabilityEstimatedUnitCost.value
+  }
+  return positiveOrDefault(config.balance_exchange_rate, 1)
+})
 const balanceLiabilityUserCount = computed(() => toFinite(balanceLiabilitySummary.value?.positive_user_count))
 const hasBalanceLiabilityValuation = computed(() => {
   const source = balanceLiabilitySummary.value?.valuation_source
@@ -877,7 +897,7 @@ function profitToneClass(value: number): string {
 }
 
 function rowIncome(row: ProfitStat): number {
-  return platformBalanceToActual(row.actual_cost)
+  return balanceToRevenue(row.actual_cost)
 }
 
 function rowCost(row: ProfitStat): number {
@@ -888,15 +908,11 @@ function rowProfit(row: ProfitStat): number {
   return rowIncome(row) - rowCost(row)
 }
 
-function usdToRmb(value: unknown): number {
-  return toFinite(value) * positiveOrDefault(config.balance_exchange_rate, 1)
-}
-
-function platformBalanceToActual(value: unknown): number {
-  if (hasBalanceLiabilityValuation.value) {
-    return toFinite(value) * balanceLiabilityEstimatedUnitCost.value
-  }
-  return usdToRmb(value)
+// 把「平台余额额度」按售价折算成人民币收入/机会成本。
+// 用于：分组/模型收入、顶部用户计费、排行榜奖励成本（送出额度的机会成本）。
+// 收入侧统一用售价单价（salePriceUnitCost），区别于负债估值口径。
+function balanceToRevenue(value: unknown): number {
+  return toFinite(value) * salePriceUnitCost.value
 }
 
 function openSettingsDialog() {
