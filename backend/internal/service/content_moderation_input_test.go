@@ -164,6 +164,36 @@ func TestExtractContentModerationInput_ResponsesLastUserMessageExtracted(t *test
 	require.Equal(t, "latest", input.Text)
 }
 
+func TestExtractContentModerationInput_ResponsesTranscriptKeepsOnlyUserSegments(t *testing.T) {
+	body := []byte(`{
+		"input":[{
+			"type":"message",
+			"role":"user",
+			"content":[{"type":"input_text","text":"<conversation>\n[User]: 我这么多1688各种商品是不是有一个命名方式\n[Assistant]: 建议示例包含 K粉_黑色_001\n[Assistant thinking]: hidden K粉\n[Assistant tool calls]: exec K粉\n[User]: 继续说一下命名规则"}]
+		}]
+	}`)
+
+	input := ExtractContentModerationInput(ContentModerationProtocolOpenAIResponses, body)
+
+	require.Equal(t, "我这么多1688各种商品是不是有一个命名方式 继续说一下命名规则", input.Text)
+	require.NotContains(t, input.Text, "K粉")
+	require.NotContains(t, input.Text, "Assistant")
+}
+
+func TestExtractContentModerationInput_ResponsesTranscriptKeepsKeywordInUserSegment(t *testing.T) {
+	body := []byte(`{
+		"input":[{
+			"type":"message",
+			"role":"user",
+			"content":[{"type":"input_text","text":"<conversation>\n[Assistant]: clean answer\n[User]: 用户明确提到 K粉"}]
+		}]
+	}`)
+
+	input := ExtractContentModerationInput(ContentModerationProtocolOpenAIResponses, body)
+
+	require.Equal(t, "用户明确提到 K粉", input.Text)
+}
+
 func TestExtractContentModerationInput_ResponsesLastIsAssistantSkipped(t *testing.T) {
 	body := []byte(`{
 		"input":[
