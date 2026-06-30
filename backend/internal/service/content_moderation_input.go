@@ -4,10 +4,13 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"regexp"
 	"strings"
 
 	"github.com/tidwall/gjson"
 )
+
+var contentModerationTranscriptHeaderRE = regexp.MustCompile(`(?m)^\s*\[(User|Assistant(?: thinking| tool calls)?|System|Developer|Tool)\]:`)
 
 func ExtractContentModerationText(protocol string, body []byte) string {
 	return ExtractContentModerationInput(protocol, body).Text
@@ -311,7 +314,42 @@ func addModerationText(parts *[]string, text string) {
 	if strings.Contains(text, "<system-reminder>") {
 		return
 	}
+	text = extractModerationUserTranscriptText(text)
+	if text == "" {
+		return
+	}
 	*parts = append(*parts, text)
+}
+
+func extractModerationUserTranscriptText(text string) string {
+	text = strings.TrimSpace(text)
+	if text == "" || !strings.Contains(text, "[User]:") {
+		return text
+	}
+	locs := contentModerationTranscriptHeaderRE.FindAllStringSubmatchIndex(text, -1)
+	if len(locs) == 0 {
+		return text
+	}
+	var userParts []string
+	for i, loc := range locs {
+		role := text[loc[2]:loc[3]]
+		start := loc[1]
+		end := len(text)
+		if i+1 < len(locs) {
+			end = locs[i+1][0]
+		}
+		if role != "User" {
+			continue
+		}
+		part := strings.TrimSpace(text[start:end])
+		if part != "" {
+			userParts = append(userParts, part)
+		}
+	}
+	if len(userParts) == 0 {
+		return text
+	}
+	return strings.Join(userParts, "\n")
 }
 
 func normalizeContentModerationText(text string) string {
