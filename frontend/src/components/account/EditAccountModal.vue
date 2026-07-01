@@ -1303,7 +1303,7 @@
         </div>
       </div>
 
-      <div>
+      <div v-if="!isSparkShadow">
         <div class="mb-1 flex items-center gap-2">
           <label class="input-label mb-0">{{ t('admin.accounts.proxy') }}</label>
           <ProxyAdBanner />
@@ -2467,6 +2467,10 @@ const geminiUpstreamMode = ref<GeminiUpstreamMode>('native')
 // 自定义平台（OpenAI 兼容透传）展示名；支持的模型经“同步上游支持的模型”获取
 const customPlatformName = ref('')
 
+// Spark 影子账号(parent_account_id 非空):代理恒继承母账号,不可独立编辑(外审 B/P1),
+// 故隐藏代理选择器。
+const isSparkShadow = computed(() => props.account?.parent_account_id != null)
+
 // Platform-specific hint for Base URL
 const baseUrlHint = computed(() => {
   if (!props.account) return t('admin.accounts.baseUrlHint')
@@ -2977,6 +2981,28 @@ const loadModelRestrictionFromMapping = (rawMapping?: Record<string, unknown>) =
 
 const buildModelRestrictionMapping = () =>
   buildModelMappingObject('combined', allowedModels.value, modelMappings.value)
+
+const applyOpenAIModelMappingCredentials = (credentials: Record<string, unknown>) => {
+  const shouldApplyModelMapping = !openaiPassthroughEnabled.value
+
+  if (shouldApplyModelMapping) {
+    const modelMapping = buildModelRestrictionMapping()
+    if (modelMapping) {
+      credentials.model_mapping = modelMapping
+    } else {
+      delete credentials.model_mapping
+    }
+  } else if (!credentials.model_mapping) {
+    delete credentials.model_mapping
+  }
+
+  const compactModelMapping = buildModelMappingObject('mapping', [], openAICompactModelMappings.value)
+  if (compactModelMapping) {
+    credentials.compact_model_mapping = compactModelMapping
+  } else {
+    delete credentials.compact_model_mapping
+  }
+}
 
 const syncFormFromAccount = (newAccount: Account | null) => {
   if (!newAccount) {
@@ -4028,28 +4054,12 @@ const handleSubmit = async () => {
 
     // OpenAI OAuth: persist model mapping to credentials
     if (props.account.platform === 'openai' && props.account.type === 'oauth') {
-      const currentCredentials = (updatePayload.credentials as Record<string, unknown>) ||
-        ((props.account.credentials as Record<string, unknown>) || {})
+      const currentCredentials = isSparkShadow.value
+        ? {}
+        : (updatePayload.credentials as Record<string, unknown>) ||
+          ((props.account.credentials as Record<string, unknown>) || {})
       const newCredentials: Record<string, unknown> = { ...currentCredentials }
-      const shouldApplyModelMapping = !openaiPassthroughEnabled.value
-
-      if (shouldApplyModelMapping) {
-        const modelMapping = buildModelRestrictionMapping()
-        if (modelMapping) {
-          newCredentials.model_mapping = modelMapping
-        } else {
-          delete newCredentials.model_mapping
-        }
-      } else if (currentCredentials.model_mapping) {
-        // 透传模式保留现有映射
-        newCredentials.model_mapping = currentCredentials.model_mapping
-      }
-      const compactModelMapping = buildModelMappingObject('mapping', [], openAICompactModelMappings.value)
-      if (compactModelMapping) {
-        newCredentials.compact_model_mapping = compactModelMapping
-      } else {
-        delete newCredentials.compact_model_mapping
-      }
+      applyOpenAIModelMappingCredentials(newCredentials)
 
       updatePayload.credentials = newCredentials
     }
