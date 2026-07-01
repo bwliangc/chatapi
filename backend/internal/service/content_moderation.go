@@ -19,6 +19,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode/utf8"
 
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -884,7 +885,7 @@ func (s *ContentModerationService) Check(ctx context.Context, input ContentModer
 	hashText := content.Hash()
 	if cfg.Mode == ContentModerationModePreBlock {
 		if cfg.KeywordBlockingMode != ContentModerationKeywordModeAPIOnly && len(cfg.BlockedKeywords) > 0 {
-			if keyword, hit := matchBlockedKeyword(content.Text, cfg.BlockedKeywords); hit {
+			if keyword, _, hit := findBlockedKeyword(content.Text, cfg.BlockedKeywords); hit {
 				s.recordPreBlockSyncMetric(0, ContentModerationActionKeywordBlock)
 				slog.Info("content_moderation.keyword_block",
 					"user_id", input.UserID,
@@ -895,7 +896,9 @@ func (s *ContentModerationService) Check(ctx context.Context, input ContentModer
 					"keyword_blocking_mode", cfg.KeywordBlockingMode,
 					"keyword", keyword)
 				scores := map[string]float64{contentModerationKeywordCategory: 1.0}
-				log := s.buildLog(input, cfg, ContentModerationActionKeywordBlock, true, contentModerationKeywordCategory, 1.0, scores, content.ExcerptText(), nil, nil, "")
+				logText := content.ExcerptText()
+				log := s.buildLog(input, cfg, ContentModerationActionKeywordBlock, true, contentModerationKeywordCategory, 1.0, scores, logText, nil, nil, "")
+				log.InputExcerpt = redactContentModerationSecrets(logText)
 				log.MatchedKeyword = keyword
 				s.enqueueRecord(input, cfg, log, hashText, false, true)
 				return &ContentModerationDecision{
@@ -2588,20 +2591,101 @@ func contentModerationModelListContains(models []string, model string) bool {
 	return false
 }
 
+type blockedKeywordMatchRange struct {
+	start int
+	end   int
+	found bool
+}
+
 func matchBlockedKeyword(text string, keywords []string) (string, bool) {
+	keyword, _, hit := findBlockedKeyword(text, keywords)
+	return keyword, hit
+}
+
+func findBlockedKeyword(text string, keywords []string) (string, blockedKeywordMatchRange, bool) {
 	if text == "" || len(keywords) == 0 {
-		return "", false
+		return "", blockedKeywordMatchRange{}, false
 	}
 	lower := strings.ToLower(text)
 	for _, kw := range keywords {
 		if kw == "" {
 			continue
 		}
-		if strings.Contains(lower, strings.ToLower(kw)) {
-			return kw, true
+		if matchRange, hit := blockedKeywordMatch(lower, strings.ToLower(kw)); hit {
+			return kw, matchRange, true
 		}
 	}
-	return "", false
+	return "", blockedKeywordMatchRange{}, false
+}
+
+func blockedKeywordMatches(lowerText, lowerKeyword string) bool {
+	_, hit := blockedKeywordMatch(lowerText, lowerKeyword)
+	return hit
+}
+
+func blockedKeywordMatch(lowerText, lowerKeyword string) (blockedKeywordMatchRange, bool) {
+	if lowerText == "" || lowerKeyword == "" {
+		return blockedKeywordMatchRange{}, false
+	}
+	for start := 0; start <= len(lowerText); {
+		idx := strings.Index(lowerText[start:], lowerKeyword)
+		if idx < 0 {
+			return blockedKeywordMatchRange{}, false
+		}
+		idx += start
+		end := idx + len(lowerKeyword)
+		if isBlockedKeywordBoundary(lowerText[:idx], lowerText[end:], lowerKeyword) {
+			return blockedKeywordMatchRange{start: idx, end: end, found: true}, true
+		}
+		start = end
+	}
+	return blockedKeywordMatchRange{}, false
+}
+
+func isBlockedKeywordBoundary(before, after, keyword string) bool {
+	if blockedKeywordStartsWithASCIITokenChar(keyword) && hasBlockedKeywordASCIITokenCharSuffix(before) {
+		return false
+	}
+	if blockedKeywordEndsWithASCIITokenChar(keyword) && hasBlockedKeywordASCIITokenCharPrefix(after) {
+		return false
+	}
+	return true
+}
+
+func blockedKeywordStartsWithASCIITokenChar(keyword string) bool {
+	if keyword == "" {
+		return false
+	}
+	r, _ := utf8.DecodeRuneInString(keyword)
+	return isBlockedKeywordASCIITokenChar(r)
+}
+
+func blockedKeywordEndsWithASCIITokenChar(keyword string) bool {
+	if keyword == "" {
+		return false
+	}
+	r, _ := utf8.DecodeLastRuneInString(keyword)
+	return isBlockedKeywordASCIITokenChar(r)
+}
+
+func hasBlockedKeywordASCIITokenCharSuffix(s string) bool {
+	if s == "" {
+		return false
+	}
+	r, _ := utf8.DecodeLastRuneInString(s)
+	return isBlockedKeywordASCIITokenChar(r)
+}
+
+func hasBlockedKeywordASCIITokenCharPrefix(s string) bool {
+	if s == "" {
+		return false
+	}
+	r, _ := utf8.DecodeRuneInString(s)
+	return isBlockedKeywordASCIITokenChar(r)
+}
+
+func isBlockedKeywordASCIITokenChar(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' || r == '-'
 }
 
 func normalizeModerationAPIKeys(keys []string) []string {
