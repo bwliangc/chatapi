@@ -41,6 +41,55 @@ func (r *leaderboardRewardRepository) HasSettled(ctx context.Context, rewardDate
 	return exists, rows.Err()
 }
 
+func (r *leaderboardRewardRepository) ListByDate(ctx context.Context, rewardDate time.Time) ([]service.LeaderboardRewardLog, error) {
+	client := clientFromContext(ctx, r.client)
+	rows, err := client.QueryContext(ctx,
+		`SELECT
+		    user_id,
+		    rank,
+		    reward_amount::double precision,
+		    pool_amount::double precision,
+		    total_cost::double precision,
+		    pool_rate::double precision,
+		    top_n,
+		    min_spend::double precision,
+		    distribution_mode,
+		    distribution_weights
+		 FROM leaderboard_reward_logs
+		 WHERE reward_date = $1
+		 ORDER BY rank ASC, id ASC`,
+		rewardDate.Format(leaderboardRewardDateLayout),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list leaderboard reward logs: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	logs := make([]service.LeaderboardRewardLog, 0)
+	for rows.Next() {
+		var log service.LeaderboardRewardLog
+		if err := rows.Scan(
+			&log.UserID,
+			&log.Rank,
+			&log.RewardAmount,
+			&log.PoolAmount,
+			&log.TotalCost,
+			&log.PoolRate,
+			&log.TopN,
+			&log.MinSpend,
+			&log.DistributionMode,
+			&log.DistributionWeights,
+		); err != nil {
+			return nil, fmt.Errorf("scan leaderboard reward log: %w", err)
+		}
+		logs = append(logs, log)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate leaderboard reward logs: %w", err)
+	}
+	return logs, nil
+}
+
 func (r *leaderboardRewardRepository) GrantRewards(ctx context.Context, grant service.LeaderboardRewardGrant) (int, error) {
 	dateStr := grant.RewardDate.Format(leaderboardRewardDateLayout)
 	granted := 0
@@ -53,9 +102,19 @@ func (r *leaderboardRewardRepository) GrantRewards(ctx context.Context, grant se
 			// (reward_date, user_id) 唯一约束保证幂等：若该日已发放，INSERT 冲突会使整个事务回滚，不会重复加余额。
 			if _, err := txClient.ExecContext(txCtx,
 				`INSERT INTO leaderboard_reward_logs
-				    (reward_date, user_id, rank, reward_amount, pool_amount, total_cost, distribution_mode)
-				 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-				dateStr, item.UserID, item.Rank, item.Amount, grant.PoolAmount, grant.TotalCost, grant.DistributionMode,
+				    (reward_date, user_id, rank, reward_amount, pool_amount, total_cost, pool_rate, top_n, min_spend, distribution_mode, distribution_weights)
+				 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+				dateStr,
+				item.UserID,
+				item.Rank,
+				item.Amount,
+				grant.PoolAmount,
+				grant.TotalCost,
+				grant.PoolRate,
+				grant.TopN,
+				grant.MinSpend,
+				grant.DistributionMode,
+				grant.DistributionWeights,
 			); err != nil {
 				return fmt.Errorf("insert leaderboard reward log (user %d): %w", item.UserID, err)
 			}

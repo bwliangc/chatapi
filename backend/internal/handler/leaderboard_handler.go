@@ -27,13 +27,19 @@ const (
 type LeaderboardHandler struct {
 	dashboardService *service.DashboardService
 	settingService   *service.SettingService
+	rewardRepo       service.LeaderboardRewardRepository
 }
 
 // NewLeaderboardHandler 构造用户排行榜处理器。
-func NewLeaderboardHandler(dashboardService *service.DashboardService, settingService *service.SettingService) *LeaderboardHandler {
+func NewLeaderboardHandler(
+	dashboardService *service.DashboardService,
+	settingService *service.SettingService,
+	rewardRepo service.LeaderboardRewardRepository,
+) *LeaderboardHandler {
 	return &LeaderboardHandler{
 		dashboardService: dashboardService,
 		settingService:   settingService,
+		rewardRepo:       rewardRepo,
 	}
 }
 
@@ -61,6 +67,17 @@ type leaderboardResponse struct {
 	MinSpend           float64            `json:"min_spend"` // 每人参与门槛（0=无门槛）
 	Ranking            []leaderboardEntry `json:"ranking"`
 	Me                 *leaderboardEntry  `json:"me"`
+}
+
+type leaderboardSettlement struct {
+	rewardsByUser       map[int64]float64
+	poolRate            float64
+	topN                int
+	minSpend            float64
+	distributionMode    string
+	distributionWeights string
+	totalCost           float64
+	poolAmount          float64
 }
 
 // GetLeaderboard 返回今日/昨日的消费排行榜（脱敏）。
@@ -99,6 +116,23 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 	minSpend := h.settingService.GetLeaderboardRewardMinSpend(ctx)
 	mode := h.settingService.GetLeaderboardRewardDistributionMode(ctx)
 	weights := h.settingService.GetLeaderboardRewardWeights(ctx)
+	var settlement *leaderboardSettlement
+	if period == "yesterday" && h.rewardRepo != nil {
+		logs, err := h.rewardRepo.ListByDate(ctx, windowStart)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+		settlement = newLeaderboardSettlement(logs)
+		if settlement != nil {
+			rewardEnabled = true
+			poolRate = settlement.poolRate
+			topN = settlement.topN
+			minSpend = settlement.minSpend
+			mode = settlement.distributionMode
+			weights = settlement.distributionWeights
+		}
+	}
 
 	resp := &leaderboardResponse{
 		Period:           period,
@@ -126,7 +160,7 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		excluded := h.settingService.GetLeaderboardExcludedEmailSet(ctx)
 		totalCost := ranking.TotalActualCost
 		filtered := ranking.Ranking
-		if len(excluded) > 0 {
+		if settlement == nil && len(excluded) > 0 {
 			filtered = make([]usagestats.UserSpendingRankingItem, 0, len(ranking.Ranking))
 			for _, item := range ranking.Ranking {
 				if service.IsLeaderboardEmailExcluded(item.Email, excluded) {
@@ -140,8 +174,13 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 			}
 		}
 
-		resp.TotalCost = roundLeaderboard(totalCost)
-		if rewardEnabled && poolRate > 0 {
+		if settlement != nil {
+			resp.TotalCost = roundLeaderboard(settlement.totalCost)
+			resp.PoolAmount = roundLeaderboard(settlement.poolAmount)
+		} else {
+			resp.TotalCost = roundLeaderboard(totalCost)
+		}
+		if settlement == nil && rewardEnabled && poolRate > 0 {
 			resp.PoolAmount = roundLeaderboard(totalCost * poolRate / 100.0)
 		}
 		// 榜单按消费降序：达标用户（actual_cost ≥ 门槛）必然是顶部连续的一段，未达门槛者
@@ -157,8 +196,16 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 				name = item.Email // 本人行展示真实身份
 			}
 			qualified := item.ActualCost >= minSpend && item.ActualCost > 0
+			rewardAmount := 0.0
+			hasSettledReward := false
+			if settlement != nil {
+				rewardAmount, hasSettledReward = settlement.rewardsByUser[item.UserID]
+			}
 			isWinner := rewardEnabled && topN > 0 && rank <= topN && qualified
-			if isWinner {
+			if settlement != nil {
+				isWinner = hasSettledReward
+			}
+			if settlement == nil && isWinner {
 				winners++
 			}
 			entry := leaderboardEntry{
@@ -170,6 +217,9 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 				IsWinner:   isWinner,
 				IsMe:       isMe,
 			}
+			if hasSettledReward {
+				entry.RewardAmount = rewardAmount
+			}
 			if (!applyThreshold || qualified) && len(resp.Ranking) < leaderboardDisplayLimit {
 				resp.Ranking = append(resp.Ranking, entry)
 			}
@@ -180,7 +230,7 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		}
 
 		// 昨日结算：就地按发放算法算出各名次实际奖励（设置不变时与已发放一致），填到中奖者行。
-		if period == "yesterday" && rewardEnabled && winners > 0 && resp.PoolAmount > 0 {
+		if period == "yesterday" && settlement == nil && rewardEnabled && winners > 0 && resp.PoolAmount > 0 {
 			amounts := service.LeaderboardRewardAmounts(winners, mode, weights, resp.PoolAmount)
 			for i := range resp.Ranking {
 				if e := &resp.Ranking[i]; e.IsWinner && e.Rank-1 < len(amounts) {
@@ -194,6 +244,66 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 	}
 
 	response.Success(c, resp)
+}
+
+func newLeaderboardSettlement(logs []service.LeaderboardRewardLog) *leaderboardSettlement {
+	if len(logs) == 0 {
+		return nil
+	}
+	settlement := &leaderboardSettlement{
+		rewardsByUser:    make(map[int64]float64, len(logs)),
+		distributionMode: service.LeaderboardRewardModeAverage,
+	}
+	maxRank := 0
+	for i, log := range logs {
+		if log.UserID > 0 && log.RewardAmount > 0 {
+			settlement.rewardsByUser[log.UserID] = roundLeaderboard(log.RewardAmount)
+		}
+		if log.Rank > maxRank {
+			maxRank = log.Rank
+		}
+		if i == 0 {
+			settlement.poolRate = log.PoolRate
+			settlement.topN = log.TopN
+			settlement.minSpend = log.MinSpend
+			settlement.distributionMode = strings.TrimSpace(log.DistributionMode)
+			settlement.distributionWeights = strings.TrimSpace(log.DistributionWeights)
+			settlement.totalCost = log.TotalCost
+			settlement.poolAmount = log.PoolAmount
+			continue
+		}
+		if settlement.poolRate <= 0 && log.PoolRate > 0 {
+			settlement.poolRate = log.PoolRate
+		}
+		if settlement.topN <= 0 && log.TopN > 0 {
+			settlement.topN = log.TopN
+		}
+		if settlement.minSpend <= 0 && log.MinSpend > 0 {
+			settlement.minSpend = log.MinSpend
+		}
+		if settlement.distributionMode == "" && strings.TrimSpace(log.DistributionMode) != "" {
+			settlement.distributionMode = strings.TrimSpace(log.DistributionMode)
+		}
+		if settlement.distributionWeights == "" && strings.TrimSpace(log.DistributionWeights) != "" {
+			settlement.distributionWeights = strings.TrimSpace(log.DistributionWeights)
+		}
+		if settlement.totalCost <= 0 && log.TotalCost > 0 {
+			settlement.totalCost = log.TotalCost
+		}
+		if settlement.poolAmount <= 0 && log.PoolAmount > 0 {
+			settlement.poolAmount = log.PoolAmount
+		}
+	}
+	if settlement.topN <= 0 {
+		settlement.topN = maxRank
+	}
+	if settlement.poolRate <= 0 && settlement.totalCost > 0 && settlement.poolAmount > 0 {
+		settlement.poolRate = roundLeaderboard(settlement.poolAmount / settlement.totalCost * 100)
+	}
+	if settlement.distributionMode == "" {
+		settlement.distributionMode = service.LeaderboardRewardModeAverage
+	}
+	return settlement
 }
 
 // maskLeaderboardEmail 对邮箱脱敏：保留本地名前 1-2 位 + "***"，域名保留。

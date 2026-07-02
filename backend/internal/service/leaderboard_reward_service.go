@@ -24,17 +24,37 @@ type LeaderboardRewardGrantItem struct {
 
 // LeaderboardRewardGrant 表示一次每日激励发放的全部信息。
 type LeaderboardRewardGrant struct {
-	RewardDate       time.Time // 结算的消费日期（即“昨天”），仅日期部分有意义
-	PoolAmount       float64   // 奖池总额（昨日总消费 × 比例）
-	TotalCost        float64   // 当日全站总消费（actual_cost）
-	DistributionMode string    // 分配模式
-	Items            []LeaderboardRewardGrantItem
+	RewardDate          time.Time // 结算的消费日期（即“昨天”），仅日期部分有意义
+	PoolRate            float64   // 奖池比例快照（百分比）
+	TopN                int       // 奖励名额快照
+	MinSpend            float64   // 参与门槛快照
+	PoolAmount          float64   // 奖池总额（昨日总消费 × 比例）
+	TotalCost           float64   // 当日全站总消费（actual_cost）
+	DistributionMode    string    // 分配模式
+	DistributionWeights string    // 分配权重快照
+	Items               []LeaderboardRewardGrantItem
+}
+
+// LeaderboardRewardLog 表示一次排行榜激励的单个用户发放记录。
+type LeaderboardRewardLog struct {
+	UserID              int64
+	Rank                int
+	RewardAmount        float64
+	PoolAmount          float64
+	TotalCost           float64
+	PoolRate            float64
+	TopN                int
+	MinSpend            float64
+	DistributionMode    string
+	DistributionWeights string
 }
 
 // LeaderboardRewardRepository 排行榜激励发放的持久化接口。
 type LeaderboardRewardRepository interface {
 	// HasSettled 报告给定消费日期是否已经发放过（幂等去重依据）。
 	HasSettled(ctx context.Context, rewardDate time.Time) (bool, error)
+	// ListByDate 返回指定消费日期的实际发放记录，用于昨日榜回放结算快照。
+	ListByDate(ctx context.Context, rewardDate time.Time) ([]LeaderboardRewardLog, error)
 	// GrantRewards 在单个事务内为每个用户加余额并写入发放记录；
 	// (reward_date, user_id) 唯一约束保证重复发放会整体回滚。返回实际发放人数。
 	GrantRewards(ctx context.Context, grant LeaderboardRewardGrant) (int, error)
@@ -193,11 +213,15 @@ func (s *LeaderboardRewardService) runOnce() {
 	}
 
 	granted, err := s.rewardRepo.GrantRewards(ctx, LeaderboardRewardGrant{
-		RewardDate:       rewardDate,
-		PoolAmount:       pool,
-		TotalCost:        roundTo(totalCost, 6),
-		DistributionMode: mode,
-		Items:            grantItems,
+		RewardDate:          rewardDate,
+		PoolRate:            rate,
+		TopN:                topN,
+		MinSpend:            roundTo(minSpend, 6),
+		PoolAmount:          pool,
+		TotalCost:           roundTo(totalCost, 6),
+		DistributionMode:    mode,
+		DistributionWeights: strings.TrimSpace(weights),
+		Items:               grantItems,
 	})
 	if err != nil {
 		log.Printf("[LeaderboardReward] grant rewards for %s failed: %v", rewardDate.Format("2006-01-02"), err)
