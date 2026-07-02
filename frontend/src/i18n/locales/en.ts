@@ -33,7 +33,14 @@ export default {
       title: 'Today’s spend leaderboard is active.',
       description: 'Rankings are calculated from each user’s daily actual spend, with rewards distributed after daily settlement.',
       items: { period: 'Period', pool: 'Reward pool', reward: 'Reward spots', threshold: 'How to join' },
-      values: { period: 'Daily settlement', pool: '20% of sitewide spend', reward: 'Top 3', threshold: 'Use API normally' },
+      values: {
+        period: 'Daily settlement',
+        pool: '20% of sitewide spend',
+        reward: 'Top 3',
+        configuredPool: '{rate}% of sitewide spend',
+        configuredReward: 'Top {topN}',
+        threshold: 'Use API normally'
+      },
       ctaGuest: 'Log in to view usage',
       ctaAuthed: 'View my usage'
     },

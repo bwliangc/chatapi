@@ -33,7 +33,14 @@ export default {
       title: '今日消费排行榜进行中。',
       description: '活动按用户每日实际消费统计排名，每日结算后发放对应奖励。',
       items: { period: '周期', pool: '奖池', reward: '奖励名额', threshold: '参与方式' },
-      values: { period: '每天结算', pool: '全站的 20%', reward: 'Top3', threshold: '正常使用 API' },
+      values: {
+        period: '每天结算',
+        pool: '全站的 20%',
+        reward: 'Top3',
+        configuredPool: '全站的 {rate}%',
+        configuredReward: 'Top{topN}',
+        threshold: '正常使用 API'
+      },
       ctaGuest: '登录查看用量',
       ctaAuthed: '查看我的用量'
     },

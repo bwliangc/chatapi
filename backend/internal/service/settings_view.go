@@ -327,7 +327,9 @@ type PublicSettings struct {
 	// Subscription Management feature (admin "订阅管理" + user "我的订阅" pages; opt-out, default true)
 	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
 	// Leaderboard ranking page (user-facing spending board; opt-in)
-	LeaderboardRankingVisibleEnabled bool `json:"leaderboard_ranking_visible_enabled"`
+	LeaderboardRankingVisibleEnabled bool    `json:"leaderboard_ranking_visible_enabled"`
+	LeaderboardRewardPoolRate        float64 `json:"leaderboard_reward_pool_rate"`
+	LeaderboardRewardTopN            int     `json:"leaderboard_reward_top_n"`
 
 	// Affiliate (邀请返利) feature toggle
 	AffiliateEnabled bool `json:"affiliate_enabled"`

@@ -308,6 +308,11 @@ interface FeaturedPrice {
   actualOutput: number | null
 }
 
+type LeaderboardActivityPublicSettings = {
+  leaderboard_reward_pool_rate?: unknown
+  leaderboard_reward_top_n?: unknown
+}
+
 // Site settings - directly from appStore (already initialized from injected config)
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Sub2API')
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
@@ -358,15 +363,43 @@ const featuredPrices: FeaturedPrice[] = [
 
 const activityHighlights = computed(() => [
   { label: t('home.activity.items.period'), value: t('home.activity.values.period') },
-  { label: t('home.activity.items.pool'), value: t('home.activity.values.pool') },
-  { label: t('home.activity.items.reward'), value: t('home.activity.values.reward') },
+  { label: t('home.activity.items.pool'), value: activityPoolValue.value },
+  { label: t('home.activity.items.reward'), value: activityRewardValue.value },
   { label: t('home.activity.items.threshold'), value: t('home.activity.values.threshold') }
 ])
 
 const pricingTableSubtitle = computed(() => t('home.pricingTable.fixedSubtitle'))
 
+const leaderboardActivitySettings = computed(
+  () => appStore.cachedPublicSettings as LeaderboardActivityPublicSettings | null,
+)
+
+const leaderboardPoolRate = computed(() => {
+  const value = Number(leaderboardActivitySettings.value?.leaderboard_reward_pool_rate)
+  return Number.isFinite(value) ? value : null
+})
+
+const leaderboardTopN = computed(() => {
+  const value = Number(leaderboardActivitySettings.value?.leaderboard_reward_top_n)
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : null
+})
+
+const activityPoolValue = computed(() => {
+  if (leaderboardPoolRate.value == null) return t('home.activity.values.pool')
+  return t('home.activity.values.configuredPool', { rate: formatActivityNumber(leaderboardPoolRate.value) })
+})
+
+const activityRewardValue = computed(() => {
+  if (leaderboardTopN.value == null) return t('home.activity.values.reward')
+  return t('home.activity.values.configuredReward', { topN: leaderboardTopN.value })
+})
+
 function formatMultiplier(rate: number): string {
   return `${Number(rate || 0).toFixed(2).replace(/\.00$/, '').replace(/0$/, '')}x`
+}
+
+function formatActivityNumber(value: number): string {
+  return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
 }
 
 function formatPricePair(input: number | null, output: number | null): string {

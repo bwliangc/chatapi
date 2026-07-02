@@ -99,6 +99,8 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 
 		SubscriptionManagementEnabled:    settings.SubscriptionManagementEnabled,
 		LeaderboardRankingVisibleEnabled: settings.LeaderboardRankingVisibleEnabled,
+		LeaderboardRewardPoolRate:        settings.LeaderboardRewardPoolRate,
+		LeaderboardRewardTopN:            settings.LeaderboardRewardTopN,
 
 		AffiliateEnabled: settings.AffiliateEnabled,
 

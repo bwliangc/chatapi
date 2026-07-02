@@ -837,6 +837,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyOnlinePlaygroundEnabled,
 		SettingKeySubscriptionManagementEnabled,
 		SettingKeyLeaderboardRankingVisibleEnabled,
+		SettingKeyLeaderboardRewardPoolRate,
+		SettingKeyLeaderboardRewardTopN,
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
 		SettingKeyAllowUserViewErrorRequests,
@@ -896,6 +898,17 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 	if v, err := strconv.ParseFloat(settings[SettingKeyBalanceLowNotifyThreshold], 64); err == nil && v >= 0 {
 		balanceLowNotifyThreshold = v
 	}
+	leaderboardRewardPoolRate := LeaderboardRewardPoolRateDefault
+	if v, err := strconv.ParseFloat(strings.TrimSpace(settings[SettingKeyLeaderboardRewardPoolRate]), 64); err == nil {
+		leaderboardRewardPoolRate = clampLeaderboardRewardPoolRate(v)
+	}
+	leaderboardRewardTopN := LeaderboardRewardTopNDefault
+	if v, err := strconv.Atoi(strings.TrimSpace(settings[SettingKeyLeaderboardRewardTopN])); err == nil && v >= 0 {
+		if v > LeaderboardRewardTopNMax {
+			v = LeaderboardRewardTopNMax
+		}
+		leaderboardRewardTopN = v
+	}
 
 	return &PublicSettings{
 		RegistrationEnabled:              settings[SettingKeyRegistrationEnabled] == "true",
@@ -954,6 +967,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		// Subscription management feature (default: enabled; only an explicit false-y value disables it)
 		SubscriptionManagementEnabled:    !isFalseSettingValue(settings[SettingKeySubscriptionManagementEnabled]),
 		LeaderboardRankingVisibleEnabled: settings[SettingKeyLeaderboardRankingVisibleEnabled] == "true",
+		LeaderboardRewardPoolRate:        leaderboardRewardPoolRate,
+		LeaderboardRewardTopN:            leaderboardRewardTopN,
 
 		AffiliateEnabled: settings[SettingKeyAffiliateEnabled] == "true",
 
@@ -1478,15 +1493,17 @@ type PublicSettingsInjectionPayload struct {
 	// Feature flags — MUST match the opt-in/opt-out registry in
 	// frontend/src/utils/featureFlags.ts. Missing a field here is the bug
 	// that hid the "可用渠道" menu on page refresh.
-	ChannelMonitorEnabled                bool `json:"channel_monitor_enabled"`
-	ChannelMonitorDefaultIntervalSeconds int  `json:"channel_monitor_default_interval_seconds"`
-	AvailableChannelsEnabled             bool `json:"available_channels_enabled"`
-	OnlinePlaygroundEnabled              bool `json:"online_playground_enabled"`
-	SubscriptionManagementEnabled        bool `json:"subscription_management_enabled"`
-	LeaderboardRankingVisibleEnabled     bool `json:"leaderboard_ranking_visible_enabled"`
-	AffiliateEnabled                     bool `json:"affiliate_enabled"`
-	RiskControlEnabled                   bool `json:"risk_control_enabled"`
-	AllowUserViewErrorRequests           bool `json:"allow_user_view_error_requests"`
+	ChannelMonitorEnabled                bool    `json:"channel_monitor_enabled"`
+	ChannelMonitorDefaultIntervalSeconds int     `json:"channel_monitor_default_interval_seconds"`
+	AvailableChannelsEnabled             bool    `json:"available_channels_enabled"`
+	OnlinePlaygroundEnabled              bool    `json:"online_playground_enabled"`
+	SubscriptionManagementEnabled        bool    `json:"subscription_management_enabled"`
+	LeaderboardRankingVisibleEnabled     bool    `json:"leaderboard_ranking_visible_enabled"`
+	LeaderboardRewardPoolRate            float64 `json:"leaderboard_reward_pool_rate"`
+	LeaderboardRewardTopN                int     `json:"leaderboard_reward_top_n"`
+	AffiliateEnabled                     bool    `json:"affiliate_enabled"`
+	RiskControlEnabled                   bool    `json:"risk_control_enabled"`
+	AllowUserViewErrorRequests           bool    `json:"allow_user_view_error_requests"`
 }
 
 // GetPublicSettingsForInjection returns public settings in a format suitable for HTML injection.
@@ -1550,6 +1567,8 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		OnlinePlaygroundEnabled:              settings.OnlinePlaygroundEnabled,
 		SubscriptionManagementEnabled:        settings.SubscriptionManagementEnabled,
 		LeaderboardRankingVisibleEnabled:     settings.LeaderboardRankingVisibleEnabled,
+		LeaderboardRewardPoolRate:            settings.LeaderboardRewardPoolRate,
+		LeaderboardRewardTopN:                settings.LeaderboardRewardTopN,
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		AllowUserViewErrorRequests:           settings.AllowUserViewErrorRequests,

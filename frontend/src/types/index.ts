@@ -248,6 +248,8 @@ export interface PublicSettings {
   available_channels_enabled: boolean
   online_playground_enabled: boolean
   leaderboard_ranking_visible_enabled: boolean
+  leaderboard_reward_pool_rate?: number
+  leaderboard_reward_top_n?: number
   service_quota_enabled: boolean
   affiliate_enabled: boolean
   allow_user_view_error_requests?: boolean
