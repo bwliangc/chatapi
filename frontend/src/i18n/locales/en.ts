@@ -1566,6 +1566,10 @@ export default {
       usageCost: 'Window Cost',
       monthlyFixedCost: 'Monthly Fixed Cost (CNY)',
       usageCostRate: 'Composite Usage Cost Rate',
+      fixedCostPeriod: 'Fixed Cost Period',
+      fixedCostStartsAt: 'Start',
+      fixedCostEndsAt: 'End',
+      fixedCostActiveDays: '{days} day(s)',
       periodUsageCost: 'Period Usage Cost (CNY)',
       costNote: 'Cost Note',
       costNotePlaceholder: 'Subscription plan, rental cost, or billing cycle',
@@ -1579,7 +1583,7 @@ export default {
       costFormula: 'Upstream cost',
       costFormulaValue: 'Upstream cost multiplies the account-cost base (USD) by each upstream account composite usage cost rate (CNY/USD); admin users are excluded.',
       fixedCostSource: 'Fixed subscription cost',
-      fixedCostSourceValue: 'Maintain monthly account fixed costs, usage cost rates, and recharge package prices in the settings button on this page; fixed costs are prorated by selected days.',
+      fixedCostSourceValue: 'Maintain monthly account fixed costs, validity periods, usage cost rates, and recharge package prices in the settings button on this page; fixed costs are prorated by the overlap between the selected range and each validity period.',
       balanceLiabilityFormula: 'Balance liability',
       balanceLiabilityFormulaValue: 'Balance liability is shown primarily as total positive non-admin platform balance and is not directly converted by the RMB-per-USD rate; CNY liability is only an estimate from recharge package prices or matched recharge history.',
       balanceLiabilitySourceMatched: 'matched recharge history',
@@ -1615,6 +1619,7 @@ export default {
       settingsSaveFailed: 'Failed to save cost calculator settings',
       usageSummaryLoadFailed: 'Failed to refresh cost calculator usage summary',
       monthlyCostInvalid: 'Monthly fixed account cost cannot be negative',
+      fixedCostDateRangeInvalid: 'Fixed cost end date cannot be earlier than start date',
       accountUsageCostRateInvalid: 'Account composite usage cost rate cannot be negative'
     },
 

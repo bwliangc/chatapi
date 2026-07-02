@@ -171,7 +171,9 @@
                   </td>
                   <td class="whitespace-nowrap px-5 py-3 text-right font-mono text-sm text-gray-900 dark:text-white">
                     <div>{{ formatActualMoney(row.period_fixed_cost) }}</div>
-                    <div class="text-xs text-gray-500 dark:text-dark-400">{{ formatActualMoney(row.monthly_fixed_cost) }}/月</div>
+                    <div class="text-xs text-gray-500 dark:text-dark-400">
+                      {{ formatActualMoney(row.monthly_fixed_cost) }}/月 · {{ t('admin.costCalculator.fixedCostActiveDays', { days: row.fixed_cost_days }) }}
+                    </div>
                   </td>
                   <td class="whitespace-nowrap px-5 py-3 text-right font-mono text-sm text-gray-900 dark:text-white">
                     {{ formatActualMoney(row.total_cost) }}
@@ -421,6 +423,9 @@
                       {{ t('admin.costCalculator.usageCostRate') }}
                     </th>
                     <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
+                      {{ t('admin.costCalculator.fixedCostPeriod') }}
+                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
                       {{ t('admin.costCalculator.costNote') }}
                     </th>
                     <th class="w-16 px-4 py-3"></th>
@@ -428,7 +433,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100 bg-white dark:divide-dark-700 dark:bg-dark-800">
                   <tr v-if="settingsForm.account_costs.length === 0">
-                    <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-dark-400">
+                    <td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-dark-400">
                       {{ t('admin.costCalculator.noAccountCosts') }}
                     </td>
                   </tr>
@@ -457,6 +462,30 @@
                         step="0.0001"
                         class="input text-right font-mono"
                       />
+                    </td>
+                    <td class="min-w-[16rem] px-4 py-3">
+                      <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <div>
+                          <label class="mb-1 block text-xs text-gray-500 dark:text-dark-400">
+                            {{ t('admin.costCalculator.fixedCostStartsAt') }}
+                          </label>
+                          <input
+                            v-model="item.fixed_cost_starts_at"
+                            type="date"
+                            class="input"
+                          />
+                        </div>
+                        <div>
+                          <label class="mb-1 block text-xs text-gray-500 dark:text-dark-400">
+                            {{ t('admin.costCalculator.fixedCostEndsAt') }}
+                          </label>
+                          <input
+                            v-model="item.fixed_cost_ends_at"
+                            type="date"
+                            class="input"
+                          />
+                        </div>
+                      </div>
                     </td>
                     <td class="px-4 py-3">
                       <input
@@ -528,6 +557,7 @@ interface AccountCostRow {
   period_income: number
   period_usage_cost: number
   period_fixed_cost: number
+  fixed_cost_days: number
   total_cost: number
   profit: number
   note: string
@@ -606,16 +636,24 @@ const balanceLiabilitySummary = ref<CostCalculatorBalanceLiabilitySummary | null
 const config = reactive<CostCalculatorConfig>(defaultCostCalculatorConfig())
 const settingsForm = reactive<CostCalculatorConfig>(defaultCostCalculatorConfig())
 
+const DAY_MS = 86_400_000
+
 const defaultCompositeUsageRate = computed(() =>
   nonNegativeOrDefault(config.upstream_cost_rate, positiveOrDefault(config.balance_exchange_rate, 1))
 )
 
+const selectedRange = computed(() => {
+  const start = parseDateOnly(startDate.value)
+  const end = parseDateOnly(endDate.value)
+  if (!start || !end) return null
+  return { start, end }
+})
+
 const selectedDays = computed(() => {
-  const start = new Date(`${startDate.value}T00:00:00`)
-  const end = new Date(`${endDate.value}T00:00:00`)
-  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return 0
-  const ms = end.getTime() - start.getTime()
-  return Math.max(1, Math.floor(ms / 86_400_000) + 1)
+  const range = selectedRange.value
+  if (!range) return 0
+  const ms = range.end.getTime() - range.start.getTime()
+  return Math.max(1, Math.floor(ms / DAY_MS) + 1)
 })
 
 const rawUserBilling = computed(() => toFinite(usageSummary.value?.total_actual_cost))
@@ -628,7 +666,9 @@ const usageGrossMargin = computed(() => {
 const monthlyFixedCost = computed(() =>
   accountRows.value.reduce((sum, row) => sum + row.monthly_fixed_cost, 0)
 )
-const proratedFixedCost = computed(() => monthlyFixedCost.value / 30 * selectedDays.value)
+const proratedFixedCost = computed(() =>
+  accountRows.value.reduce((sum, row) => sum + row.period_fixed_cost, 0)
+)
 const leaderboardRewardAmount = computed(() => toFinite(balanceRechargeSummary.value?.leaderboard_reward_amount))
 const leaderboardRewardCost = computed(() => balanceToRevenue(leaderboardRewardAmount.value))
 const leaderboardRewardCount = computed(() => toFinite(balanceRechargeSummary.value?.leaderboard_reward_count))
@@ -713,7 +753,8 @@ const accountRows = computed<AccountCostRow[]>(() => {
     const account = accountsById.value.get(accountId)
     const usage = accountUsageById.value.get(accountId)
     const monthlyFixedCost = nonNegativeOrDefault(configured?.monthly_cost, 0)
-    const periodFixedCost = monthlyFixedCost / 30 * selectedDays.value
+    const fixedCostDays = fixedCostOverlapDays(configured)
+    const periodFixedCost = monthlyFixedCost / 30 * fixedCostDays
     const periodUsageCost = toFinite(usage?.usage_cost)
     const periodIncome = balanceToRevenue(usage?.actual_cost)
     const totalCost = periodUsageCost + periodFixedCost
@@ -727,6 +768,7 @@ const accountRows = computed<AccountCostRow[]>(() => {
       period_income: periodIncome,
       period_usage_cost: periodUsageCost,
       period_fixed_cost: periodFixedCost,
+      fixed_cost_days: fixedCostDays,
       total_cost: totalCost,
       profit: periodIncome - totalCost,
       note: configured?.monthly_cost_label || ''
@@ -833,6 +875,46 @@ function buildAccountingStatsParams() {
   }
 }
 
+function parseDateOnly(value: unknown): Date | null {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+  const date = new Date(`${value}T00:00:00`)
+  if (!Number.isFinite(date.getTime())) return null
+  return formatDateOnly(date) === value ? date : null
+}
+
+function formatDateOnly(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function normalizeDateOnly(value: unknown): string {
+  const date = parseDateOnly(typeof value === 'string' ? value.trim() : '')
+  return date ? formatDateOnly(date) : ''
+}
+
+function fixedCostOverlapDays(item: Partial<CostCalculatorAccountCost> | undefined): number {
+  const range = selectedRange.value
+  if (!range) return 0
+  let start = range.start
+  let end = range.end
+  const fixedStart = parseDateOnly(item?.fixed_cost_starts_at)
+  const fixedEnd = parseDateOnly(item?.fixed_cost_ends_at)
+  if (fixedStart && fixedStart > start) start = fixedStart
+  if (fixedEnd && fixedEnd < end) end = fixedEnd
+  if (end < start) return 0
+  return Math.floor((end.getTime() - start.getTime()) / DAY_MS) + 1
+}
+
+function isValidFixedCostDateRange(item: Partial<CostCalculatorAccountCost>): boolean {
+  const start = parseDateOnly(item.fixed_cost_starts_at)
+  const end = parseDateOnly(item.fixed_cost_ends_at)
+  if (item.fixed_cost_starts_at && !start) return false
+  if (item.fixed_cost_ends_at && !end) return false
+  return !(start && end && end < start)
+}
+
 function profitToneClass(value: number): string {
   return value >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
 }
@@ -869,7 +951,9 @@ function addAccountCost() {
     platform: account?.platform || '',
     monthly_cost: 0,
     usage_cost_rate: nonNegativeOrDefault(settingsForm.upstream_cost_rate, positiveOrDefault(settingsForm.balance_exchange_rate, 1)),
-    monthly_cost_label: ''
+    monthly_cost_label: '',
+    fixed_cost_starts_at: '',
+    fixed_cost_ends_at: ''
   })
   selectedAccountId.value = 0
 }
@@ -904,6 +988,10 @@ async function saveSettings() {
   }
   if (settingsForm.account_costs.some(item => toFinite(item.usage_cost_rate) < 0)) {
     appStore.showError(t('admin.costCalculator.accountUsageCostRateInvalid'))
+    return
+  }
+  if (settingsForm.account_costs.some(item => !isValidFixedCostDateRange(item))) {
+    appStore.showError(t('admin.costCalculator.fixedCostDateRangeInvalid'))
     return
   }
   if (settingsForm.balance_recharge_packages.some(item => toFinite(item.balance_amount) <= 0)) {
@@ -996,7 +1084,9 @@ function cloneAccountCost(item: Partial<CostCalculatorAccountCost>, defaultUsage
     platform: String(item.platform || '').trim(),
     monthly_cost: nonNegativeOrDefault(item.monthly_cost, 0),
     usage_cost_rate: nonNegativeOrDefault(item.usage_cost_rate, defaultUsageCostRate),
-    monthly_cost_label: String(item.monthly_cost_label || '').trim()
+    monthly_cost_label: String(item.monthly_cost_label || '').trim(),
+    fixed_cost_starts_at: normalizeDateOnly(item.fixed_cost_starts_at),
+    fixed_cost_ends_at: normalizeDateOnly(item.fixed_cost_ends_at)
   }
 }
 

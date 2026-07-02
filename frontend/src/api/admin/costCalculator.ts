@@ -7,6 +7,8 @@ export interface CostCalculatorAccountCost {
   monthly_cost: number
   usage_cost_rate?: number
   monthly_cost_label?: string
+  fixed_cost_starts_at?: string
+  fixed_cost_ends_at?: string
 }
 
 export interface CostCalculatorBalanceRechargePackage {

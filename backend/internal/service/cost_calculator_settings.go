@@ -8,17 +8,20 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 )
 
 const SettingKeyCostCalculatorConfig = "cost_calculator_config"
 
 type CostCalculatorAccountCost struct {
-	AccountID        int64    `json:"account_id"`
-	AccountName      string   `json:"account_name"`
-	Platform         string   `json:"platform"`
-	MonthlyCost      float64  `json:"monthly_cost"`
-	UsageCostRate    *float64 `json:"usage_cost_rate,omitempty"`
-	MonthlyCostLabel string   `json:"monthly_cost_label,omitempty"`
+	AccountID         int64    `json:"account_id"`
+	AccountName       string   `json:"account_name"`
+	Platform          string   `json:"platform"`
+	MonthlyCost       float64  `json:"monthly_cost"`
+	UsageCostRate     *float64 `json:"usage_cost_rate,omitempty"`
+	MonthlyCostLabel  string   `json:"monthly_cost_label,omitempty"`
+	FixedCostStartsAt string   `json:"fixed_cost_starts_at,omitempty"`
+	FixedCostEndsAt   string   `json:"fixed_cost_ends_at,omitempty"`
 }
 
 type CostCalculatorBalanceRechargePackage struct {
@@ -147,8 +150,13 @@ func normalizeCostCalculatorConfig(cfg CostCalculatorConfig) (CostCalculatorConf
 		item.AccountName = trimCostCalculatorText(item.AccountName)
 		item.Platform = trimCostCalculatorText(item.Platform)
 		item.MonthlyCostLabel = trimCostCalculatorText(item.MonthlyCostLabel)
+		item.FixedCostStartsAt = trimCostCalculatorText(item.FixedCostStartsAt)
+		item.FixedCostEndsAt = trimCostCalculatorText(item.FixedCostEndsAt)
 		if len(item.MonthlyCostLabel) > maxCostCalculatorLabelLength {
 			return CostCalculatorConfig{}, fmt.Errorf("monthly_cost_label is too long")
+		}
+		if err := validateCostCalculatorDateRange(item.FixedCostStartsAt, item.FixedCostEndsAt); err != nil {
+			return CostCalculatorConfig{}, err
 		}
 		costs = append(costs, item)
 	}
@@ -197,4 +205,30 @@ func isFiniteNonNegative(value float64) bool {
 
 func trimCostCalculatorText(value string) string {
 	return strings.TrimSpace(value)
+}
+
+func validateCostCalculatorDateRange(startDate, endDate string) error {
+	var start time.Time
+	var end time.Time
+	var hasStart, hasEnd bool
+	if startDate != "" {
+		parsed, err := time.Parse("2006-01-02", startDate)
+		if err != nil {
+			return fmt.Errorf("fixed_cost_starts_at must use YYYY-MM-DD")
+		}
+		start = parsed
+		hasStart = true
+	}
+	if endDate != "" {
+		parsed, err := time.Parse("2006-01-02", endDate)
+		if err != nil {
+			return fmt.Errorf("fixed_cost_ends_at must use YYYY-MM-DD")
+		}
+		end = parsed
+		hasEnd = true
+	}
+	if hasStart && hasEnd && end.Before(start) {
+		return fmt.Errorf("fixed_cost_ends_at must be on or after fixed_cost_starts_at")
+	}
+	return nil
 }

@@ -1587,6 +1587,10 @@ export default {
       usageCost: '窗口成本',
       monthlyFixedCost: '月固定成本（人民币）',
       usageCostRate: '综合按量成本倍率',
+      fixedCostPeriod: '固定成本有效期',
+      fixedCostStartsAt: '开始',
+      fixedCostEndsAt: '结束',
+      fixedCostActiveDays: '{days} 天',
       periodUsageCost: '区间按量成本（人民币）',
       costNote: '成本备注',
       costNotePlaceholder: '例如订阅套餐、租用成本或结算周期',
@@ -1600,7 +1604,7 @@ export default {
       costFormula: '上游成本',
       costFormulaValue: '上游成本使用账号统计成本基数（USD）乘以每个上游账号的综合按量成本倍率（人民币/USD）；管理员用户已排除。',
       fixedCostSource: '固定订阅成本',
-      fixedCostSourceValue: '在成本计算页面右上角设置中维护账号月固定成本、按量成本倍率和充值面额价格表；固定成本按所选天数折算。',
+      fixedCostSourceValue: '在成本计算页面右上角设置中维护账号月固定成本、有效期、按量成本倍率和充值面额价格表；固定成本按所选区间与有效期重叠天数折算。',
       balanceLiabilityFormula: '余额负债',
       balanceLiabilityFormulaValue: '平台余额负债主值按全量普通用户正余额展示，不直接用人民币兑美元汇率折算；人民币负债仅按充值面额价格表或历史匹配充值的加权实际单价估算。',
       balanceLiabilitySourceMatched: '历史匹配充值加权',
@@ -1636,6 +1640,7 @@ export default {
       settingsSaveFailed: '保存成本计算设置失败',
       usageSummaryLoadFailed: '刷新成本计算用量汇总失败',
       monthlyCostInvalid: '账号月固定成本不能小于 0',
+      fixedCostDateRangeInvalid: '固定成本有效期结束日期不能早于开始日期',
       accountUsageCostRateInvalid: '账号综合按量成本倍率不能小于 0'
     },
 
