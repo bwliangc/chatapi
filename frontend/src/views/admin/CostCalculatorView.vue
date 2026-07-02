@@ -281,7 +281,7 @@
       <BaseDialog
         :show="showSettingsDialog"
         :title="t('admin.costCalculator.settingsTitle')"
-        width="wide"
+        width="extra-wide"
         @close="closeSettingsDialog"
       >
         <div class="space-y-6">
@@ -406,108 +406,84 @@
               </button>
             </div>
 
-            <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-dark-700">
-              <table class="min-w-full divide-y divide-gray-200 dark:divide-dark-700">
-                <thead class="bg-gray-50 dark:bg-dark-800/70">
-                  <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                      {{ t('admin.costCalculator.account') }}
-                    </th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                      {{ t('admin.costCalculator.platform') }}
-                    </th>
-                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                      {{ t('admin.costCalculator.monthlyFixedCost') }}
-                    </th>
-                    <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                      {{ t('admin.costCalculator.usageCostRate') }}
-                    </th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                      {{ t('admin.costCalculator.fixedCostPeriod') }}
-                    </th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                      {{ t('admin.costCalculator.costNote') }}
-                    </th>
-                    <th class="w-16 px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 bg-white dark:divide-dark-700 dark:bg-dark-800">
-                  <tr v-if="settingsForm.account_costs.length === 0">
-                    <td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-dark-400">
-                      {{ t('admin.costCalculator.noAccountCosts') }}
-                    </td>
-                  </tr>
-                  <tr v-for="(item, index) in settingsForm.account_costs" v-else :key="item.account_id">
-                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                      <div class="font-medium">{{ item.account_name || accountName(item.account_id) }}</div>
-                      <div class="text-xs text-gray-500 dark:text-dark-400">#{{ item.account_id }}</div>
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-600 dark:text-dark-300">
-                      {{ item.platform || accountPlatform(item.account_id) }}
-                    </td>
-                    <td class="px-4 py-3">
-                      <input
-                        v-model.number="item.monthly_cost"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        class="input text-right font-mono"
-                      />
-                    </td>
-                    <td class="px-4 py-3">
-                      <input
-                        v-model.number="item.usage_cost_rate"
-                        type="number"
-                        min="0"
-                        step="0.0001"
-                        class="input text-right font-mono"
-                      />
-                    </td>
-                    <td class="min-w-[16rem] px-4 py-3">
-                      <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <div>
-                          <label class="mb-1 block text-xs text-gray-500 dark:text-dark-400">
-                            {{ t('admin.costCalculator.fixedCostStartsAt') }}
-                          </label>
-                          <input
-                            v-model="item.fixed_cost_starts_at"
-                            type="date"
-                            class="input"
-                          />
-                        </div>
-                        <div>
-                          <label class="mb-1 block text-xs text-gray-500 dark:text-dark-400">
-                            {{ t('admin.costCalculator.fixedCostEndsAt') }}
-                          </label>
-                          <input
-                            v-model="item.fixed_cost_ends_at"
-                            type="date"
-                            class="input"
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td class="px-4 py-3">
-                      <input
-                        v-model.trim="item.monthly_cost_label"
-                        type="text"
-                        class="input"
-                        :placeholder="t('admin.costCalculator.costNotePlaceholder')"
-                      />
-                    </td>
-                    <td class="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        class="rounded p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
-                        :title="t('common.delete')"
-                        @click="removeAccountCost(index)"
-                      >
-                        <Icon name="trash" size="sm" />
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div v-if="settingsForm.account_costs.length === 0" class="rounded-lg border border-dashed border-gray-300 bg-gray-50/70 px-4 py-6 text-center text-sm text-gray-500 dark:border-dark-600 dark:bg-dark-800/50 dark:text-dark-400">
+              {{ t('admin.costCalculator.noAccountCosts') }}
+            </div>
+            <div v-else class="space-y-3">
+              <div
+                v-for="(item, index) in settingsForm.account_costs"
+                :key="item.account_id"
+                class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800"
+              >
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div class="min-w-0">
+                    <div class="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ item.account_name || accountName(item.account_id) }}
+                    </div>
+                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-dark-400">
+                      <span>#{{ item.account_id }}</span>
+                      <span>{{ item.platform || accountPlatform(item.account_id) }}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="self-start rounded p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                    :title="t('common.delete')"
+                    @click="removeAccountCost(index)"
+                  >
+                    <Icon name="trash" size="sm" />
+                  </button>
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <div>
+                    <label class="input-label">{{ t('admin.costCalculator.monthlyFixedCost') }}</label>
+                    <input
+                      v-model.number="item.monthly_cost"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      class="input text-right font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label class="input-label">{{ t('admin.costCalculator.usageCostRate') }}</label>
+                    <input
+                      v-model.number="item.usage_cost_rate"
+                      type="number"
+                      min="0"
+                      step="0.0001"
+                      class="input text-right font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label class="input-label">{{ t('admin.costCalculator.fixedCostStartsAt') }}</label>
+                    <input
+                      v-model="item.fixed_cost_starts_at"
+                      type="date"
+                      class="input"
+                    />
+                  </div>
+                  <div>
+                    <label class="input-label">{{ t('admin.costCalculator.fixedCostEndsAt') }}</label>
+                    <input
+                      v-model="item.fixed_cost_ends_at"
+                      type="date"
+                      class="input"
+                    />
+                  </div>
+                </div>
+
+                <div class="mt-3">
+                  <label class="input-label">{{ t('admin.costCalculator.costNote') }}</label>
+                  <input
+                    v-model.trim="item.monthly_cost_label"
+                    type="text"
+                    class="input"
+                    :placeholder="t('admin.costCalculator.costNotePlaceholder')"
+                  />
+                </div>
+              </div>
             </div>
           </section>
         </div>
