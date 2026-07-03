@@ -114,6 +114,7 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 	poolRate := h.settingService.GetLeaderboardRewardPoolRate(ctx)
 	topN := h.settingService.GetLeaderboardRewardTopN(ctx)
 	minSpend := h.settingService.GetLeaderboardRewardMinSpend(ctx)
+	currentMinSpend := minSpend
 	mode := h.settingService.GetLeaderboardRewardDistributionMode(ctx)
 	weights := h.settingService.GetLeaderboardRewardWeights(ctx)
 	var settlement *leaderboardSettlement
@@ -128,7 +129,7 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 			rewardEnabled = true
 			poolRate = settlement.poolRate
 			topN = settlement.topN
-			minSpend = settlement.minSpend
+			minSpend = leaderboardDisplayMinSpend(settlement, currentMinSpend)
 			mode = settlement.distributionMode
 			weights = settlement.distributionWeights
 		}
@@ -159,20 +160,7 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		// 故从中扣减榜单内可见的被排除者消耗，使总额/奖池口径与展示一致。
 		excluded := h.settingService.GetLeaderboardExcludedEmailSet(ctx)
 		totalCost := ranking.TotalActualCost
-		filtered := ranking.Ranking
-		if settlement == nil && len(excluded) > 0 {
-			filtered = make([]usagestats.UserSpendingRankingItem, 0, len(ranking.Ranking))
-			for _, item := range ranking.Ranking {
-				if service.IsLeaderboardEmailExcluded(item.Email, excluded) {
-					totalCost -= item.ActualCost
-					continue
-				}
-				filtered = append(filtered, item)
-			}
-			if totalCost < 0 {
-				totalCost = 0
-			}
-		}
+		filtered, totalCost := filterLeaderboardExcludedItems(ranking.Ranking, excluded, totalCost, settlement == nil)
 
 		if settlement != nil {
 			resp.TotalCost = roundLeaderboard(settlement.totalCost)
@@ -304,6 +292,47 @@ func newLeaderboardSettlement(logs []service.LeaderboardRewardLog) *leaderboardS
 		settlement.distributionMode = service.LeaderboardRewardModeAverage
 	}
 	return settlement
+}
+
+func leaderboardDisplayMinSpend(settlement *leaderboardSettlement, currentMinSpend float64) float64 {
+	if settlement == nil {
+		return currentMinSpend
+	}
+	if settlement.minSpend > 0 {
+		return settlement.minSpend
+	}
+	// 旧结算记录在规则快照迁移前没有 min_spend，只能从当前设置做展示兜底。
+	// 新结算记录的非 0 快照仍优先，避免后续配置变更影响昨日榜。
+	if currentMinSpend > 0 {
+		return currentMinSpend
+	}
+	return 0
+}
+
+func filterLeaderboardExcludedItems(
+	items []usagestats.UserSpendingRankingItem,
+	excluded map[string]struct{},
+	totalCost float64,
+	subtractExcludedCost bool,
+) ([]usagestats.UserSpendingRankingItem, float64) {
+	if len(excluded) == 0 {
+		return items, totalCost
+	}
+
+	filtered := make([]usagestats.UserSpendingRankingItem, 0, len(items))
+	for _, item := range items {
+		if service.IsLeaderboardEmailExcluded(item.Email, excluded) {
+			if subtractExcludedCost {
+				totalCost -= item.ActualCost
+			}
+			continue
+		}
+		filtered = append(filtered, item)
+	}
+	if totalCost < 0 {
+		totalCost = 0
+	}
+	return filtered, totalCost
 }
 
 // maskLeaderboardEmail 对邮箱脱敏：保留本地名前 1-2 位 + "***"，域名保留。
