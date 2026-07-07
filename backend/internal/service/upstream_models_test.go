@@ -32,14 +32,71 @@ func TestBuildV1ModelsURL(t *testing.T) {
 func TestBuildOpenAIModelsURL(t *testing.T) {
 	t.Parallel()
 
-	require.Equal(t, "https://api.example.com/v1/models", buildOpenAIModelsURL("https://api.example.com"))
-	require.Equal(t, "https://api.example.com/v1/models", buildOpenAIModelsURL("https://api.example.com/v1"))
-	require.Equal(t, "https://api.example.com/v1/models", buildOpenAIModelsURL("https://api.example.com/v1/"))
-	require.Equal(t, "https://api.example.com/v1/models", buildOpenAIModelsURL("https://api.example.com/v1/models"))
-	// 任意版本段都应保留，不强加 /v1
-	require.Equal(t, "https://api.example.com/v2/models", buildOpenAIModelsURL("https://api.example.com/v2"))
-	// base 已自带 /models 时原样返回，避免拼成 /models/v1/models
-	require.Equal(t, "https://api.example.com/models", buildOpenAIModelsURL("https://api.example.com/models"))
+	tests := []struct {
+		name string
+		base string
+		want string
+	}{
+		{
+			name: "generic host fallback uses v1",
+			base: "https://api.example.com",
+			want: "https://api.example.com/v1/models",
+		},
+		{
+			name: "openai v1 base url",
+			base: "https://api.example.com/v1",
+			want: "https://api.example.com/v1/models",
+		},
+		{
+			name: "openai v1 base url with trailing slash",
+			base: "https://api.example.com/v1/",
+			want: "https://api.example.com/v1/models",
+		},
+		{
+			name: "models url unchanged",
+			base: "https://api.example.com/v1/models",
+			want: "https://api.example.com/v1/models",
+		},
+		{
+			name: "root models url unchanged",
+			base: "https://api.example.com/models",
+			want: "https://api.example.com/models",
+		},
+		{
+			name: "zhipu v4 coding base url",
+			base: "https://open.bigmodel.cn/api/coding/paas/v4",
+			want: "https://open.bigmodel.cn/api/coding/paas/v4/models",
+		},
+		{
+			name: "openai host fallback uses v1",
+			base: "https://api.openai.com",
+			want: "https://api.openai.com/v1/models",
+		},
+		{
+			name: "trailing slash on v4",
+			base: "https://open.bigmodel.cn/api/coding/paas/v4/",
+			want: "https://open.bigmodel.cn/api/coding/paas/v4/models",
+		},
+		{
+			name: "v2 base url",
+			base: "https://gateway.example.com/openai/v2",
+			want: "https://gateway.example.com/openai/v2/models",
+		},
+		{
+			name: "v3 base url",
+			base: "https://gateway.example.com/openai/v3",
+			want: "https://gateway.example.com/openai/v3/models",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			require.Equal(t, tt.want, buildOpenAIModelsURL(tt.base))
+		})
+	}
 }
 
 func TestBuildGeminiModelsURL(t *testing.T) {
