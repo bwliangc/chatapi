@@ -1123,7 +1123,7 @@ func (s *BillingService) applyModelSpecificPricingPolicy(model string, pricing *
 		return nil
 	}
 	normalized := normalizeKnownOpenAICodexModel(model)
-	isGPT56 := isOpenAIGPT56PricingModel(normalized)
+	isGPT56 := isOpenAIGPT56Model(normalized)
 	usesLegacyLongContextPricing := usesOpenAILegacyLongContextPricing(normalized)
 	if !isGPT56 && !usesLegacyLongContextPricing {
 		return pricing
@@ -1167,10 +1167,6 @@ func (s *BillingService) shouldApplySessionLongContextPricing(tokens UsageTokens
 	}
 	totalInputTokens := tokens.InputTokens + tokens.CacheCreationTokens + tokens.CacheReadTokens
 	return totalInputTokens > pricing.LongContextInputThreshold
-}
-
-func isOpenAIGPT56PricingModel(normalized string) bool {
-	return normalized == "gpt-5.6-sol" || normalized == "gpt-5.6-terra" || normalized == "gpt-5.6-luna"
 }
 
 func usesOpenAILegacyLongContextPricing(normalized string) bool {
