@@ -201,8 +201,8 @@
               </div>
             </div>
 
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-slate-900/10 text-left text-sm dark:divide-white/10">
+            <div data-pricing-layout="desktop" class="hidden overflow-x-auto lg:block">
+              <table class="w-full min-w-[64rem] divide-y divide-slate-900/10 text-left text-sm dark:divide-white/10">
                 <thead class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                   <tr>
                     <th class="px-5 py-4 font-black">{{ t('home.pricingTable.model') }}</th>
@@ -214,7 +214,9 @@
                 <tbody class="divide-y divide-slate-900/10 dark:divide-white/10">
                   <tr
                     v-for="item in featuredPrices"
-                    :key="`${item.model}-${item.platform}`"
+                    :key="`${item.model}-${item.contextTier}-${item.platform}`"
+                    :data-model="item.model"
+                    :data-context-tier="item.contextTier"
                     class="transition-colors hover:bg-slate-950/[0.03] dark:hover:bg-white/[0.04]"
                   >
                     <td class="px-5 py-4">
@@ -222,9 +224,29 @@
                       <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         {{ item.platform }}
                       </div>
+                      <div
+                        class="mt-2 inline-flex rounded-full bg-slate-950/[0.06] px-2 py-1 text-[11px] font-bold text-slate-600 dark:bg-white/10 dark:text-slate-300"
+                      >
+                        {{ formatContextTier(item.contextTier) }}
+                      </div>
                     </td>
-                    <td class="whitespace-nowrap px-5 py-4 font-mono text-xs text-slate-700 dark:text-slate-300">
-                      {{ formatPricePair(item.officialInput, item.officialOutput) }}
+                    <td class="px-5 py-4">
+                      <dl class="grid min-w-[13rem] gap-1.5">
+                        <div
+                          v-for="priceKind in priceKinds"
+                          :key="priceKind.key"
+                          class="grid grid-cols-[5.5rem_auto] items-baseline gap-3"
+                        >
+                          <dt class="text-xs text-slate-500 dark:text-slate-400">{{ priceKind.label }}</dt>
+                          <dd
+                            :data-price-kind="priceKind.key"
+                            data-price-currency="usd"
+                            class="whitespace-nowrap font-mono text-xs font-bold text-slate-700 dark:text-slate-300"
+                          >
+                            {{ formatPrice(item.official[priceKind.key]) }}
+                          </dd>
+                        </div>
+                      </dl>
                     </td>
                     <td class="px-5 py-4">
                       <span
@@ -233,10 +255,23 @@
                         {{ formatMultiplier(item.multiplier) }}
                       </span>
                     </td>
-                    <td class="whitespace-nowrap px-5 py-4">
-                      <div class="font-mono text-xs font-black text-emerald-700 dark:text-emerald-300">
-                        {{ formatCnyPair(item.actualInput, item.actualOutput) }}
-                      </div>
+                    <td class="px-5 py-4">
+                      <dl class="grid min-w-[13rem] gap-1.5">
+                        <div
+                          v-for="priceKind in priceKinds"
+                          :key="priceKind.key"
+                          class="grid grid-cols-[5.5rem_auto] items-baseline gap-3"
+                        >
+                          <dt class="text-xs text-slate-500 dark:text-slate-400">{{ priceKind.label }}</dt>
+                          <dd
+                            :data-price-kind="priceKind.key"
+                            data-price-currency="cny"
+                            class="whitespace-nowrap font-mono text-xs font-black text-emerald-700 dark:text-emerald-300"
+                          >
+                            {{ formatCnyFromPrice(item.official[priceKind.key], item.multiplier) }}
+                          </dd>
+                        </div>
+                      </dl>
                       <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                         {{ t('home.pricingTable.exchangeApplied') }}
                       </div>
@@ -245,6 +280,82 @@
                 </tbody>
               </table>
             </div>
+
+            <ul data-pricing-layout="mobile" class="divide-y divide-slate-900/10 dark:divide-white/10 lg:hidden">
+              <li
+                v-for="item in featuredPrices"
+                :key="`${item.model}-${item.contextTier}-${item.platform}-mobile`"
+                :data-model="item.model"
+                :data-context-tier="item.contextTier"
+                class="p-5"
+              >
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0">
+                    <div class="break-words font-black text-slate-950 dark:text-white">{{ item.model }}</div>
+                    <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                      <span>{{ item.platform }}</span>
+                      <span aria-hidden="true">/</span>
+                      <span>{{ formatContextTier(item.contextTier) }}</span>
+                    </div>
+                  </div>
+                  <span
+                    class="inline-flex shrink-0 rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-black text-cyan-700 dark:text-cyan-200"
+                  >
+                    {{ formatMultiplier(item.multiplier) }}
+                  </span>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-4">
+                  <section class="min-w-0">
+                    <h3 class="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400">
+                      {{ t('home.pricingTable.official') }}
+                    </h3>
+                    <dl class="mt-2 grid gap-1.5">
+                      <div
+                        v-for="priceKind in priceKinds"
+                        :key="priceKind.key"
+                        class="flex items-baseline justify-between gap-2"
+                      >
+                        <dt class="text-[11px] text-slate-500 dark:text-slate-400">{{ priceKind.label }}</dt>
+                        <dd
+                          :data-price-kind="priceKind.key"
+                          data-price-currency="usd"
+                          class="whitespace-nowrap font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300"
+                        >
+                          {{ formatPrice(item.official[priceKind.key]) }}
+                        </dd>
+                      </div>
+                    </dl>
+                  </section>
+
+                  <section class="min-w-0">
+                    <h3 class="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400">
+                      {{ t('home.pricingTable.cny') }}
+                    </h3>
+                    <dl class="mt-2 grid gap-1.5">
+                      <div
+                        v-for="priceKind in priceKinds"
+                        :key="priceKind.key"
+                        class="flex items-baseline justify-between gap-2"
+                      >
+                        <dt class="text-[11px] text-slate-500 dark:text-slate-400">{{ priceKind.label }}</dt>
+                        <dd
+                          :data-price-kind="priceKind.key"
+                          data-price-currency="cny"
+                          class="whitespace-nowrap font-mono text-[11px] font-black text-emerald-700 dark:text-emerald-300"
+                        >
+                          {{ formatCnyFromPrice(item.official[priceKind.key], item.multiplier) }}
+                        </dd>
+                      </div>
+                    </dl>
+                  </section>
+                </div>
+
+                <p class="mt-3 text-[10px] text-slate-500 dark:text-slate-400">
+                  {{ t('home.pricingTable.exchangeApplied') }}
+                </p>
+              </li>
+            </ul>
           </div>
 
         </section>
@@ -302,20 +413,42 @@ const EXCHANGE_CNY_PER_100_CREDITS = 15
 const CNY_PER_CREDIT = EXCHANGE_CNY_PER_100_CREDITS / 100
 const PRICE_SCALE = 1_000_000
 
+type PriceKind = 'input' | 'cacheRead' | 'cacheWrite' | 'output'
+type ContextTier = 'short' | 'long'
+
+interface TokenPrices {
+  input: number | null
+  cacheRead: number | null
+  cacheWrite: number | null
+  output: number | null
+}
+
+interface FeaturedModelPrice {
+  model: string
+  platform: string
+  multiplier: number
+  shortContextPrices: TokenPrices
+}
+
 interface FeaturedPrice {
   model: string
   platform: string
   multiplier: number
-  officialInput: number | null
-  officialOutput: number | null
-  actualInput: number | null
-  actualOutput: number | null
+  contextTier: ContextTier
+  official: TokenPrices
 }
 
 type LeaderboardActivityPublicSettings = {
   leaderboard_reward_pool_rate?: unknown
   leaderboard_reward_top_n?: unknown
 }
+
+const priceKinds = computed<Array<{ key: PriceKind; label: string }>>(() => [
+  { key: 'input', label: t('home.pricingTable.priceInput') },
+  { key: 'cacheRead', label: t('home.pricingTable.priceCacheRead') },
+  { key: 'cacheWrite', label: t('home.pricingTable.priceCacheWrite') },
+  { key: 'output', label: t('home.pricingTable.priceOutput') }
+])
 
 // Site settings - directly from appStore (already initialized from injected config)
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Sub2API')
@@ -345,53 +478,87 @@ const userInitial = computed(() => {
 
 const currentYear = computed(() => new Date().getFullYear())
 
-const featuredPrices: FeaturedPrice[] = [
+const featuredModels: FeaturedModelPrice[] = [
   {
     model: 'gpt-5.6-sol',
     platform: 'OpenAI',
     multiplier: 1,
-    officialInput: 0.000005,
-    officialOutput: 0.00003,
-    actualInput: 0.000005,
-    actualOutput: 0.00003
+    shortContextPrices: {
+      input: 0.000005,
+      cacheRead: 0.0000005,
+      cacheWrite: 0.00000625,
+      output: 0.00003
+    }
   },
   {
     model: 'gpt-5.6-terra',
     platform: 'OpenAI',
     multiplier: 1,
-    officialInput: 0.0000025,
-    officialOutput: 0.000015,
-    actualInput: 0.0000025,
-    actualOutput: 0.000015
+    shortContextPrices: {
+      input: 0.0000025,
+      cacheRead: 0.00000025,
+      cacheWrite: 0.000003125,
+      output: 0.000015
+    }
   },
   {
     model: 'gpt-5.6-luna',
     platform: 'OpenAI',
     multiplier: 1,
-    officialInput: 0.000001,
-    officialOutput: 0.000006,
-    actualInput: 0.000001,
-    actualOutput: 0.000006
+    shortContextPrices: {
+      input: 0.000001,
+      cacheRead: 0.0000001,
+      cacheWrite: 0.00000125,
+      output: 0.000006
+    }
   },
   {
     model: 'gpt-5.5',
     platform: 'OpenAI',
     multiplier: 1,
-    officialInput: 0.000005,
-    officialOutput: 0.00003,
-    actualInput: 0.000005,
-    actualOutput: 0.00003
+    shortContextPrices: {
+      input: 0.000005,
+      cacheRead: 0.0000005,
+      cacheWrite: null,
+      output: 0.00003
+    }
   },
   {
     model: 'gpt-5.4',
     platform: 'OpenAI',
     multiplier: 1,
-    officialInput: 0.0000025,
-    officialOutput: 0.000015,
-    actualInput: 0.0000025,
-    actualOutput: 0.000015
+    shortContextPrices: {
+      input: 0.0000025,
+      cacheRead: 0.00000025,
+      cacheWrite: null,
+      output: 0.000015
+    }
   }
 ]
+
+const longContextMultipliers: Record<PriceKind, number> = {
+  input: 2,
+  cacheRead: 2,
+  cacheWrite: 2,
+  output: 1.5
+}
+
+const featuredPrices: FeaturedPrice[] = featuredModels.flatMap((item) => [
+  {
+    model: item.model,
+    platform: item.platform,
+    multiplier: item.multiplier,
+    contextTier: 'short',
+    official: item.shortContextPrices
+  },
+  {
+    model: item.model,
+    platform: item.platform,
+    multiplier: item.multiplier,
+    contextTier: 'long',
+    official: scaleTokenPrices(item.shortContextPrices, longContextMultipliers)
+  }
+])
 
 const activityHighlights = computed(() => [
   { label: t('home.activity.items.period'), value: t('home.activity.values.period') },
@@ -434,19 +601,31 @@ function formatActivityNumber(value: number): string {
   return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
 }
 
-function formatPricePair(input: number | null, output: number | null): string {
-  return `${formatScaled(input, PRICE_SCALE)} / ${formatScaled(output, PRICE_SCALE)}`
+function scaleTokenPrices(prices: TokenPrices, multipliers: Record<PriceKind, number>): TokenPrices {
+  return {
+    input: scalePrice(prices.input, multipliers.input),
+    cacheRead: scalePrice(prices.cacheRead, multipliers.cacheRead),
+    cacheWrite: scalePrice(prices.cacheWrite, multipliers.cacheWrite),
+    output: scalePrice(prices.output, multipliers.output)
+  }
 }
 
-function formatCnyPair(input: number | null, output: number | null): string {
-  return `${formatCnyFromPrice(input)} / ${formatCnyFromPrice(output)}`
+function scalePrice(value: number | null, multiplier: number): number | null {
+  return value == null ? null : value * multiplier
 }
 
-function formatCnyFromPrice(value: number | null): string {
+function formatContextTier(tier: ContextTier): string {
+  return t(tier === 'short' ? 'home.pricingTable.contextShort' : 'home.pricingTable.contextLong')
+}
+
+function formatPrice(value: number | null): string {
+  return formatScaled(value, PRICE_SCALE)
+}
+
+function formatCnyFromPrice(value: number | null, multiplier: number): string {
   if (value == null) return '-'
-  const cny = value * PRICE_SCALE * CNY_PER_CREDIT
-  if (cny > 0 && cny < 0.01) return `¥${cny.toFixed(4)}`
-  return `¥${cny.toFixed(2).replace(/\.00$/, '').replace(/0$/, '')}`
+  const cny = value * PRICE_SCALE * multiplier * CNY_PER_CREDIT
+  return `¥${cny.toFixed(5).replace(/\.?0+$/, '')}`
 }
 
 function toggleTheme() {

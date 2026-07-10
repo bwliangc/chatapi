@@ -21,16 +21,22 @@ export default {
       kicker: 'Published pricing',
       title: 'AI usage costs',
       titleAccent: 'Calculated by clear public rules',
-      description: 'The home page publishes official input/output prices, platform multipliers, RMB conversion, and ranking activity rules.'
+      description: 'The home page publishes context-tiered input, cache read, cache write, and output prices, plus platform multipliers, RMB conversion, and ranking activity rules.'
     },
     pricingTable: {
       kicker: 'Transparent pricing',
       title: 'Official vs actual charge',
-      fixedSubtitle: 'Published home page pricing; actual charges are calculated from official price, multiplier, and RMB exchange ratio.',
+      fixedSubtitle: 'Standard tier pricing; above 272K input tokens, input-side prices are 2x and output is 1.5x for the full request.',
       model: 'Model',
-      official: 'Official input / output / 1M',
+      official: 'Official / 1M tokens',
       multiplier: 'Multiplier',
-      cny: 'RMB input / output / 1M',
+      cny: 'RMB / 1M tokens',
+      contextShort: '≤272K input',
+      contextLong: '>272K input',
+      priceInput: 'Input',
+      priceCacheRead: 'Cache read',
+      priceCacheWrite: 'Cache write',
+      priceOutput: 'Output',
       exchangeApplied: 'Converted at ¥15 / $100'
     },
     activity: {

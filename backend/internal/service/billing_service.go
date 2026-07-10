@@ -111,9 +111,9 @@ type ModelPricing struct {
 }
 
 const (
-	openAIGPT54LongContextInputThreshold   = 272000
-	openAIGPT54LongContextInputMultiplier  = 2.0
-	openAIGPT54LongContextOutputMultiplier = 1.5
+	openAILongContextInputThreshold   = 272000
+	openAILongContextInputMultiplier  = 2.0
+	openAILongContextOutputMultiplier = 1.5
 )
 
 func normalizeBillingServiceTier(serviceTier string) string {
@@ -294,9 +294,9 @@ func (s *BillingService) initFallbackPricing() {
 		CacheReadPricePerToken:         0.25e-6, // $0.25 per MTok
 		CacheReadPricePerTokenPriority: 0.5e-6,  // $0.5 per MTok
 		SupportsCacheBreakdown:         false,
-		LongContextInputThreshold:      openAIGPT54LongContextInputThreshold,
-		LongContextInputMultiplier:     openAIGPT54LongContextInputMultiplier,
-		LongContextOutputMultiplier:    openAIGPT54LongContextOutputMultiplier,
+		LongContextInputThreshold:      openAILongContextInputThreshold,
+		LongContextInputMultiplier:     openAILongContextInputMultiplier,
+		LongContextOutputMultiplier:    openAILongContextOutputMultiplier,
 	}
 	// GPT-5.5 / GPT-5.5 Pro 暂无独立定价，回退到 GPT-5.4。
 	s.fallbackPrices["gpt-5.5"] = s.fallbackPrices["gpt-5.4"]
@@ -1124,11 +1124,11 @@ func (s *BillingService) applyModelSpecificPricingPolicy(model string, pricing *
 	}
 	normalized := normalizeKnownOpenAICodexModel(model)
 	isGPT56 := isOpenAIGPT56Model(normalized)
-	usesLegacyLongContextPricing := usesOpenAILegacyLongContextPricing(normalized)
-	if !isGPT56 && !usesLegacyLongContextPricing {
+	usesLongContextPricing := usesOpenAILongContextPricing(normalized)
+	if !isGPT56 && !usesLongContextPricing {
 		return pricing
 	}
-	needsLongContextPolicy := usesLegacyLongContextPricing &&
+	needsLongContextPolicy := usesLongContextPricing &&
 		(pricing.LongContextInputThreshold <= 0 || pricing.LongContextInputMultiplier <= 0 || pricing.LongContextOutputMultiplier <= 0)
 	needsCacheCreationPolicy := isGPT56 && !pricing.CacheCreationPriceExplicit && (pricing.CacheCreationPricePerToken <= 0 ||
 		(pricing.InputPricePerTokenPriority > 0 && pricing.CacheCreationPricePerTokenPriority <= 0))
@@ -1136,7 +1136,7 @@ func (s *BillingService) applyModelSpecificPricingPolicy(model string, pricing *
 		return pricing
 	}
 	cloned := *pricing
-	if isGPT56 {
+	if isGPT56 && !cloned.CacheCreationPriceExplicit {
 		if cloned.CacheCreationPricePerToken <= 0 {
 			cloned.CacheCreationPricePerToken = cloned.InputPricePerToken * 1.25
 		}
@@ -1144,15 +1144,15 @@ func (s *BillingService) applyModelSpecificPricingPolicy(model string, pricing *
 			cloned.CacheCreationPricePerTokenPriority = cloned.InputPricePerTokenPriority * 1.25
 		}
 	}
-	if usesLegacyLongContextPricing {
+	if usesLongContextPricing {
 		if cloned.LongContextInputThreshold <= 0 {
-			cloned.LongContextInputThreshold = openAIGPT54LongContextInputThreshold
+			cloned.LongContextInputThreshold = openAILongContextInputThreshold
 		}
 		if cloned.LongContextInputMultiplier <= 0 {
-			cloned.LongContextInputMultiplier = openAIGPT54LongContextInputMultiplier
+			cloned.LongContextInputMultiplier = openAILongContextInputMultiplier
 		}
 		if cloned.LongContextOutputMultiplier <= 0 {
-			cloned.LongContextOutputMultiplier = openAIGPT54LongContextOutputMultiplier
+			cloned.LongContextOutputMultiplier = openAILongContextOutputMultiplier
 		}
 	}
 	return &cloned
@@ -1169,7 +1169,10 @@ func (s *BillingService) shouldApplySessionLongContextPricing(tokens UsageTokens
 	return totalInputTokens > pricing.LongContextInputThreshold
 }
 
-func usesOpenAILegacyLongContextPricing(normalized string) bool {
+func usesOpenAILongContextPricing(normalized string) bool {
+	if isOpenAIGPT56Model(normalized) {
+		return true
+	}
 	return normalized == "gpt-5.4" || normalized == "gpt-5.5" || normalized == "gpt-5.5-pro"
 }
 

@@ -21,16 +21,22 @@ export default {
       kicker: '价格公示',
       title: 'AI 调用成本',
       titleAccent: '按公开规则清晰计算',
-      description: '首页统一展示官方输入/输出价格、平台倍率、人民币折算结果及排行榜活动规则。'
+      description: '首页统一展示不同上下文下的官方输入、缓存读写与输出价格、平台倍率、人民币折算结果及排行榜活动规则。'
     },
     pricingTable: {
       kicker: '透明定价',
       title: '官方价 vs 实际扣费',
-      fixedSubtitle: '当前首页公示价格，实际扣费以官方价、倍率与人民币兑换比例计算。',
+      fixedSubtitle: 'Standard 档价格；输入超过 272K 时，输入侧按 2x、输出按 1.5x 对整次请求计价。',
       model: '模型',
-      official: '官方价（输入 / 输出）/ 1M',
+      official: '官方价 / 1M Tokens',
       multiplier: '倍率',
-      cny: '人民币（输入 / 输出）/ 1M',
+      cny: '人民币 / 1M Tokens',
+      contextShort: '≤272K 输入',
+      contextLong: '>272K 输入',
+      priceInput: '输入',
+      priceCacheRead: '缓存读取',
+      priceCacheWrite: '缓存写入',
+      priceOutput: '输出',
       exchangeApplied: '已按 ¥15 / $100 换算'
     },
     activity: {
