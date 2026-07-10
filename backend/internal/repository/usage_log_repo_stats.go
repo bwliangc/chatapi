@@ -813,7 +813,7 @@ type AccountUsageStatsResponse = usagestats.AccountUsageStatsResponse
 // EndpointStat represents endpoint usage statistics row.
 type EndpointStat = usagestats.EndpointStat
 
-func buildCostCalculatorUsageCostExpression(alias string, args []any, accountUsageRates map[int64]float64, defaultUsageRate float64) (string, []any) {
+func buildCostCalculatorUsageCostExpression(alias string, args []any, accountUsageRates []service.CostCalculatorUsageRatePeriod, defaultUsageRate float64) (string, []any) {
 	prefix := ""
 	if strings.TrimSpace(alias) != "" {
 		prefix = strings.TrimSpace(alias) + "."
@@ -824,26 +824,42 @@ func buildCostCalculatorUsageCostExpression(alias string, args []any, accountUsa
 	args = append(args, defaultUsageRate)
 	defaultRatePlaceholder := fmt.Sprintf("$%d::numeric", len(args))
 
-	ids := make([]int64, 0, len(accountUsageRates))
-	for accountID, rate := range accountUsageRates {
-		if accountID > 0 && rate >= 0 {
-			ids = append(ids, accountID)
+	periods := append([]service.CostCalculatorUsageRatePeriod(nil), accountUsageRates...)
+	sort.SliceStable(periods, func(i, j int) bool {
+		if periods[i].AccountID != periods[j].AccountID {
+			return periods[i].AccountID < periods[j].AccountID
 		}
-	}
-	sort.Slice(ids, func(i, j int) bool {
-		return ids[i] < ids[j]
+		if periods[i].EffectiveUntil == nil {
+			return false
+		}
+		if periods[j].EffectiveUntil == nil {
+			return true
+		}
+		return periods[i].EffectiveUntil.Before(*periods[j].EffectiveUntil)
 	})
 
 	rateExpr := defaultRatePlaceholder
-	if len(ids) > 0 {
+	if len(periods) > 0 {
 		var builder strings.Builder
 		_, _ = builder.WriteString("CASE")
-		for _, accountID := range ids {
-			args = append(args, accountID)
+		for _, period := range periods {
+			if period.AccountID <= 0 || period.UsageCostRate < 0 {
+				continue
+			}
+			args = append(args, period.AccountID)
 			accountPlaceholder := fmt.Sprintf("$%d::bigint", len(args))
-			args = append(args, accountUsageRates[accountID])
+			condition := fmt.Sprintf("%saccount_id = %s", prefix, accountPlaceholder)
+			if period.EffectiveFrom != nil {
+				args = append(args, *period.EffectiveFrom)
+				condition += fmt.Sprintf(" AND %screated_at >= $%d::timestamptz", prefix, len(args))
+			}
+			if period.EffectiveUntil != nil {
+				args = append(args, *period.EffectiveUntil)
+				condition += fmt.Sprintf(" AND %screated_at < $%d::timestamptz", prefix, len(args))
+			}
+			args = append(args, period.UsageCostRate)
 			ratePlaceholder := fmt.Sprintf("$%d::numeric", len(args))
-			_, _ = builder.WriteString(fmt.Sprintf(" WHEN %saccount_id = %s THEN %s", prefix, accountPlaceholder, ratePlaceholder))
+			_, _ = builder.WriteString(fmt.Sprintf(" WHEN %s THEN %s", condition, ratePlaceholder))
 		}
 		_, _ = builder.WriteString(fmt.Sprintf(" ELSE %s END", defaultRatePlaceholder))
 		rateExpr = builder.String()
@@ -852,7 +868,7 @@ func buildCostCalculatorUsageCostExpression(alias string, args []any, accountUsa
 	return fmt.Sprintf("COALESCE(%saccount_stats_cost, %stotal_cost) * (%s)", prefix, prefix, rateExpr), args
 }
 
-func (r *usageLogRepository) GetCostCalculatorUsageSummary(ctx context.Context, startTime, endTime time.Time, accountUsageRates map[int64]float64, defaultUsageRate float64, excludeAdmins bool) (*service.CostCalculatorUsageSummary, error) {
+func (r *usageLogRepository) GetCostCalculatorUsageSummary(ctx context.Context, startTime, endTime time.Time, accountUsageRates []service.CostCalculatorUsageRatePeriod, defaultUsageRate float64, excludeAdmins bool) (*service.CostCalculatorUsageSummary, error) {
 	summary := &service.CostCalculatorUsageSummary{
 		Groups:   []service.CostCalculatorGroupUsage{},
 		Models:   []service.CostCalculatorModelUsage{},
@@ -903,7 +919,7 @@ func (r *usageLogRepository) GetCostCalculatorUsageSummary(ctx context.Context, 
 	return summary, nil
 }
 
-func (r *usageLogRepository) getCostCalculatorGroupUsage(ctx context.Context, startTime, endTime time.Time, accountUsageRates map[int64]float64, defaultUsageRate float64, excludeAdmins bool) (results []service.CostCalculatorGroupUsage, err error) {
+func (r *usageLogRepository) getCostCalculatorGroupUsage(ctx context.Context, startTime, endTime time.Time, accountUsageRates []service.CostCalculatorUsageRatePeriod, defaultUsageRate float64, excludeAdmins bool) (results []service.CostCalculatorGroupUsage, err error) {
 	usageCostExpr, args := buildCostCalculatorUsageCostExpression("ul", []any{startTime, endTime}, accountUsageRates, defaultUsageRate)
 	query := fmt.Sprintf(`
 		SELECT
@@ -954,7 +970,7 @@ func (r *usageLogRepository) getCostCalculatorGroupUsage(ctx context.Context, st
 	return results, nil
 }
 
-func (r *usageLogRepository) getCostCalculatorModelUsage(ctx context.Context, startTime, endTime time.Time, accountUsageRates map[int64]float64, defaultUsageRate float64, excludeAdmins bool) (results []service.CostCalculatorModelUsage, err error) {
+func (r *usageLogRepository) getCostCalculatorModelUsage(ctx context.Context, startTime, endTime time.Time, accountUsageRates []service.CostCalculatorUsageRatePeriod, defaultUsageRate float64, excludeAdmins bool) (results []service.CostCalculatorModelUsage, err error) {
 	usageCostExpr, args := buildCostCalculatorUsageCostExpression("ul", []any{startTime, endTime}, accountUsageRates, defaultUsageRate)
 	modelExpr := resolveModelDimensionExpressionWithAlias(usagestats.ModelSourceRequested, "ul")
 	query := fmt.Sprintf(`
@@ -1003,7 +1019,7 @@ func (r *usageLogRepository) getCostCalculatorModelUsage(ctx context.Context, st
 	return results, nil
 }
 
-func (r *usageLogRepository) getCostCalculatorAccountUsage(ctx context.Context, startTime, endTime time.Time, accountUsageRates map[int64]float64, defaultUsageRate float64, excludeAdmins bool) (results []service.CostCalculatorAccountUsage, err error) {
+func (r *usageLogRepository) getCostCalculatorAccountUsage(ctx context.Context, startTime, endTime time.Time, accountUsageRates []service.CostCalculatorUsageRatePeriod, defaultUsageRate float64, excludeAdmins bool) (results []service.CostCalculatorAccountUsage, err error) {
 	usageCostExpr, args := buildCostCalculatorUsageCostExpression("ul", []any{startTime, endTime}, accountUsageRates, defaultUsageRate)
 	query := fmt.Sprintf(`
 		SELECT

@@ -11,7 +11,7 @@ import (
 )
 
 type costCalculatorUsageSummaryReader interface {
-	GetCostCalculatorUsageSummary(ctx context.Context, startTime, endTime time.Time, accountUsageRates map[int64]float64, defaultUsageRate float64, excludeAdmins bool) (*service.CostCalculatorUsageSummary, error)
+	GetCostCalculatorUsageSummary(ctx context.Context, startTime, endTime time.Time, accountUsageRates []service.CostCalculatorUsageRatePeriod, defaultUsageRate float64, excludeAdmins bool) (*service.CostCalculatorUsageSummary, error)
 }
 
 type costCalculatorBalanceRechargeSummaryReader interface {
@@ -94,12 +94,7 @@ func (h *CostCalculatorHandler) GetUsageSummary(c *gin.Context) {
 	}
 
 	defaultUsageRate := cfg.UpstreamCostRate
-	accountUsageRates := make(map[int64]float64, len(cfg.AccountCosts))
-	for _, item := range cfg.AccountCosts {
-		if item.UsageCostRate != nil {
-			accountUsageRates[item.AccountID] = *item.UsageCostRate
-		}
-	}
+	accountUsageRates := cfg.AccountUsageRatePeriods()
 
 	excludeAdmins := parseBoolQueryWithDefault(c.Query("exclude_admins"), true)
 	summary, err := h.usageSummary.GetCostCalculatorUsageSummary(c.Request.Context(), startTime, endTime, accountUsageRates, defaultUsageRate, excludeAdmins)

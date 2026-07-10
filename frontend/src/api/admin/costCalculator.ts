@@ -9,6 +9,8 @@ export interface CostCalculatorAccountCost {
   monthly_cost_label?: string
   fixed_cost_starts_at?: string
   fixed_cost_ends_at?: string
+  effective_from?: string
+  effective_until?: string
 }
 
 export interface CostCalculatorBalanceRechargePackage {
@@ -20,6 +22,7 @@ export interface CostCalculatorConfig {
   balance_exchange_rate: number
   upstream_cost_rate: number
   account_costs: CostCalculatorAccountCost[]
+  account_cost_history: CostCalculatorAccountCost[]
   balance_recharge_packages: CostCalculatorBalanceRechargePackage[]
 }
 

@@ -537,6 +537,8 @@ interface AccountCostRow {
   total_cost: number
   profit: number
   note: string
+  has_current_cost: boolean
+  has_usage: boolean
 }
 
 interface MetricToneClasses {
@@ -640,7 +642,7 @@ const usageGrossMargin = computed(() => {
   return userBillingRevenue.value > 0 ? usageGrossProfit.value / userBillingRevenue.value : 0
 })
 const monthlyFixedCost = computed(() =>
-  accountRows.value.reduce((sum, row) => sum + row.monthly_fixed_cost, 0)
+  config.account_costs.reduce((sum, item) => sum + nonNegativeOrDefault(item.monthly_cost, 0), 0)
 )
 const proratedFixedCost = computed(() =>
   accountRows.value.reduce((sum, row) => sum + row.period_fixed_cost, 0)
@@ -649,7 +651,7 @@ const leaderboardRewardAmount = computed(() => toFinite(balanceRechargeSummary.v
 const leaderboardRewardCost = computed(() => balanceToRevenue(leaderboardRewardAmount.value))
 const leaderboardRewardCount = computed(() => toFinite(balanceRechargeSummary.value?.leaderboard_reward_count))
 const netProfitAfterFixedCost = computed(() => usageGrossProfit.value - proratedFixedCost.value - leaderboardRewardCost.value)
-const configuredCostAccounts = computed(() => accountRows.value.length)
+const configuredCostAccounts = computed(() => config.account_costs.length)
 const balanceRechargeRevenue = computed(() => toFinite(balanceRechargeSummary.value?.actual_revenue))
 const redeemRechargeRevenue = computed(() => toFinite(balanceRechargeSummary.value?.redeem_actual_revenue))
 const adminBalanceAdjustment = computed(() => toFinite(balanceRechargeSummary.value?.admin_actual_revenue))
@@ -721,6 +723,9 @@ const accountRows = computed<AccountCostRow[]>(() => {
   for (const item of config.account_costs) {
     if (item.account_id > 0) accountIds.add(item.account_id)
   }
+  for (const item of config.account_cost_history) {
+    if (item.account_id > 0) accountIds.add(item.account_id)
+  }
   for (const usage of usageSummary.value?.accounts || []) {
     if (usage.account_id > 0) accountIds.add(usage.account_id)
   }
@@ -729,27 +734,38 @@ const accountRows = computed<AccountCostRow[]>(() => {
     const account = accountsById.value.get(accountId)
     const usage = accountUsageById.value.get(accountId)
     const monthlyFixedCost = nonNegativeOrDefault(configured?.monthly_cost, 0)
-    const fixedCostDays = fixedCostOverlapDays(configured)
-    const periodFixedCost = monthlyFixedCost / 30 * fixedCostDays
+    const history = config.account_cost_history.filter(item => item.account_id === accountId)
+    const costVersions = configured ? [...history, configured] : history
+    const fixedCost = costVersions.reduce((total, item) => {
+      const days = fixedCostOverlapDays(item)
+      return {
+        days: total.days + days,
+        amount: total.amount + nonNegativeOrDefault(item.monthly_cost, 0) / 30 * days
+      }
+    }, { days: 0, amount: 0 })
+    const latestCost = configured || latestAccountCostVersion(history)
     const periodUsageCost = toFinite(usage?.usage_cost)
     const periodIncome = balanceToRevenue(usage?.actual_cost)
-    const totalCost = periodUsageCost + periodFixedCost
+    const totalCost = periodUsageCost + fixedCost.amount
     return {
       id: accountId,
-      name: configured?.account_name || usage?.account_name || account?.name || `#${accountId}`,
-      platform: configured?.platform || usage?.platform || account?.platform || '-',
+      name: latestCost?.account_name || usage?.account_name || account?.name || `#${accountId}`,
+      platform: latestCost?.platform || usage?.platform || account?.platform || '-',
       type: account?.type || '-',
       monthly_fixed_cost: monthlyFixedCost,
-      usage_cost_rate: accountUsageCostRate(configured || {}),
+      usage_cost_rate: accountUsageCostRate(latestCost || {}),
       period_income: periodIncome,
       period_usage_cost: periodUsageCost,
-      period_fixed_cost: periodFixedCost,
-      fixed_cost_days: fixedCostDays,
+      period_fixed_cost: fixedCost.amount,
+      fixed_cost_days: fixedCost.days,
       total_cost: totalCost,
       profit: periodIncome - totalCost,
-      note: configured?.monthly_cost_label || ''
+      note: latestCost?.monthly_cost_label || '',
+      has_current_cost: Boolean(configured),
+      has_usage: Boolean(usage)
     }
-  }).sort((a, b) => b.total_cost - a.total_cost || b.period_income - a.period_income || a.id - b.id)
+  }).filter(row => row.has_current_cost || row.has_usage || row.period_fixed_cost > 0)
+    .sort((a, b) => b.total_cost - a.total_cost || b.period_income - a.period_income || a.id - b.id)
 })
 
 const accountUsageById = computed(() => {
@@ -877,10 +893,38 @@ function fixedCostOverlapDays(item: Partial<CostCalculatorAccountCost> | undefin
   let end = range.end
   const fixedStart = parseDateOnly(item?.fixed_cost_starts_at)
   const fixedEnd = parseDateOnly(item?.fixed_cost_ends_at)
+  const effectiveStart = parseEffectiveDate(item?.effective_from)
+  const effectiveUntil = parseEffectiveDate(item?.effective_until)
   if (fixedStart && fixedStart > start) start = fixedStart
   if (fixedEnd && fixedEnd < end) end = fixedEnd
+  if (effectiveStart && effectiveStart > start) start = effectiveStart
+  if (effectiveUntil) {
+    const effectiveEnd = addLocalDays(effectiveUntil, -1)
+    if (effectiveEnd < end) end = effectiveEnd
+  }
   if (end < start) return 0
   return Math.floor((end.getTime() - start.getTime()) / DAY_MS) + 1
+}
+
+function parseEffectiveDate(value: unknown): Date | null {
+  if (typeof value !== 'string' || !value.trim()) return null
+  const instant = new Date(value)
+  if (!Number.isFinite(instant.getTime())) return null
+  return parseDateOnly(formatDateOnly(instant))
+}
+
+function addLocalDays(value: Date, days: number): Date {
+  const result = new Date(value)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
+function latestAccountCostVersion(items: CostCalculatorAccountCost[]): CostCalculatorAccountCost | undefined {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a.effective_until || a.effective_from || 0).getTime()
+    const bTime = new Date(b.effective_until || b.effective_from || 0).getTime()
+    return bTime - aTime
+  })[0]
 }
 
 function isValidFixedCostDateRange(item: Partial<CostCalculatorAccountCost>): boolean {
@@ -1028,12 +1072,14 @@ function applyConfig(target: CostCalculatorConfig, source: CostCalculatorConfig)
   target.balance_exchange_rate = normalized.balance_exchange_rate
   target.upstream_cost_rate = normalized.upstream_cost_rate
   target.account_costs.splice(0, target.account_costs.length, ...normalized.account_costs)
+  target.account_cost_history.splice(0, target.account_cost_history.length, ...normalized.account_cost_history)
   target.balance_recharge_packages.splice(0, target.balance_recharge_packages.length, ...normalized.balance_recharge_packages)
 }
 
 function normalizeConfig(source: Partial<CostCalculatorConfig> | null | undefined): CostCalculatorConfig {
   const seen = new Set<number>()
   const accountCosts = Array.isArray(source?.account_costs) ? source.account_costs : []
+  const accountCostHistory = Array.isArray(source?.account_cost_history) ? source.account_cost_history : []
   const rechargePackages = Array.isArray(source?.balance_recharge_packages) ? source.balance_recharge_packages : []
   const defaultUsageCostRate = nonNegativeOrDefault(
     source?.upstream_cost_rate,
@@ -1049,6 +1095,9 @@ function normalizeConfig(source: Partial<CostCalculatorConfig> | null | undefine
         seen.add(item.account_id)
         return true
       }),
+    account_cost_history: accountCostHistory
+      .map(item => cloneAccountCost(item, defaultUsageCostRate))
+      .filter(item => item.account_id > 0 && Boolean(item.effective_until)),
     balance_recharge_packages: normalizeRechargePackages(rechargePackages)
   }
 }
@@ -1062,8 +1111,16 @@ function cloneAccountCost(item: Partial<CostCalculatorAccountCost>, defaultUsage
     usage_cost_rate: nonNegativeOrDefault(item.usage_cost_rate, defaultUsageCostRate),
     monthly_cost_label: String(item.monthly_cost_label || '').trim(),
     fixed_cost_starts_at: normalizeDateOnly(item.fixed_cost_starts_at),
-    fixed_cost_ends_at: normalizeDateOnly(item.fixed_cost_ends_at)
+    fixed_cost_ends_at: normalizeDateOnly(item.fixed_cost_ends_at),
+    effective_from: normalizeEffectiveTime(item.effective_from),
+    effective_until: normalizeEffectiveTime(item.effective_until)
   }
+}
+
+function normalizeEffectiveTime(value: unknown): string {
+  if (typeof value !== 'string' || !value.trim()) return ''
+  const instant = new Date(value)
+  return Number.isFinite(instant.getTime()) ? value.trim() : ''
 }
 
 function normalizeRechargePackages(items: Partial<CostCalculatorBalanceRechargePackage>[]): CostCalculatorBalanceRechargePackage[] {
@@ -1088,6 +1145,7 @@ function defaultCostCalculatorConfig(): CostCalculatorConfig {
     balance_exchange_rate: 1,
     upstream_cost_rate: 1,
     account_costs: [],
+    account_cost_history: [],
     balance_recharge_packages: []
   }
 }
