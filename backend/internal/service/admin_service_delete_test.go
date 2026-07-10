@@ -416,6 +416,10 @@ func (s *redeemRepoStub) SumPositiveBalanceByUser(ctx context.Context, userID in
 	panic("unexpected SumPositiveBalanceByUser call")
 }
 
+func (s *redeemRepoStub) GetCostCalculatorBalanceRechargeSummary(ctx context.Context, startTime, endTime time.Time, excludeAdmins bool) (*CostCalculatorBalanceRechargeSummary, error) {
+	return nil, nil
+}
+
 type subscriptionInvalidateCall struct {
 	userID  int64
 	groupID int64

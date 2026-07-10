@@ -106,6 +106,10 @@ func (s *redeemCodeRepoStub) SumPositiveBalanceByUser(context.Context, int64) (f
 	panic("unexpected SumPositiveBalanceByUser call")
 }
 
+func (s *redeemCodeRepoStub) GetCostCalculatorBalanceRechargeSummary(context.Context, time.Time, time.Time, bool) (*CostCalculatorBalanceRechargeSummary, error) {
+	return nil, nil
+}
+
 func newOAuthEmailFlowAuthService(
 	userRepo UserRepository,
 	redeemRepo RedeemCodeRepository,

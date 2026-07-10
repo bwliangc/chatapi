@@ -8,7 +8,6 @@ import (
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -466,9 +465,10 @@ func (r *redeemCodeRepository) GetCostCalculatorBalanceRechargeSummaryWithPackag
 		summary.ActualRevenue += actualTotal
 		summary.MatchedBalanceAmount += amount
 		summary.MatchedRecordCount += row.Count
-		if row.Type == service.RedeemTypeBalance {
+		switch row.Type {
+		case service.RedeemTypeBalance:
 			summary.RedeemActualRevenue += actualTotal
-		} else if row.Type == service.AdjustmentTypeAdminBalance {
+		case service.AdjustmentTypeAdminBalance:
 			summary.AdminActualRevenue += actualTotal
 		}
 
@@ -500,28 +500,6 @@ func (r *redeemCodeRepository) GetCostCalculatorBalanceRechargeSummaryWithPackag
 	summary.LeaderboardRewardAmount = rewardAmount
 	summary.LeaderboardRewardCount = rewardCount
 	return summary, nil
-}
-
-func (r *redeemCodeRepository) sumAndCountRedeemCodeValues(ctx context.Context, predicates ...predicate.RedeemCode) (float64, int64, error) {
-	count, err := r.client.RedeemCode.Query().Where(predicates...).Count(ctx)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	var result []struct {
-		Sum sql.NullFloat64 `json:"sum"`
-	}
-	err = r.client.RedeemCode.Query().
-		Where(predicates...).
-		Aggregate(dbent.As(dbent.Sum(redeemcode.FieldValue), "sum")).
-		Scan(ctx, &result)
-	if err != nil {
-		return 0, 0, err
-	}
-	if len(result) == 0 || !result[0].Sum.Valid {
-		return 0, int64(count), nil
-	}
-	return result[0].Sum.Float64, int64(count), nil
 }
 
 type costCalculatorBalanceRechargeGroup struct {

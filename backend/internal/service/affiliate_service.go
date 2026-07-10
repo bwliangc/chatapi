@@ -157,19 +157,19 @@ type AffiliateInviteRecord struct {
 }
 
 type AffiliateRebateRecord struct {
-	OrderID         int64     `json:"order_id"`
-	OutTradeNo      string    `json:"out_trade_no"`
-	InviterID       int64     `json:"inviter_id"`
-	InviterEmail    string    `json:"inviter_email"`
-	InviterUsername string    `json:"inviter_username"`
-	InviteeID       int64     `json:"invitee_id"`
-	InviteeEmail    string    `json:"invitee_email"`
-	InviteeUsername string    `json:"invitee_username"`
-	OrderAmount     float64   `json:"order_amount"`
-	PayAmount       float64   `json:"pay_amount"`
-	RebateAmount    float64   `json:"rebate_amount"`
-	PaymentType     string    `json:"payment_type"`
-	OrderStatus     string    `json:"order_status"`
+	OrderID         int64   `json:"order_id"`
+	OutTradeNo      string  `json:"out_trade_no"`
+	InviterID       int64   `json:"inviter_id"`
+	InviterEmail    string  `json:"inviter_email"`
+	InviterUsername string  `json:"inviter_username"`
+	InviteeID       int64   `json:"invitee_id"`
+	InviteeEmail    string  `json:"invitee_email"`
+	InviteeUsername string  `json:"invitee_username"`
+	OrderAmount     float64 `json:"order_amount"`
+	PayAmount       float64 `json:"pay_amount"`
+	RebateAmount    float64 `json:"rebate_amount"`
+	PaymentType     string  `json:"payment_type"`
+	OrderStatus     string  `json:"order_status"`
 	// Source 标识返利来源："order"=支付订单充值，"redeem"=卡密/兑换码充值（无订单）。
 	Source    string    `json:"source"`
 	CreatedAt time.Time `json:"created_at"`

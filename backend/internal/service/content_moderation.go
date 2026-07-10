@@ -2618,11 +2618,6 @@ func findBlockedKeyword(text string, keywords []string) (string, blockedKeywordM
 	return "", blockedKeywordMatchRange{}, false
 }
 
-func blockedKeywordMatches(lowerText, lowerKeyword string) bool {
-	_, hit := blockedKeywordMatch(lowerText, lowerKeyword)
-	return hit
-}
-
 func blockedKeywordMatch(lowerText, lowerKeyword string) (blockedKeywordMatchRange, bool) {
 	if lowerText == "" || lowerKeyword == "" {
 		return blockedKeywordMatchRange{}, false

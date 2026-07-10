@@ -57,6 +57,9 @@
             <div class="text-sm font-black tracking-tight text-slate-950 dark:text-white">
               {{ siteName }}
             </div>
+            <div class="max-w-48 truncate text-[11px] text-slate-500 dark:text-slate-400">
+              {{ siteSubtitle }}
+            </div>
           </div>
         </div>
 
@@ -288,6 +291,7 @@ import { useAuthStore, useAppStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { formatScaled } from '@/utils/pricing'
+import { sanitizeUrl } from '@/utils/url'
 
 const { t } = useI18n()
 
@@ -315,8 +319,9 @@ type LeaderboardActivityPublicSettings = {
 
 // Site settings - directly from appStore (already initialized from injected config)
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Sub2API')
-const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
-const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
+const siteLogo = computed(() => sanitizeUrl(appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '', { allowRelative: true, allowDataUrl: true }))
+const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || 'AI API Gateway Platform')
+const docUrl = computed(() => sanitizeUrl(appStore.cachedPublicSettings?.doc_url || appStore.docUrl || ''))
 const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
 
 // Check if homeContent is a URL (for iframe display)
