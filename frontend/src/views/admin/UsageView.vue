@@ -210,7 +210,10 @@ const appStore = useAppStore()
 type DistributionMetric = 'tokens' | 'actual_cost'
 type EndpointSource = 'inbound' | 'upstream' | 'path'
 type ModelDistributionSource = 'requested' | 'upstream' | 'mapping'
+type DetailTab = 'usage' | 'errors' | 'ranking'
 const route = useRoute()
+const activeTab = ref<DetailTab>('usage')
+const rankingMounted = ref(false)
 const usageStats = ref<AdminUsageStatsResponse | null>(null); const usageLogs = ref<AdminUsageLog[]>([]); const loading = ref(false); const exporting = ref(false)
 const trendData = ref<TrendDataPoint[]>([]); const requestedModelStats = ref<ModelStat[]>([]); const upstreamModelStats = ref<ModelStat[]>([]); const mappingModelStats = ref<ModelStat[]>([]); const groupStats = ref<GroupStat[]>([]); const chartsLoading = ref(false); const modelStatsLoading = ref(false); const granularity = ref<'day' | 'hour'>('hour')
 const modelDistributionMetric = ref<DistributionMetric>('tokens')
@@ -239,12 +242,16 @@ const balanceHistoryUser = ref<AdminUser | null>(null)
 
 const breakdownFilters = computed(() => {
   const f: Record<string, any> = {}
+  const requestType = filters.value.request_type
+  const legacyStream = requestType ? requestTypeToLegacyStream(requestType) : filters.value.stream
   if (filters.value.user_id) f.user_id = filters.value.user_id
   if (filters.value.api_key_id) f.api_key_id = filters.value.api_key_id
   if (filters.value.account_id) f.account_id = filters.value.account_id
   if (filters.value.group_id) f.group_id = filters.value.group_id
-  if (filters.value.request_type != null) f.request_type = filters.value.request_type
+  if (requestType != null) f.request_type = requestType
+  if (legacyStream != null) f.stream = legacyStream
   if (filters.value.billing_type != null) f.billing_type = filters.value.billing_type
+  if (filters.value.billing_mode != null) f.billing_mode = filters.value.billing_mode
   return f
 })
 
@@ -318,6 +325,12 @@ const applyRouteQueryFilters = () => {
   const queryStartDate = getSingleQueryValue(route.query.start_date)
   const queryEndDate = getSingleQueryValue(route.query.end_date)
   const queryUserId = getNumericQueryValue(route.query.user_id)
+  const queryTab = getSingleQueryValue(route.query.tab)
+
+  if (queryTab === 'usage' || queryTab === 'errors' || queryTab === 'ranking') {
+    activeTab.value = queryTab
+    rankingMounted.value = queryTab === 'ranking'
+  }
 
   if (queryStartDate) {
     startDate.value = queryStartDate
@@ -738,15 +751,12 @@ const loadSavedColumns = () => {
 }
 
 // Detail tabs
-type DetailTab = 'usage' | 'errors' | 'ranking'
-const activeTab = ref<DetailTab>('usage')
 const detailTabs = computed(() => [
   { key: 'usage' as const, label: t('usage.tabs.usage'), icon: 'document' as const },
   { key: 'errors' as const, label: t('usage.tabs.errors'), icon: 'exclamationTriangle' as const },
   { key: 'ranking' as const, label: t('usage.tabs.ranking'), icon: 'chart' as const },
 ])
 const usageFiltersRef = ref<InstanceType<typeof UsageFilters> | null>(null)
-const rankingMounted = ref(false)
 const rankingRef = ref<InstanceType<typeof UserTokenRanking> | null>(null)
 
 const switchTab = (tab: DetailTab) => {
@@ -836,6 +846,15 @@ onUnmounted(() => { abortController?.abort(); exportAbortController?.abort(); do
 watch(modelDistributionSource, (source) => {
   void loadModelStats(source)
 })
+
+watch(
+  () => getSingleQueryValue(route.query.tab),
+  (tab) => {
+    if (tab === 'usage' || tab === 'errors' || tab === 'ranking') {
+      switchTab(tab)
+    }
+  }
+)
 
 defineExpose({ requestedModelStats, refreshData })
 </script>

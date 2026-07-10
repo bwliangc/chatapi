@@ -628,14 +628,10 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/admin/token-leaderboard',
     name: 'AdminTokenLeaderboard',
-    component: () => import('@/views/admin/UserTokenLeaderboardView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'User Token Usage Ranking',
-      titleKey: 'admin.usage.tokenLeaderboardTitle',
-      descriptionKey: 'admin.usage.tokenLeaderboardDescription'
-    }
+    redirect: (to) => ({
+      path: '/admin/usage',
+      query: { ...to.query, tab: 'ranking' }
+    })
   },
   {
     path: '/admin/affiliates',

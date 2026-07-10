@@ -3,6 +3,10 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import UsageView from '../UsageView.vue'
 
+const route = vi.hoisted(() => ({
+  query: {} as Record<string, string | undefined>,
+}))
+
 const { list, getStats, getSnapshotV2, getById, getModelStats, listErrorLogs } = vi.hoisted(() => {
   vi.stubGlobal('localStorage', {
     getItem: vi.fn(() => null),
@@ -83,11 +87,15 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
-vi.mock('vue-router', () => ({
-  useRoute: () => ({
-    query: {}
-  })
-}))
+vi.mock('vue-router', async () => {
+  const { reactive } = await vi.importActual<typeof import('vue')>('vue')
+  route.query = reactive(route.query)
+  return { useRoute: () => route }
+})
+
+beforeEach(() => {
+  Object.keys(route.query).forEach((key) => Reflect.deleteProperty(route.query, key))
+})
 
 const AppLayoutStub = { template: '<div><slot /></div>' }
 const UsageFiltersStub = { template: '<div><slot name="after-reset" /></div>' }
@@ -96,6 +104,8 @@ const UsageTableStub = {
   template: '<div data-test="usage-table"><button class="user-click" @click="$emit(\'userClick\', 2)">user</button></div>',
 }
 const UserTokenRankingStub = {
+  name: 'UserTokenRanking',
+  props: ['startDate', 'endDate', 'filters', 'model'],
   emits: ['select-user'],
   template: '<div data-test="ranking"><button class="pick-user" @click="$emit(\'select-user\', 5, \'rank@test.com\')">pick</button></div>',
 }
@@ -411,5 +421,60 @@ describe('admin UsageView ranking tab', () => {
     expect((wrapper.vm as any).activeTab).toBe('usage')
     expect((wrapper.vm as any).filters.user_id).toBe(5)
     expect(list).toHaveBeenCalledWith(expect.objectContaining({ user_id: 5 }), expect.anything())
+  })
+
+  it('opens ranking from the route query and forwards billing mode with legacy stream', async () => {
+    route.query.tab = 'ranking'
+
+    const wrapper = mount(UsageView, {
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, TokenUsageTrend: true,
+        ModelDistributionChart: true, GroupDistributionChart: true, EndpointDistributionChart: true,
+        UserTokenRanking: UserTokenRankingStub, OpsErrorLogTable: true, OpsErrorDetailModal: true,
+      } },
+    })
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+
+    expect((wrapper.vm as any).activeTab).toBe('ranking')
+    expect(wrapper.find('[data-test="ranking"]').exists()).toBe(true)
+
+    const vm = wrapper.vm as any
+    vm.filters.request_type = 'sync'
+    vm.filters.billing_mode = 'per_request'
+    await flushPromises()
+
+    expect(wrapper.findComponent(UserTokenRankingStub).props('filters')).toEqual(expect.objectContaining({
+      request_type: 'sync',
+      stream: false,
+      billing_mode: 'per_request',
+    }))
+  })
+
+  it('switches to ranking when a reused view receives a new tab query', async () => {
+    const wrapper = mount(UsageView, {
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, TokenUsageTrend: true,
+        ModelDistributionChart: true, GroupDistributionChart: true, EndpointDistributionChart: true,
+        UserTokenRanking: UserTokenRankingStub, OpsErrorLogTable: true, OpsErrorDetailModal: true,
+      } },
+    })
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+
+    expect((wrapper.vm as any).activeTab).toBe('usage')
+    expect(wrapper.find('[data-test="ranking"]').exists()).toBe(false)
+
+    route.query.tab = 'ranking'
+    await flushPromises()
+
+    expect((wrapper.vm as any).activeTab).toBe('ranking')
+    expect(wrapper.find('[data-test="ranking"]').exists()).toBe(true)
   })
 })

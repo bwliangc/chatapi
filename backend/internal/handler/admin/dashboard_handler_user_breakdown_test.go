@@ -64,16 +64,51 @@ func TestGetUserBreakdown_GroupIDFilter(t *testing.T) {
 }
 
 func TestGetUserBreakdown_SortBy(t *testing.T) {
-	repo := &userBreakdownRepoCapture{}
-	router := newUserBreakdownRouter(repo)
+	tests := []struct {
+		name       string
+		sortBy     string
+		wantStatus int
+		wantSortBy string
+		wantError  string
+	}{
+		{name: "default", wantStatus: http.StatusOK, wantSortBy: "actual_cost"},
+		{name: "actual cost", sortBy: "actual_cost", wantStatus: http.StatusOK, wantSortBy: "actual_cost"},
+		{name: "tokens", sortBy: "tokens", wantStatus: http.StatusOK, wantSortBy: "tokens"},
+		{name: "total tokens alias", sortBy: "total_tokens", wantStatus: http.StatusOK, wantSortBy: "tokens"},
+		{name: "input tokens", sortBy: "input_tokens", wantStatus: http.StatusOK, wantSortBy: "input_tokens"},
+		{name: "output tokens", sortBy: "output_tokens", wantStatus: http.StatusOK, wantSortBy: "output_tokens"},
+		{name: "cache tokens", sortBy: "cache_tokens", wantStatus: http.StatusOK, wantSortBy: "cache_tokens"},
+		{name: "requests", sortBy: "requests", wantStatus: http.StatusOK, wantSortBy: "requests"},
+		{name: "cost", sortBy: "cost", wantStatus: http.StatusOK, wantSortBy: "cost"},
+		{name: "account cost", sortBy: "account_cost", wantStatus: http.StatusOK, wantSortBy: "account_cost"},
+		{
+			name:       "invalid",
+			sortBy:     "unknown",
+			wantStatus: http.StatusBadRequest,
+			wantError:  "Invalid sort_by, use actual_cost/tokens/input_tokens/output_tokens/cache_tokens/requests/cost/account_cost",
+		},
+	}
 
-	req := httptest.NewRequest(http.MethodGet,
-		"/admin/dashboard/user-breakdown?start_date=2026-03-01&end_date=2026-03-16&sort_by=total_tokens", nil)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &userBreakdownRepoCapture{}
+			router := newUserBreakdownRouter(repo)
+			path := "/admin/dashboard/user-breakdown?start_date=2026-03-01&end_date=2026-03-16"
+			if tt.sortBy != "" {
+				path += "&sort_by=" + tt.sortBy
+			}
 
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "tokens", repo.capturedDim.SortBy)
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			require.Equal(t, tt.wantStatus, w.Code)
+			require.Equal(t, tt.wantSortBy, repo.capturedDim.SortBy)
+			if tt.wantError != "" {
+				require.Contains(t, w.Body.String(), tt.wantError)
+			}
+		})
+	}
 }
 
 func TestGetUserBreakdown_ModelFilter(t *testing.T) {

@@ -193,3 +193,22 @@ describe('UsageFilters — model options come from prop (no dup request)', () =>
     expect(opts.map((o) => o.value)).toEqual([null, 'claude-3', 'gpt-4o'])
   })
 })
+
+describe('UsageFilters — ranking mode', () => {
+  it('keeps the billing mode filter available', () => {
+    const wrapper = mount(UsageFilters, {
+      props: {
+        modelValue: defaultFilters(),
+        exporting: false,
+        startDate: '2026-05-01',
+        endDate: '2026-05-28',
+        showActions: false,
+        modelOptions: [],
+        mode: 'ranking',
+      },
+      global: { stubs: { Select: true, Teleport: true } },
+    })
+
+    expect(wrapper.text()).toContain('Billing Mode')
+  })
+})
