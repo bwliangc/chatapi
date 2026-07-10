@@ -25,19 +25,17 @@ export default {
     },
     pricingTable: {
       kicker: 'Transparent pricing',
-      title: 'Official vs actual charge',
-      fixedSubtitle: 'Standard tier pricing; above 272K input tokens, input-side prices are 2x and output is 1.5x for the full request.',
+      title: 'Model pricing',
+      fixedSubtitle: 'Per 1M tokens; RMB converted at ¥15 / $100. The >272K tier applies to the full request.',
       model: 'Model',
-      official: 'Official / 1M tokens',
-      multiplier: 'Multiplier',
-      cny: 'RMB / 1M tokens',
-      contextShort: '≤272K input',
-      contextLong: '>272K input',
+      contextLabel: 'Context pricing tier',
+      contextShort: '≤272K',
+      contextLong: '>272K',
+      uniformMultiplier: 'Uniform multiplier',
       priceInput: 'Input',
       priceCacheRead: 'Cache read',
       priceCacheWrite: 'Cache write',
-      priceOutput: 'Output',
-      exchangeApplied: 'Converted at ¥15 / $100'
+      priceOutput: 'Output'
     },
     activity: {
       badge: 'Ranking event',

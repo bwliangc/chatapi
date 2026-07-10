@@ -40,7 +40,7 @@ vi.mock('vue-i18n', async () => {
 })
 
 describe('HomeView transparent pricing', () => {
-  it('lists official short and long context prices including cache read and write', () => {
+  it('switches five models between short and long context prices', async () => {
     const wrapper = mount(HomeView, {
       global: {
         stubs: {
@@ -51,37 +51,52 @@ describe('HomeView transparent pricing', () => {
       },
     })
 
-    const expectedRows = [
-      { model: 'gpt-5.6-sol', tier: 'short', prices: ['$5', '$0.5', '$6.25', '$30'] },
-      { model: 'gpt-5.6-sol', tier: 'long', prices: ['$10', '$1', '$12.5', '$45'] },
-      { model: 'gpt-5.6-terra', tier: 'short', prices: ['$2.5', '$0.25', '$3.125', '$15'] },
-      { model: 'gpt-5.6-terra', tier: 'long', prices: ['$5', '$0.5', '$6.25', '$22.5'] },
-      { model: 'gpt-5.6-luna', tier: 'short', prices: ['$1', '$0.1', '$1.25', '$6'] },
-      { model: 'gpt-5.6-luna', tier: 'long', prices: ['$2', '$0.2', '$2.5', '$9'] },
-      { model: 'gpt-5.5', tier: 'short', prices: ['$5', '$0.5', '-', '$30'] },
-      { model: 'gpt-5.5', tier: 'long', prices: ['$10', '$1', '-', '$45'] },
-      { model: 'gpt-5.4', tier: 'short', prices: ['$2.5', '$0.25', '-', '$15'] },
-      { model: 'gpt-5.4', tier: 'long', prices: ['$5', '$0.5', '-', '$22.5'] },
+    const shortRows = [
+      { model: 'gpt-5.6-sol', prices: ['$5', '$0.5', '$6.25', '$30'] },
+      { model: 'gpt-5.6-terra', prices: ['$2.5', '$0.25', '$3.125', '$15'] },
+      { model: 'gpt-5.6-luna', prices: ['$1', '$0.1', '$1.25', '$6'] },
+      { model: 'gpt-5.5', prices: ['$5', '$0.5', '-', '$30'] },
+      { model: 'gpt-5.4', prices: ['$2.5', '$0.25', '-', '$15'] },
+    ]
+    const longRows = [
+      { model: 'gpt-5.6-sol', prices: ['$10', '$1', '$12.5', '$45'] },
+      { model: 'gpt-5.6-terra', prices: ['$5', '$0.5', '$6.25', '$22.5'] },
+      { model: 'gpt-5.6-luna', prices: ['$2', '$0.2', '$2.5', '$9'] },
+      { model: 'gpt-5.5', prices: ['$10', '$1', '-', '$45'] },
+      { model: 'gpt-5.4', prices: ['$5', '$0.5', '-', '$22.5'] },
     ]
     const priceKinds = ['input', 'cacheRead', 'cacheWrite', 'output']
 
-    for (const layout of ['desktop', 'mobile']) {
-      const pricingLayout = wrapper.get(`[data-pricing-layout="${layout}"]`)
-      expectedRows.forEach(({ model, tier, prices }) => {
-        const row = pricingLayout.get(`[data-model="${model}"][data-context-tier="${tier}"]`)
-        expect(row.text()).toContain('1x')
-        priceKinds.forEach((kind, index) => {
-          expect(row.get(`[data-price-currency="usd"][data-price-kind="${kind}"]`).text()).toBe(prices[index])
+    const expectPrices = (rows: typeof shortRows, tier: 'short' | 'long') => {
+      for (const layout of ['desktop', 'mobile']) {
+        const pricingLayout = wrapper.get(`[data-pricing-layout="${layout}"]`)
+        expect(pricingLayout.findAll('[data-model]')).toHaveLength(5)
+        rows.forEach(({ model, prices }) => {
+          const row = pricingLayout.get(`[data-model="${model}"][data-context-tier="${tier}"]`)
+          priceKinds.forEach((kind, index) => {
+            expect(row.get(`[data-price-kind="${kind}"] [data-price-currency="usd"]`).text()).toBe(prices[index])
+          })
         })
-      })
+      }
     }
 
+    expect(wrapper.get('[data-context-select="short"]').attributes('aria-pressed')).toBe('true')
+    expectPrices(shortRows, 'short')
+
     const desktop = wrapper.get('[data-pricing-layout="desktop"]')
-    const terraShort = desktop.get('[data-model="gpt-5.6-terra"][data-context-tier="short"]')
-    const lunaShort = desktop.get('[data-model="gpt-5.6-luna"][data-context-tier="short"]')
-    const solLong = desktop.get('[data-model="gpt-5.6-sol"][data-context-tier="long"]')
-    expect(terraShort.get('[data-price-currency="cny"][data-price-kind="cacheWrite"]').text()).toBe('¥0.46875')
-    expect(lunaShort.get('[data-price-currency="cny"][data-price-kind="cacheRead"]').text()).toBe('¥0.015')
-    expect(solLong.get('[data-price-currency="cny"][data-price-kind="output"]').text()).toBe('¥6.75')
+    expect(
+      desktop.get('[data-model="gpt-5.6-terra"] [data-price-kind="cacheWrite"] [data-price-currency="cny"]').text(),
+    ).toBe('¥0.46875')
+    expect(
+      desktop.get('[data-model="gpt-5.6-luna"] [data-price-kind="cacheRead"] [data-price-currency="cny"]').text(),
+    ).toBe('¥0.015')
+
+    await wrapper.get('[data-context-select="long"]').trigger('click')
+
+    expect(wrapper.get('[data-context-select="long"]').attributes('aria-pressed')).toBe('true')
+    expectPrices(longRows, 'long')
+    expect(
+      desktop.get('[data-model="gpt-5.6-sol"] [data-price-kind="output"] [data-price-currency="cny"]').text(),
+    ).toBe('¥6.75')
   })
 })

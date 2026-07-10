@@ -25,19 +25,17 @@ export default {
     },
     pricingTable: {
       kicker: '透明定价',
-      title: '官方价 vs 实际扣费',
-      fixedSubtitle: 'Standard 档价格；输入超过 272K 时，输入侧按 2x、输出按 1.5x 对整次请求计价。',
+      title: '模型价格',
+      fixedSubtitle: '每 1M Tokens；人民币按 ¥15 / $100 换算，>272K 档按整次请求计价。',
       model: '模型',
-      official: '官方价 / 1M Tokens',
-      multiplier: '倍率',
-      cny: '人民币 / 1M Tokens',
-      contextShort: '≤272K 输入',
-      contextLong: '>272K 输入',
+      contextLabel: '上下文价格档位',
+      contextShort: '≤272K',
+      contextLong: '>272K',
+      uniformMultiplier: '统一倍率',
       priceInput: '输入',
       priceCacheRead: '缓存读取',
       priceCacheWrite: '缓存写入',
-      priceOutput: '输出',
-      exchangeApplied: '已按 ¥15 / $100 换算'
+      priceOutput: '输出'
     },
     activity: {
       badge: '排行榜活动',

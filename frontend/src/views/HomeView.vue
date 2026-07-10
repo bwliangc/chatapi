@@ -187,7 +187,9 @@
           <div
             class="overflow-hidden rounded-[2rem] border border-slate-900/10 bg-white/70 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06]"
           >
-            <div class="flex flex-col gap-3 border-b border-slate-900/10 p-5 dark:border-white/10 sm:flex-row sm:items-end sm:justify-between">
+            <div
+              class="flex flex-col gap-4 border-b border-slate-900/10 p-5 dark:border-white/10 md:flex-row md:items-end md:justify-between"
+            >
               <div>
                 <div class="text-xs font-black uppercase tracking-[0.24em] text-amber-600 dark:text-amber-300">
                   {{ t('home.pricingTable.kicker') }}
@@ -199,81 +201,86 @@
                   {{ pricingTableSubtitle }}
                 </p>
               </div>
+
+              <div class="flex flex-wrap items-center gap-3 md:justify-end">
+                <div
+                  role="group"
+                  :aria-label="t('home.pricingTable.contextLabel')"
+                  class="inline-flex rounded-lg bg-slate-950/[0.06] p-1 dark:bg-white/10"
+                >
+                  <button
+                    v-for="tier in contextTiers"
+                    :key="tier.key"
+                    type="button"
+                    :data-context-select="tier.key"
+                    :aria-pressed="selectedContextTier === tier.key"
+                    class="rounded-md px-3 py-1.5 text-xs font-bold transition-colors"
+                    :class="
+                      selectedContextTier === tier.key
+                        ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-800 dark:text-white'
+                        : 'text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white'
+                    "
+                    @click="selectedContextTier = tier.key"
+                  >
+                    {{ tier.label }}
+                  </button>
+                </div>
+                <div class="flex items-baseline gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span>{{ t('home.pricingTable.uniformMultiplier') }}</span>
+                  <strong class="font-mono text-sm text-cyan-700 dark:text-cyan-200">
+                    {{ formatMultiplier(uniformMultiplier) }}
+                  </strong>
+                </div>
+              </div>
             </div>
 
             <div data-pricing-layout="desktop" class="hidden overflow-x-auto lg:block">
-              <table class="w-full min-w-[64rem] divide-y divide-slate-900/10 text-left text-sm dark:divide-white/10">
+              <table class="w-full min-w-[52rem] divide-y divide-slate-900/10 text-left text-sm dark:divide-white/10">
                 <thead class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                   <tr>
                     <th class="px-5 py-4 font-black">{{ t('home.pricingTable.model') }}</th>
-                    <th class="px-5 py-4 font-black">{{ t('home.pricingTable.official') }}</th>
-                    <th class="px-5 py-4 font-black">{{ t('home.pricingTable.multiplier') }}</th>
-                    <th class="px-5 py-4 font-black">{{ t('home.pricingTable.cny') }}</th>
+                    <th
+                      v-for="priceKind in priceKinds"
+                      :key="priceKind.key"
+                      class="px-5 py-4 text-right font-black"
+                    >
+                      {{ priceKind.label }}
+                    </th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-900/10 dark:divide-white/10">
                   <tr
                     v-for="item in featuredPrices"
-                    :key="`${item.model}-${item.contextTier}-${item.platform}`"
+                    :key="item.model"
                     :data-model="item.model"
-                    :data-context-tier="item.contextTier"
+                    :data-context-tier="selectedContextTier"
                     class="transition-colors hover:bg-slate-950/[0.03] dark:hover:bg-white/[0.04]"
                   >
                     <td class="px-5 py-4">
                       <div class="font-black text-slate-950 dark:text-white">{{ item.model }}</div>
-                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {{ item.platform }}
+                    </td>
+                    <td
+                      v-for="priceKind in priceKinds"
+                      :key="priceKind.key"
+                      :data-price-kind="priceKind.key"
+                      class="px-5 py-4 text-right"
+                    >
+                      <div
+                        data-price-currency="usd"
+                        class="whitespace-nowrap font-mono text-sm font-bold text-slate-800 dark:text-slate-200"
+                      >
+                        {{ formatPrice(item.prices[selectedContextTier][priceKind.key]) }}
                       </div>
                       <div
-                        class="mt-2 inline-flex rounded-full bg-slate-950/[0.06] px-2 py-1 text-[11px] font-bold text-slate-600 dark:bg-white/10 dark:text-slate-300"
+                        data-price-currency="cny"
+                        class="mt-1 whitespace-nowrap font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300"
                       >
-                        {{ formatContextTier(item.contextTier) }}
-                      </div>
-                    </td>
-                    <td class="px-5 py-4">
-                      <dl class="grid min-w-[13rem] gap-1.5">
-                        <div
-                          v-for="priceKind in priceKinds"
-                          :key="priceKind.key"
-                          class="grid grid-cols-[5.5rem_auto] items-baseline gap-3"
-                        >
-                          <dt class="text-xs text-slate-500 dark:text-slate-400">{{ priceKind.label }}</dt>
-                          <dd
-                            :data-price-kind="priceKind.key"
-                            data-price-currency="usd"
-                            class="whitespace-nowrap font-mono text-xs font-bold text-slate-700 dark:text-slate-300"
-                          >
-                            {{ formatPrice(item.official[priceKind.key]) }}
-                          </dd>
-                        </div>
-                      </dl>
-                    </td>
-                    <td class="px-5 py-4">
-                      <span
-                        class="inline-flex rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-black text-cyan-700 dark:text-cyan-200"
-                      >
-                        {{ formatMultiplier(item.multiplier) }}
-                      </span>
-                    </td>
-                    <td class="px-5 py-4">
-                      <dl class="grid min-w-[13rem] gap-1.5">
-                        <div
-                          v-for="priceKind in priceKinds"
-                          :key="priceKind.key"
-                          class="grid grid-cols-[5.5rem_auto] items-baseline gap-3"
-                        >
-                          <dt class="text-xs text-slate-500 dark:text-slate-400">{{ priceKind.label }}</dt>
-                          <dd
-                            :data-price-kind="priceKind.key"
-                            data-price-currency="cny"
-                            class="whitespace-nowrap font-mono text-xs font-black text-emerald-700 dark:text-emerald-300"
-                          >
-                            {{ formatCnyFromPrice(item.official[priceKind.key], item.multiplier) }}
-                          </dd>
-                        </div>
-                      </dl>
-                      <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                        {{ t('home.pricingTable.exchangeApplied') }}
+                        {{
+                          formatCnyFromPrice(
+                            item.prices[selectedContextTier][priceKind.key],
+                            item.multiplier,
+                          )
+                        }}
                       </div>
                     </td>
                   </tr>
@@ -284,76 +291,44 @@
             <ul data-pricing-layout="mobile" class="divide-y divide-slate-900/10 dark:divide-white/10 lg:hidden">
               <li
                 v-for="item in featuredPrices"
-                :key="`${item.model}-${item.contextTier}-${item.platform}-mobile`"
+                :key="`${item.model}-mobile`"
                 :data-model="item.model"
-                :data-context-tier="item.contextTier"
-                class="p-5"
+                :data-context-tier="selectedContextTier"
+                class="px-5 py-4"
               >
-                <div class="flex items-start justify-between gap-4">
-                  <div class="min-w-0">
-                    <div class="break-words font-black text-slate-950 dark:text-white">{{ item.model }}</div>
-                    <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                      <span>{{ item.platform }}</span>
-                      <span aria-hidden="true">/</span>
-                      <span>{{ formatContextTier(item.contextTier) }}</span>
-                    </div>
-                  </div>
-                  <span
-                    class="inline-flex shrink-0 rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-black text-cyan-700 dark:text-cyan-200"
+                <div class="break-words text-sm font-black text-slate-950 dark:text-white">
+                  {{ item.model }}
+                </div>
+
+                <dl class="mt-2 divide-y divide-slate-900/[0.06] dark:divide-white/[0.06]">
+                  <div
+                    v-for="priceKind in priceKinds"
+                    :key="priceKind.key"
+                    :data-price-kind="priceKind.key"
+                    class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-3 py-1.5"
                   >
-                    {{ formatMultiplier(item.multiplier) }}
-                  </span>
-                </div>
-
-                <div class="mt-4 grid grid-cols-2 gap-4">
-                  <section class="min-w-0">
-                    <h3 class="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400">
-                      {{ t('home.pricingTable.official') }}
-                    </h3>
-                    <dl class="mt-2 grid gap-1.5">
-                      <div
-                        v-for="priceKind in priceKinds"
-                        :key="priceKind.key"
-                        class="flex items-baseline justify-between gap-2"
-                      >
-                        <dt class="text-[11px] text-slate-500 dark:text-slate-400">{{ priceKind.label }}</dt>
-                        <dd
-                          :data-price-kind="priceKind.key"
-                          data-price-currency="usd"
-                          class="whitespace-nowrap font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300"
-                        >
-                          {{ formatPrice(item.official[priceKind.key]) }}
-                        </dd>
-                      </div>
-                    </dl>
-                  </section>
-
-                  <section class="min-w-0">
-                    <h3 class="text-[11px] font-black uppercase text-slate-500 dark:text-slate-400">
-                      {{ t('home.pricingTable.cny') }}
-                    </h3>
-                    <dl class="mt-2 grid gap-1.5">
-                      <div
-                        v-for="priceKind in priceKinds"
-                        :key="priceKind.key"
-                        class="flex items-baseline justify-between gap-2"
-                      >
-                        <dt class="text-[11px] text-slate-500 dark:text-slate-400">{{ priceKind.label }}</dt>
-                        <dd
-                          :data-price-kind="priceKind.key"
-                          data-price-currency="cny"
-                          class="whitespace-nowrap font-mono text-[11px] font-black text-emerald-700 dark:text-emerald-300"
-                        >
-                          {{ formatCnyFromPrice(item.official[priceKind.key], item.multiplier) }}
-                        </dd>
-                      </div>
-                    </dl>
-                  </section>
-                </div>
-
-                <p class="mt-3 text-[10px] text-slate-500 dark:text-slate-400">
-                  {{ t('home.pricingTable.exchangeApplied') }}
-                </p>
+                    <dt class="min-w-0 text-xs text-slate-500 dark:text-slate-400">
+                      {{ priceKind.label }}
+                    </dt>
+                    <dd
+                      data-price-currency="usd"
+                      class="whitespace-nowrap font-mono text-xs font-bold text-slate-800 dark:text-slate-200"
+                    >
+                      {{ formatPrice(item.prices[selectedContextTier][priceKind.key]) }}
+                    </dd>
+                    <dd
+                      data-price-currency="cny"
+                      class="min-w-[4.75rem] whitespace-nowrap text-right font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300"
+                    >
+                      {{
+                        formatCnyFromPrice(
+                          item.prices[selectedContextTier][priceKind.key],
+                          item.multiplier,
+                        )
+                      }}
+                    </dd>
+                  </div>
+                </dl>
               </li>
             </ul>
           </div>
@@ -423,19 +398,10 @@ interface TokenPrices {
   output: number | null
 }
 
-interface FeaturedModelPrice {
-  model: string
-  platform: string
-  multiplier: number
-  shortContextPrices: TokenPrices
-}
-
 interface FeaturedPrice {
   model: string
-  platform: string
   multiplier: number
-  contextTier: ContextTier
-  official: TokenPrices
+  prices: Record<ContextTier, TokenPrices>
 }
 
 type LeaderboardActivityPublicSettings = {
@@ -448,6 +414,11 @@ const priceKinds = computed<Array<{ key: PriceKind; label: string }>>(() => [
   { key: 'cacheRead', label: t('home.pricingTable.priceCacheRead') },
   { key: 'cacheWrite', label: t('home.pricingTable.priceCacheWrite') },
   { key: 'output', label: t('home.pricingTable.priceOutput') }
+])
+
+const contextTiers = computed<Array<{ key: ContextTier; label: string }>>(() => [
+  { key: 'short', label: t('home.pricingTable.contextShort') },
+  { key: 'long', label: t('home.pricingTable.contextLong') }
 ])
 
 // Site settings - directly from appStore (already initialized from injected config)
@@ -478,63 +449,8 @@ const userInitial = computed(() => {
 
 const currentYear = computed(() => new Date().getFullYear())
 
-const featuredModels: FeaturedModelPrice[] = [
-  {
-    model: 'gpt-5.6-sol',
-    platform: 'OpenAI',
-    multiplier: 1,
-    shortContextPrices: {
-      input: 0.000005,
-      cacheRead: 0.0000005,
-      cacheWrite: 0.00000625,
-      output: 0.00003
-    }
-  },
-  {
-    model: 'gpt-5.6-terra',
-    platform: 'OpenAI',
-    multiplier: 1,
-    shortContextPrices: {
-      input: 0.0000025,
-      cacheRead: 0.00000025,
-      cacheWrite: 0.000003125,
-      output: 0.000015
-    }
-  },
-  {
-    model: 'gpt-5.6-luna',
-    platform: 'OpenAI',
-    multiplier: 1,
-    shortContextPrices: {
-      input: 0.000001,
-      cacheRead: 0.0000001,
-      cacheWrite: 0.00000125,
-      output: 0.000006
-    }
-  },
-  {
-    model: 'gpt-5.5',
-    platform: 'OpenAI',
-    multiplier: 1,
-    shortContextPrices: {
-      input: 0.000005,
-      cacheRead: 0.0000005,
-      cacheWrite: null,
-      output: 0.00003
-    }
-  },
-  {
-    model: 'gpt-5.4',
-    platform: 'OpenAI',
-    multiplier: 1,
-    shortContextPrices: {
-      input: 0.0000025,
-      cacheRead: 0.00000025,
-      cacheWrite: null,
-      output: 0.000015
-    }
-  }
-]
+const uniformMultiplier = 1
+const selectedContextTier = ref<ContextTier>('short')
 
 const longContextMultipliers: Record<PriceKind, number> = {
   input: 2,
@@ -543,22 +459,58 @@ const longContextMultipliers: Record<PriceKind, number> = {
   output: 1.5
 }
 
-const featuredPrices: FeaturedPrice[] = featuredModels.flatMap((item) => [
+const featuredPrices: FeaturedPrice[] = [
   {
-    model: item.model,
-    platform: item.platform,
-    multiplier: item.multiplier,
-    contextTier: 'short',
-    official: item.shortContextPrices
+    model: 'gpt-5.6-sol',
+    multiplier: uniformMultiplier,
+    prices: buildContextPrices({
+      input: 0.000005,
+      cacheRead: 0.0000005,
+      cacheWrite: 0.00000625,
+      output: 0.00003
+    })
   },
   {
-    model: item.model,
-    platform: item.platform,
-    multiplier: item.multiplier,
-    contextTier: 'long',
-    official: scaleTokenPrices(item.shortContextPrices, longContextMultipliers)
+    model: 'gpt-5.6-terra',
+    multiplier: uniformMultiplier,
+    prices: buildContextPrices({
+      input: 0.0000025,
+      cacheRead: 0.00000025,
+      cacheWrite: 0.000003125,
+      output: 0.000015
+    })
+  },
+  {
+    model: 'gpt-5.6-luna',
+    multiplier: uniformMultiplier,
+    prices: buildContextPrices({
+      input: 0.000001,
+      cacheRead: 0.0000001,
+      cacheWrite: 0.00000125,
+      output: 0.000006
+    })
+  },
+  {
+    model: 'gpt-5.5',
+    multiplier: uniformMultiplier,
+    prices: buildContextPrices({
+      input: 0.000005,
+      cacheRead: 0.0000005,
+      cacheWrite: null,
+      output: 0.00003
+    })
+  },
+  {
+    model: 'gpt-5.4',
+    multiplier: uniformMultiplier,
+    prices: buildContextPrices({
+      input: 0.0000025,
+      cacheRead: 0.00000025,
+      cacheWrite: null,
+      output: 0.000015
+    })
   }
-])
+]
 
 const activityHighlights = computed(() => [
   { label: t('home.activity.items.period'), value: t('home.activity.values.period') },
@@ -610,12 +562,15 @@ function scaleTokenPrices(prices: TokenPrices, multipliers: Record<PriceKind, nu
   }
 }
 
-function scalePrice(value: number | null, multiplier: number): number | null {
-  return value == null ? null : value * multiplier
+function buildContextPrices(short: TokenPrices): Record<ContextTier, TokenPrices> {
+  return {
+    short,
+    long: scaleTokenPrices(short, longContextMultipliers)
+  }
 }
 
-function formatContextTier(tier: ContextTier): string {
-  return t(tier === 'short' ? 'home.pricingTable.contextShort' : 'home.pricingTable.contextLong')
+function scalePrice(value: number | null, multiplier: number): number | null {
+  return value == null ? null : value * multiplier
 }
 
 function formatPrice(value: number | null): string {
