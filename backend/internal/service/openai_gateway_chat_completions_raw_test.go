@@ -573,6 +573,41 @@ func TestEnsureOpenAIChatStreamUsage(t *testing.T) {
 	require.True(t, gjson.GetBytes(body, "stream_options.include_usage").Bool())
 }
 
+func TestExtractCCStreamUsage_PreservesCacheWriteTokens(t *testing.T) {
+	t.Parallel()
+
+	usage := extractCCStreamUsage(`{"choices":[],"usage":{"prompt_tokens":1000,"completion_tokens":50,"prompt_tokens_details":{"cached_tokens":100,"cache_write_tokens":200}}}`)
+	require.NotNil(t, usage)
+	require.Equal(t, 1000, usage.InputTokens)
+	require.Equal(t, 50, usage.OutputTokens)
+	require.Equal(t, 100, usage.CacheReadInputTokens)
+	require.Equal(t, 200, usage.CacheCreationInputTokens)
+}
+
+func TestBufferRawChatCompletions_PreservesCacheWriteTokens(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body: io.NopCloser(strings.NewReader(
+			`{"id":"chatcmpl_cache_write","choices":[],"usage":{"prompt_tokens":1000,"completion_tokens":50,"prompt_tokens_details":{"cached_tokens":100,"cache_write_tokens":200}}}`,
+		)),
+	}
+	svc := &OpenAIGatewayService{cfg: rawChatCompletionsTestConfig()}
+
+	result, err := svc.bufferRawChatCompletions(c, resp, "gpt-5.6-sol", "gpt-5.6-sol", "gpt-5.6-sol", nil, nil, time.Now())
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Equal(t, 1000, result.Usage.InputTokens)
+	require.Equal(t, 50, result.Usage.OutputTokens)
+	require.Equal(t, 100, result.Usage.CacheReadInputTokens)
+	require.Equal(t, 200, result.Usage.CacheCreationInputTokens)
+}
+
 func TestBufferRawChatCompletions_RejectsOversizedResponse(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
