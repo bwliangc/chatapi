@@ -347,6 +347,33 @@ const currentYear = computed(() => new Date().getFullYear())
 
 const featuredPrices: FeaturedPrice[] = [
   {
+    model: 'gpt-5.6-sol',
+    platform: 'OpenAI',
+    multiplier: 1,
+    officialInput: 0.000005,
+    officialOutput: 0.00003,
+    actualInput: 0.000005,
+    actualOutput: 0.00003
+  },
+  {
+    model: 'gpt-5.6-terra',
+    platform: 'OpenAI',
+    multiplier: 1,
+    officialInput: 0.0000025,
+    officialOutput: 0.000015,
+    actualInput: 0.0000025,
+    actualOutput: 0.000015
+  },
+  {
+    model: 'gpt-5.6-luna',
+    platform: 'OpenAI',
+    multiplier: 1,
+    officialInput: 0.000001,
+    officialOutput: 0.000006,
+    actualInput: 0.000001,
+    actualOutput: 0.000006
+  },
+  {
     model: 'gpt-5.5',
     platform: 'OpenAI',
     multiplier: 1,
