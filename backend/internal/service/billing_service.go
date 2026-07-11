@@ -312,6 +312,9 @@ func (s *BillingService) initFallbackPricing() {
 		CacheCreationPricePerTokenPriority: 12.5e-6,
 		CacheReadPricePerToken:             0.5e-6,
 		CacheReadPricePerTokenPriority:     1e-6,
+		LongContextInputThreshold:          openAILongContextInputThreshold,
+		LongContextInputMultiplier:         openAILongContextInputMultiplier,
+		LongContextOutputMultiplier:        openAILongContextOutputMultiplier,
 	}
 	s.fallbackPrices["gpt-5.6-terra"] = &ModelPricing{
 		InputPricePerToken:                 2.5e-6,
@@ -322,6 +325,9 @@ func (s *BillingService) initFallbackPricing() {
 		CacheCreationPricePerTokenPriority: 6.25e-6,
 		CacheReadPricePerToken:             0.25e-6,
 		CacheReadPricePerTokenPriority:     0.5e-6,
+		LongContextInputThreshold:          openAILongContextInputThreshold,
+		LongContextInputMultiplier:         openAILongContextInputMultiplier,
+		LongContextOutputMultiplier:        openAILongContextOutputMultiplier,
 	}
 	s.fallbackPrices["gpt-5.6-luna"] = &ModelPricing{
 		InputPricePerToken:                 1e-6,
@@ -332,6 +338,9 @@ func (s *BillingService) initFallbackPricing() {
 		CacheCreationPricePerTokenPriority: 2.5e-6,
 		CacheReadPricePerToken:             0.1e-6,
 		CacheReadPricePerTokenPriority:     0.2e-6,
+		LongContextInputThreshold:          openAILongContextInputThreshold,
+		LongContextInputMultiplier:         openAILongContextInputMultiplier,
+		LongContextOutputMultiplier:        openAILongContextOutputMultiplier,
 	}
 
 	s.fallbackPrices["gpt-5.4-mini"] = &ModelPricing{
