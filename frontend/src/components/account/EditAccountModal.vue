@@ -36,7 +36,7 @@
             class="input"
             :placeholder="apiKeyBaseUrlPlaceholder"
           />
-          <p class="input-hint">{{ baseUrlHint }}</p>
+          <p v-if="baseUrlHint" class="input-hint">{{ baseUrlHint }}</p>
         </div>
         <div v-if="account.platform === 'gemini'">
           <label class="input-label">{{ t('admin.accounts.gemini.upstreamMode.label') }}</label>
@@ -2611,6 +2611,7 @@ const baseUrlHint = computed(() => {
     return t('admin.accounts.gemini.upstreamMode.openAIBaseUrlHint')
   }
   if (props.account.platform === 'gemini') return t('admin.accounts.gemini.baseUrlHint')
+  if (props.account.platform === 'grok') return ''
   return t('admin.accounts.baseUrlHint')
 })
 
@@ -2623,6 +2624,7 @@ const apiKeyBaseUrlPlaceholder = computed(() => {
       : GEMINI_NATIVE_BASE_URL
   }
   if (props.account?.platform === 'antigravity') return 'https://cloudcode-pa.googleapis.com'
+  if (props.account?.platform === 'grok') return 'https://api.x.ai/v1'
   return 'https://api.anthropic.com'
 })
 
@@ -2633,6 +2635,7 @@ const apiKeyPlaceholder = computed(() => {
     return geminiUpstreamMode.value === 'openai_chat_completions' ? 'sk-...' : 'AIza...'
   }
   if (props.account?.platform === 'antigravity') return 'sk-...'
+  if (props.account?.platform === 'grok') return 'xai-...'
   return 'sk-ant-...'
 })
 
@@ -3091,6 +3094,7 @@ const tempUnschedPresets = computed(() => [
 const defaultBaseUrl = computed(() => {
   if (props.account?.platform === 'openai') return 'https://api.openai.com'
   if (props.account?.platform === 'gemini') return GEMINI_NATIVE_BASE_URL
+  if (props.account?.platform === 'grok') return 'https://api.x.ai/v1'
   return 'https://api.anthropic.com'
 })
 
@@ -3394,7 +3398,9 @@ const syncFormFromAccount = (newAccount: Account | null) => {
         ? 'https://api.openai.com'
         : newAccount.platform === 'gemini'
           ? (isGeminiOpenAIUpstream ? '' : GEMINI_NATIVE_BASE_URL)
-          : 'https://api.anthropic.com'
+          : newAccount.platform === 'grok'
+            ? 'https://api.x.ai/v1'
+            : 'https://api.anthropic.com'
     editBaseUrl.value = (credentials.base_url as string) || platformDefaultUrl
 
     // Load model mappings and detect mode
@@ -3470,7 +3476,9 @@ const syncFormFromAccount = (newAccount: Account | null) => {
         ? 'https://api.openai.com'
         : newAccount.platform === 'gemini'
           ? GEMINI_NATIVE_BASE_URL
-          : 'https://api.anthropic.com'
+          : newAccount.platform === 'grok'
+            ? 'https://api.x.ai/v1'
+            : 'https://api.anthropic.com'
     editBaseUrl.value = platformDefaultUrl
 
     // Load model mappings for OpenAI/Grok OAuth accounts
