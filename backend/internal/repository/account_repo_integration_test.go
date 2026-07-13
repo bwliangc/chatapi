@@ -858,6 +858,62 @@ func (s *AccountRepoSuite) TestSetError() {
 	s.Require().False(got.Schedulable)
 }
 
+type abnormalNotificationSenderRecorder struct {
+	inputs []service.NotificationEmailSendInput
+}
+
+func (r *abnormalNotificationSenderRecorder) Send(_ context.Context, input service.NotificationEmailSendInput) error {
+	r.inputs = append(r.inputs, input)
+	return nil
+}
+
+func (s *AccountRepoSuite) TestSetErrorSendsOncePerErrorTransition() {
+	account := mustCreateAccount(s.T(), s.client, &service.Account{
+		Name:        "acc-error-notify",
+		Platform:    service.PlatformOpenAI,
+		Status:      service.StatusActive,
+		Schedulable: true,
+		Extra: map[string]any{
+			service.AccountExtraAbnormalNotifyEnabled: true,
+			service.AccountExtraAbnormalNotifyEmail:   "alerts@example.com",
+		},
+	})
+	recorder := &abnormalNotificationSenderRecorder{}
+	s.repo.abnormalNotificationSender = recorder
+
+	s.Require().NoError(s.repo.SetError(s.ctx, account.ID, "first failure"))
+	s.Require().NoError(s.repo.SetError(s.ctx, account.ID, "updated failure"))
+	s.Require().Len(recorder.inputs, 1)
+	s.Require().Equal("alerts@example.com", recorder.inputs[0].RecipientEmail)
+	s.Require().Equal("first failure", recorder.inputs[0].Variables["error_message"])
+
+	s.Require().NoError(s.repo.ClearError(s.ctx, account.ID))
+	s.Require().NoError(s.repo.SetError(s.ctx, account.ID, "second failure"))
+	s.Require().Len(recorder.inputs, 2)
+	s.Require().Equal("second failure", recorder.inputs[1].Variables["error_message"])
+}
+
+func (s *AccountRepoSuite) TestSetErrorSkipsDisabledOrInvalidNotification() {
+	recorder := &abnormalNotificationSenderRecorder{}
+	s.repo.abnormalNotificationSender = recorder
+
+	disabled := mustCreateAccount(s.T(), s.client, &service.Account{
+		Name: "acc-error-notify-disabled", Status: service.StatusActive,
+		Extra: map[string]any{service.AccountExtraAbnormalNotifyEmail: "alerts@example.com"},
+	})
+	invalid := mustCreateAccount(s.T(), s.client, &service.Account{
+		Name: "acc-error-notify-invalid", Status: service.StatusActive,
+		Extra: map[string]any{
+			service.AccountExtraAbnormalNotifyEnabled: true,
+			service.AccountExtraAbnormalNotifyEmail:   "invalid",
+		},
+	})
+
+	s.Require().NoError(s.repo.SetError(s.ctx, disabled.ID, "disabled"))
+	s.Require().NoError(s.repo.SetError(s.ctx, invalid.ID, "invalid recipient"))
+	s.Require().Empty(recorder.inputs)
+}
+
 func (s *AccountRepoSuite) TestUpdateErrorStatusUnschedulesAccount() {
 	account := mustCreateAccount(s.T(), s.client, &service.Account{Name: "acc-update-err", Status: service.StatusActive, Schedulable: true})
 	account.Status = service.StatusError

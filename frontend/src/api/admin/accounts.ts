@@ -197,17 +197,21 @@ export async function testAccount(id: number): Promise<{
   return data
 }
 
-/**
- * Send a manually confirmed abnormal-account notice to the email stored on the account.
- */
-export async function sendAbnormalNotice(id: number): Promise<{
-  message: string
-  recipient_email: string
-}> {
-  const { data } = await apiClient.post<{
-    message: string
-    recipient_email: string
-  }>(`/admin/accounts/${id}/send-abnormal-notice`)
+export interface AccountAbnormalNotificationSettings {
+  enabled: boolean
+  email: string
+}
+
+export async function getAbnormalNotification(id: number): Promise<AccountAbnormalNotificationSettings> {
+  const { data } = await apiClient.get<AccountAbnormalNotificationSettings>(`/admin/accounts/${id}/abnormal-notification`)
+  return data
+}
+
+export async function updateAbnormalNotification(
+  id: number,
+  settings: AccountAbnormalNotificationSettings
+): Promise<AccountAbnormalNotificationSettings> {
+  const { data } = await apiClient.put<AccountAbnormalNotificationSettings>(`/admin/accounts/${id}/abnormal-notification`, settings)
   return data
 }
 
@@ -828,7 +832,8 @@ export const accountsAPI = {
   delete: deleteAccount,
   toggleStatus,
   testAccount,
-  sendAbnormalNotice,
+  getAbnormalNotification,
+  updateAbnormalNotification,
   refreshCredentials,
   applyOAuthCredentials,
   getStats,

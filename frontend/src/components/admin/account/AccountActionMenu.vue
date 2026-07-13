@@ -42,13 +42,12 @@
               {{ t('admin.accounts.setPrivacy') }}
             </button>
             <button
-              @click="$emit('notify-abnormal', account); $emit('close')"
-              :disabled="!hasNotificationEmail"
-              :title="hasNotificationEmail ? t('admin.accounts.sendAbnormalNoticeHint') : t('admin.accounts.sendAbnormalNoticeNoEmail')"
-              class="flex w-full items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-rose-400 dark:hover:bg-dark-700"
+              @click="$emit('configure-abnormal-notification', account); $emit('close')"
+              :title="t('admin.accounts.abnormalNotificationHint')"
+              class="flex w-full items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-gray-100 dark:text-rose-400 dark:hover:bg-dark-700"
             >
               <Icon name="mail" size="sm" />
-              {{ t('admin.accounts.sendAbnormalNotice') }}
+              {{ t('admin.accounts.abnormalNotification') }}
             </button>
             <div v-if="hasRecoverableState" class="my-1 border-t border-gray-100 dark:border-dark-700"></div>
             <button v-if="hasRecoverableState" @click="$emit('recover-state', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm text-emerald-600 hover:bg-gray-100 dark:hover:bg-dark-700">
@@ -73,7 +72,7 @@ import { Icon } from '@/components/icons'
 import type { Account } from '@/types'
 
 const props = defineProps<{ show: boolean; account: Account | null; position: { top: number; left: number } | null }>()
-const emit = defineEmits(['close', 'test', 'stats', 'schedule', 'reauth', 'refresh-token', 'recover-state', 'reset-quota', 'set-privacy', 'create-spark-shadow', 'notify-abnormal'])
+const emit = defineEmits(['close', 'test', 'stats', 'schedule', 'reauth', 'refresh-token', 'recover-state', 'reset-quota', 'set-privacy', 'create-spark-shadow', 'configure-abnormal-notification'])
 const { t } = useI18n()
 const isRateLimited = computed(() => {
   if (props.account?.rate_limit_reset_at && new Date(props.account.rate_limit_reset_at) > new Date()) {
@@ -92,18 +91,6 @@ const isOverloaded = computed(() => props.account?.overload_until && new Date(pr
 const isTempUnschedulable = computed(() => props.account?.temp_unschedulable_until && new Date(props.account.temp_unschedulable_until) > new Date())
 const hasRecoverableState = computed(() => {
   return props.account?.status === 'error' || Boolean(isRateLimited.value) || Boolean(isOverloaded.value) || Boolean(isTempUnschedulable.value)
-})
-const hasNotificationEmail = computed(() => {
-  const account = props.account
-  if (!account) return false
-  const candidates = [
-    account.extra?.email_address,
-    account.extra?.email,
-    account.credentials?.email_address,
-    account.credentials?.email,
-    account.parent_email,
-  ]
-  return candidates.some((value) => typeof value === 'string' && value.trim() !== '')
 })
 const isAntigravityOAuth = computed(() => props.account?.platform === 'antigravity' && props.account?.type === 'oauth')
 const isOpenAIOAuth = computed(() => props.account?.platform === 'openai' && props.account?.type === 'oauth')

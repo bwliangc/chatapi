@@ -48,7 +48,10 @@ type accountRepository struct {
 	// 确保粘性会话能及时感知账号不可用状态。
 	// Used to proactively sync account snapshot to cache when status changes,
 	// ensuring sticky sessions can promptly detect unavailable accounts.
-	schedulerCache service.SchedulerCache
+	schedulerCache             service.SchedulerCache
+	abnormalNotificationSender interface {
+		Send(context.Context, service.NotificationEmailSendInput) error
+	}
 }
 
 var schedulerNeutralExtraKeyPrefixes = []string{
@@ -60,16 +63,20 @@ var schedulerNeutralExtraKeyPrefixes = []string{
 }
 
 var schedulerNeutralExtraKeys = map[string]struct{}{
-	"codex_usage_updated_at":     {},
-	"session_window_utilization": {},
+	"codex_usage_updated_at":                  {},
+	"session_window_utilization":              {},
+	service.AccountExtraAbnormalNotifyEnabled: {},
+	service.AccountExtraAbnormalNotifyEmail:   {},
 }
 
 const postgresParameterBatchSize = 50000
 
 // NewAccountRepository 创建账户仓储实例。
 // 这是对外暴露的构造函数，返回接口类型以便于依赖注入。
-func NewAccountRepository(client *dbent.Client, sqlDB *sql.DB, schedulerCache service.SchedulerCache) service.AccountRepository {
-	return newAccountRepositoryWithSQL(client, sqlDB, schedulerCache)
+func NewAccountRepository(client *dbent.Client, sqlDB *sql.DB, schedulerCache service.SchedulerCache, notificationEmailService *service.NotificationEmailService) service.AccountRepository {
+	repo := newAccountRepositoryWithSQL(client, sqlDB, schedulerCache)
+	repo.abnormalNotificationSender = notificationEmailService
+	return repo
 }
 
 // newAccountRepositoryWithSQL 是内部构造函数，支持依赖注入 SQL 执行器。
@@ -842,8 +849,8 @@ func (r *accountRepository) BatchUpdateLastUsed(ctx context.Context, updates map
 }
 
 func (r *accountRepository) SetError(ctx context.Context, id int64, errorMsg string) error {
-	_, err := r.client.Account.Update().
-		Where(dbaccount.IDEQ(id)).
+	updated, err := r.client.Account.Update().
+		Where(dbaccount.IDEQ(id), dbaccount.StatusNEQ(service.StatusError)).
 		SetStatus(service.StatusError).
 		SetErrorMessage(errorMsg).
 		SetSchedulable(false).
@@ -851,11 +858,68 @@ func (r *accountRepository) SetError(ctx context.Context, id int64, errorMsg str
 	if err != nil {
 		return err
 	}
+	if updated == 0 {
+		_, err = r.client.Account.Update().
+			Where(dbaccount.IDEQ(id)).
+			SetStatus(service.StatusError).
+			SetErrorMessage(errorMsg).
+			SetSchedulable(false).
+			Save(ctx)
+		if err != nil {
+			return err
+		}
+	}
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue set error failed: account=%d err=%v", id, err)
 	}
 	r.syncSchedulerAccountSnapshot(ctx, id)
+	if updated > 0 {
+		r.sendAbnormalNotification(ctx, id, errorMsg)
+	}
 	return nil
+}
+
+func (r *accountRepository) sendAbnormalNotification(ctx context.Context, id int64, errorMsg string) {
+	if r == nil || r.abnormalNotificationSender == nil {
+		return
+	}
+	account, err := r.GetByID(ctx, id)
+	if err != nil {
+		logger.LegacyPrintf("repository.account", "[AbnormalNotify] read account failed: id=%d err=%v", id, err)
+		return
+	}
+	settings := service.AccountAbnormalNotificationSettingsFrom(account)
+	if !settings.Enabled {
+		return
+	}
+	recipient := service.NormalizeEmail(settings.Email)
+	if recipient == "" && settings.Email == "" {
+		recipient = service.AccountStoredEmail(account)
+		if recipient == "" && account.ParentAccountID != nil {
+			parent, parentErr := r.GetByID(ctx, *account.ParentAccountID)
+			if parentErr == nil {
+				recipient = service.AccountStoredEmail(parent)
+			}
+		}
+	}
+	if recipient == "" {
+		logger.LegacyPrintf("repository.account", "[AbnormalNotify] skip account without valid recipient: id=%d", id)
+		return
+	}
+	if err := r.abnormalNotificationSender.Send(ctx, service.NotificationEmailSendInput{
+		Event:          service.NotificationEmailEventAccountAbnormalNotice,
+		RecipientEmail: recipient,
+		RecipientName:  service.NotificationRecipientName(recipient),
+		Variables: map[string]string{
+			"account_id":     strconv.FormatInt(account.ID, 10),
+			"account_name":   account.Name,
+			"platform":       account.Platform,
+			"account_status": service.StatusError,
+			"error_message":  strings.TrimSpace(errorMsg),
+		},
+	}); err != nil {
+		logger.LegacyPrintf("repository.account", "[AbnormalNotify] send failed: id=%d err=%v", id, err)
+	}
 }
 
 // syncSchedulerAccountSnapshot 在账号状态变更时主动同步快照到调度器缓存。

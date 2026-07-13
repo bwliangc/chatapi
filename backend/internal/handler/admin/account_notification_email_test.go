@@ -1,9 +1,10 @@
 package admin
 
 import (
-	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -11,126 +12,80 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type accountNotificationEmailSenderStub struct {
-	input *service.NotificationEmailSendInput
-	err   error
-}
-
-func (s *accountNotificationEmailSenderStub) Send(_ context.Context, input service.NotificationEmailSendInput) error {
-	s.input = &input
-	return s.err
-}
-
-func setupAccountAbnormalNoticeRouter(adminSvc *stubAdminService, sender accountNotificationEmailSender) *gin.Engine {
+func setupAccountAbnormalNotificationRouter(adminSvc *stubAdminService) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	handler := NewAccountHandler(adminSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-	handler.notificationEmailService = sender
-	router.POST("/api/v1/admin/accounts/:id/send-abnormal-notice", handler.SendAbnormalNotice)
+	router.GET("/api/v1/admin/accounts/:id/abnormal-notification", handler.GetAbnormalNotification)
+	router.PUT("/api/v1/admin/accounts/:id/abnormal-notification", handler.UpdateAbnormalNotification)
 	return router
 }
 
-func TestAccountHandlerSendAbnormalNotice(t *testing.T) {
-	adminSvc := newStubAdminService()
-	adminSvc.accounts = []service.Account{{
-		ID:           42,
-		Name:         "openai-main",
-		Platform:     service.PlatformOpenAI,
-		Status:       "error",
-		ErrorMessage: "refresh token expired",
-		Extra:        map[string]any{"email_address": "owner@example.com"},
-	}}
-	sender := &accountNotificationEmailSenderStub{}
-	router := setupAccountAbnormalNoticeRouter(adminSvc, sender)
-
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/accounts/42/send-abnormal-notice", nil)
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
-	rec := httptest.NewRecorder()
-	router.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusOK, rec.Code)
-	require.NotNil(t, sender.input)
-	require.Equal(t, service.NotificationEmailEventAccountAbnormalNotice, sender.input.Event)
-	require.Equal(t, "zh-CN,zh;q=0.9", sender.input.Locale)
-	require.Equal(t, "owner@example.com", sender.input.RecipientEmail)
-	require.Equal(t, "owner", sender.input.RecipientName)
-	require.Equal(t, map[string]string{
-		"account_id":     "42",
-		"account_name":   "openai-main",
-		"platform":       service.PlatformOpenAI,
-		"account_status": "error",
-		"error_message":  "refresh token expired",
-	}, sender.input.Variables)
+func responseData(t *testing.T, recorder *httptest.ResponseRecorder) map[string]any {
+	t.Helper()
+	var envelope struct {
+		Data map[string]any `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &envelope))
+	return envelope.Data
 }
 
-func TestAccountHandlerSendAbnormalNoticeUsesParentAccountEmail(t *testing.T) {
+func TestGetAccountAbnormalNotificationUsesSavedSettings(t *testing.T) {
+	adminSvc := newStubAdminService()
+	adminSvc.accounts = []service.Account{{
+		ID: 42,
+		Extra: map[string]any{
+			service.AccountExtraAbnormalNotifyEnabled: true,
+			service.AccountExtraAbnormalNotifyEmail:   "alerts@example.com",
+		},
+	}}
+	router := setupAccountAbnormalNotificationRouter(adminSvc)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts/42/abnormal-notification", nil))
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, map[string]any{"enabled": true, "email": "alerts@example.com"}, responseData(t, recorder))
+}
+
+func TestGetAccountAbnormalNotificationDefaultsToParentEmail(t *testing.T) {
 	parentID := int64(7)
 	adminSvc := newStubAdminService()
 	adminSvc.accounts = []service.Account{
-		{
-			ID:              42,
-			Name:            "openai-shadow",
-			Platform:        service.PlatformOpenAI,
-			Status:          "error",
-			ParentAccountID: &parentID,
-		},
-		{
-			ID:       parentID,
-			Name:     "openai-main",
-			Platform: service.PlatformOpenAI,
-			Status:   service.StatusActive,
-			Extra:    map[string]any{"email": "owner@example.com"},
-		},
+		{ID: 42, ParentAccountID: &parentID},
+		{ID: parentID, Extra: map[string]any{"email": "owner@example.com"}},
 	}
-	sender := &accountNotificationEmailSenderStub{}
-	router := setupAccountAbnormalNoticeRouter(adminSvc, sender)
+	router := setupAccountAbnormalNotificationRouter(adminSvc)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts/42/abnormal-notification", nil))
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/accounts/42/send-abnormal-notice", nil)
-	rec := httptest.NewRecorder()
-	router.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusOK, rec.Code)
-	require.NotNil(t, sender.input)
-	require.Equal(t, "owner@example.com", sender.input.RecipientEmail)
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, map[string]any{"enabled": false, "email": "owner@example.com"}, responseData(t, recorder))
 }
 
-func TestAccountHandlerSendAbnormalNoticeAllowsManualNoticeForNormalAccount(t *testing.T) {
+func TestUpdateAccountAbnormalNotificationPersistsSettings(t *testing.T) {
 	adminSvc := newStubAdminService()
-	adminSvc.accounts = []service.Account{{
-		ID:       42,
-		Name:     "openai-main",
-		Platform: service.PlatformOpenAI,
-		Status:   service.StatusActive,
-		Extra:    map[string]any{"email_address": "owner@example.com"},
-	}}
-	sender := &accountNotificationEmailSenderStub{}
-	router := setupAccountAbnormalNoticeRouter(adminSvc, sender)
+	adminSvc.accounts = []service.Account{{ID: 42}}
+	router := setupAccountAbnormalNotificationRouter(adminSvc)
+	recorder := httptest.NewRecorder()
+	body := strings.NewReader(`{"enabled":true,"email":" alerts@example.com "}`)
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPut, "/api/v1/admin/accounts/42/abnormal-notification", body))
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/accounts/42/send-abnormal-notice", nil)
-	rec := httptest.NewRecorder()
-	router.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusOK, rec.Code)
-	require.NotNil(t, sender.input)
-	require.Equal(t, service.StatusActive, sender.input.Variables["account_status"])
-	require.Equal(t, "-", sender.input.Variables["error_message"])
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, int64(42), adminSvc.updatedAccountExtraID)
+	require.Equal(t, map[string]any{
+		service.AccountExtraAbnormalNotifyEnabled: true,
+		service.AccountExtraAbnormalNotifyEmail:   "alerts@example.com",
+	}, adminSvc.updatedAccountExtra)
 }
 
-func TestAccountHandlerSendAbnormalNoticeRejectsAccountWithoutEmail(t *testing.T) {
+func TestUpdateAccountAbnormalNotificationRequiresValidEmailWhenEnabled(t *testing.T) {
 	adminSvc := newStubAdminService()
-	adminSvc.accounts = []service.Account{{
-		ID:       42,
-		Name:     "openai-main",
-		Platform: service.PlatformOpenAI,
-		Status:   "error",
-	}}
-	sender := &accountNotificationEmailSenderStub{}
-	router := setupAccountAbnormalNoticeRouter(adminSvc, sender)
+	adminSvc.accounts = []service.Account{{ID: 42}}
+	router := setupAccountAbnormalNotificationRouter(adminSvc)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/accounts/42/send-abnormal-notice", nil)
-	rec := httptest.NewRecorder()
-	router.ServeHTTP(rec, req)
-
-	require.Equal(t, http.StatusBadRequest, rec.Code)
-	require.Nil(t, sender.input)
+	for _, body := range []string{`{"enabled":true,"email":""}`, `{"enabled":true,"email":"invalid"}`} {
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPut, "/api/v1/admin/accounts/42/abnormal-notification", strings.NewReader(body)))
+		require.Equal(t, http.StatusBadRequest, recorder.Code)
+	}
 }

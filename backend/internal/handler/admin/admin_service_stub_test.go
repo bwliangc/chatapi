@@ -39,7 +39,9 @@ type stubAdminService struct {
 		platform  string
 		groupIDs  []int64
 	}
-	lastListAccounts struct {
+	updatedAccountExtraID int64
+	updatedAccountExtra   map[string]any
+	lastListAccounts      struct {
 		platform    string
 		accountType string
 		status      string
@@ -427,6 +429,8 @@ func (s *stubAdminService) UpdateAccount(ctx context.Context, id int64, input *s
 }
 
 func (s *stubAdminService) UpdateAccountExtra(ctx context.Context, id int64, updates map[string]any) error {
+	s.updatedAccountExtraID = id
+	s.updatedAccountExtra = updates
 	return nil
 }
 

@@ -2,14 +2,11 @@ package admin
 
 import (
 	"context"
-	"net/mail"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/service"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,70 +14,76 @@ type accountNotificationEmailSender interface {
 	Send(context.Context, service.NotificationEmailSendInput) error
 }
 
-// SetNotificationEmailService attaches the account-notification sender without
-// changing the constructor signature used throughout the existing test suite.
 func (h *AccountHandler) SetNotificationEmailService(notificationEmailService *service.NotificationEmailService) {
 	h.notificationEmailService = notificationEmailService
 }
 
-// SendAbnormalNotice sends a manually confirmed abnormal-account notice to the
-// email address stored with the upstream account.
-// POST /api/v1/admin/accounts/:id/send-abnormal-notice
-func (h *AccountHandler) SendAbnormalNotice(c *gin.Context) {
-	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid account ID")
+type updateAccountAbnormalNotificationRequest struct {
+	Enabled bool   `json:"enabled"`
+	Email   string `json:"email"`
+}
+
+func (h *AccountHandler) GetAbnormalNotification(c *gin.Context) {
+	account, ok := h.accountForAbnormalNotification(c)
+	if !ok {
 		return
 	}
-	if h.notificationEmailService == nil {
-		response.InternalError(c, "notification email service is not configured")
+	settings := service.AccountAbnormalNotificationSettingsFrom(account)
+	if settings.Email == "" {
+		settings.Email = h.accountNotificationRecipientEmail(c.Request.Context(), account)
+	}
+	response.Success(c, settings)
+}
+
+func (h *AccountHandler) UpdateAbnormalNotification(c *gin.Context) {
+	account, ok := h.accountForAbnormalNotification(c)
+	if !ok {
 		return
 	}
-
-	ctx := c.Request.Context()
-	account, err := h.adminService.GetAccount(ctx, accountID)
-	if err != nil {
-		response.ErrorFrom(c, err)
+	var req updateAccountAbnormalNotificationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
 		return
 	}
-
-	status, reason, abnormal := accountAbnormalNoticeState(account, time.Now().UTC())
-	if !abnormal {
-		status = firstAccountAbnormalReason(account.Status, "unknown")
-		reason = "-"
+	req.Email = strings.TrimSpace(req.Email)
+	if req.Email != "" {
+		normalized := service.NormalizeEmail(req.Email)
+		if normalized == "" {
+			response.BadRequest(c, "invalid notification email")
+			return
+		}
+		req.Email = normalized
 	}
-
-	recipient := h.accountNotificationRecipientEmail(ctx, account)
-	if recipient == "" {
-		response.BadRequest(c, "account email is not available")
+	if req.Enabled && req.Email == "" {
+		response.BadRequest(c, "notification email is required when enabled")
 		return
 	}
-
-	if err := h.notificationEmailService.Send(ctx, service.NotificationEmailSendInput{
-		Event:          service.NotificationEmailEventAccountAbnormalNotice,
-		Locale:         c.GetHeader("Accept-Language"),
-		RecipientEmail: recipient,
-		RecipientName:  accountNotificationRecipientName(recipient),
-		Variables: map[string]string{
-			"account_id":     strconv.FormatInt(account.ID, 10),
-			"account_name":   account.Name,
-			"platform":       account.Platform,
-			"account_status": status,
-			"error_message":  reason,
-		},
+	if err := h.adminService.UpdateAccountExtra(c.Request.Context(), account.ID, map[string]any{
+		service.AccountExtraAbnormalNotifyEnabled: req.Enabled,
+		service.AccountExtraAbnormalNotifyEmail:   req.Email,
 	}); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
+	response.Success(c, service.AccountAbnormalNotificationSettings{Enabled: req.Enabled, Email: req.Email})
+}
 
-	response.Success(c, gin.H{
-		"message":         "account abnormal notification sent",
-		"recipient_email": recipient,
-	})
+func (h *AccountHandler) accountForAbnormalNotification(c *gin.Context) (*service.Account, bool) {
+	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || accountID <= 0 {
+		response.BadRequest(c, "Invalid account ID")
+		return nil, false
+	}
+	account, err := h.adminService.GetAccount(c.Request.Context(), accountID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return nil, false
+	}
+	return account, true
 }
 
 func (h *AccountHandler) accountNotificationRecipientEmail(ctx context.Context, account *service.Account) string {
-	if email := accountStoredEmail(account); email != "" {
+	if email := service.AccountStoredEmail(account); email != "" {
 		return email
 	}
 	if account == nil || account.ParentAccountID == nil || h.adminService == nil {
@@ -90,65 +93,5 @@ func (h *AccountHandler) accountNotificationRecipientEmail(ctx context.Context, 
 	if err != nil {
 		return ""
 	}
-	return accountStoredEmail(parent)
-}
-
-func accountStoredEmail(account *service.Account) string {
-	if account == nil {
-		return ""
-	}
-	for _, source := range []map[string]any{account.Extra, account.Credentials} {
-		for _, key := range []string{"email_address", "email"} {
-			email, ok := source[key].(string)
-			if !ok {
-				continue
-			}
-			email = strings.TrimSpace(email)
-			parsed, err := mail.ParseAddress(email)
-			if err == nil && strings.EqualFold(parsed.Address, email) {
-				return email
-			}
-		}
-	}
-	return ""
-}
-
-func accountAbnormalNoticeState(account *service.Account, now time.Time) (status, reason string, abnormal bool) {
-	if account == nil {
-		return "", "", false
-	}
-	if account.Status == "error" {
-		return "error", firstAccountAbnormalReason(account.ErrorMessage, "account is in an error state"), true
-	}
-	if strings.TrimSpace(account.ErrorMessage) != "" {
-		return "error", strings.TrimSpace(account.ErrorMessage), true
-	}
-	if account.RateLimitResetAt != nil && now.Before(*account.RateLimitResetAt) {
-		return "rate_limited", "the account is currently rate limited", true
-	}
-	if account.OverloadUntil != nil && now.Before(*account.OverloadUntil) {
-		return "overloaded", "the upstream service is currently overloaded", true
-	}
-	if account.TempUnschedulableUntil != nil && now.Before(*account.TempUnschedulableUntil) {
-		return "temporarily_unschedulable", firstAccountAbnormalReason(account.TempUnschedulableReason, "the account is temporarily unavailable"), true
-	}
-	if account.AutoPauseOnExpired && account.ExpiresAt != nil && !now.Before(*account.ExpiresAt) {
-		return "expired", "the account has expired", true
-	}
-	return "", "", false
-}
-
-func firstAccountAbnormalReason(reason, fallback string) string {
-	if trimmed := strings.TrimSpace(reason); trimmed != "" {
-		return trimmed
-	}
-	return fallback
-}
-
-func accountNotificationRecipientName(email string) string {
-	email = strings.TrimSpace(email)
-	if at := strings.Index(email, "@"); at > 0 {
-		return email[:at]
-	}
-	return email
+	return service.AccountStoredEmail(parent)
 }
