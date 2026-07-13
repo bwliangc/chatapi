@@ -399,7 +399,7 @@
     <AccountTestModal :show="showTest" :account="testingAcc" @close="closeTestModal" />
     <AccountStatsModal :show="showStats" :account="statsAcc" @close="closeStatsModal" />
     <ScheduledTestsPanel :show="showSchedulePanel" :account-id="scheduleAcc?.id ?? null" :model-options="scheduleModelOptions" @close="closeSchedulePanel" />
-    <AccountActionMenu :show="menu.show" :account="menu.acc" :position="menu.pos" @close="menu.show = false" @test="handleTest" @stats="handleViewStats" @schedule="handleSchedule" @reauth="handleReAuth" @refresh-token="handleRefresh" @recover-state="handleRecoverState" @reset-quota="handleResetQuota" @set-privacy="handleSetPrivacy" @create-spark-shadow="handleCreateSparkShadow" />
+    <AccountActionMenu :show="menu.show" :account="menu.acc" :position="menu.pos" @close="menu.show = false" @test="handleTest" @stats="handleViewStats" @schedule="handleSchedule" @reauth="handleReAuth" @refresh-token="handleRefresh" @recover-state="handleRecoverState" @reset-quota="handleResetQuota" @set-privacy="handleSetPrivacy" @create-spark-shadow="handleCreateSparkShadow" @notify-abnormal="handleSendAbnormalNotice" />
     <SyncFromCrsModal :show="showSync" @close="showSync = false" @synced="reload" />
     <ImportDataModal :show="showImportData" @close="showImportData = false" @imported="handleDataImported" />
     <BulkEditAccountModal
@@ -416,6 +416,16 @@
     <TempUnschedStatusModal :show="showTempUnsched" :account="tempUnschedAcc" @close="showTempUnsched = false" @reset="handleTempUnschedReset" />
     <ConfirmDialog :show="showDeleteDialog" :title="t('admin.accounts.deleteAccount')" :message="t('admin.accounts.deleteConfirm', { name: deletingAcc?.name })" :confirm-text="t('common.delete')" :cancel-text="t('common.cancel')" :danger="true" @confirm="confirmDelete" @cancel="showDeleteDialog = false" />
     <ConfirmDialog :show="showCreateShadowDialog" :title="t('admin.accounts.createSparkShadow')" :message="t('admin.accounts.createSparkShadowConfirm', { name: creatingShadowAcc?.name })" @confirm="confirmCreateSparkShadow" @cancel="showCreateShadowDialog = false" />
+    <ConfirmDialog
+      :show="showAbnormalNoticeDialog"
+      :title="t('admin.accounts.sendAbnormalNotice')"
+      :message="t('admin.accounts.sendAbnormalNoticeConfirm', { name: abnormalNoticeAcc?.name, email: accountDisplayEmail(abnormalNoticeAcc) })"
+      :confirm-text="sendingAbnormalNotice ? t('common.processing') : t('admin.accounts.sendAbnormalNotice')"
+      :cancel-text="t('common.cancel')"
+      :loading="sendingAbnormalNotice"
+      @confirm="confirmSendAbnormalNotice"
+      @cancel="closeAbnormalNoticeDialog"
+    />
     <ConfirmDialog :show="showExportDataDialog" :title="t('admin.accounts.dataExport')" :message="t('admin.accounts.dataExportConfirmMessage')" :confirm-text="t('admin.accounts.dataExportConfirm')" :cancel-text="t('common.cancel')" @confirm="handleExportData" @cancel="showExportDataDialog = false">
       <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
         <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" v-model="includeProxyOnExport" />
@@ -526,6 +536,7 @@ const bulkEditTarget = ref<AccountBulkEditTarget | null>(null)
 const showTempUnsched = ref(false)
 const showDeleteDialog = ref(false)
 const showCreateShadowDialog = ref(false)
+const showAbnormalNoticeDialog = ref(false)
 const showReAuth = ref(false)
 const showTest = ref(false)
 const showStats = ref(false)
@@ -535,6 +546,8 @@ const edAcc = ref<Account | null>(null)
 const tempUnschedAcc = ref<Account | null>(null)
 const deletingAcc = ref<Account | null>(null)
 const creatingShadowAcc = ref<Account | null>(null)
+const abnormalNoticeAcc = ref<Account | null>(null)
+const sendingAbnormalNotice = ref(false)
 const reAuthAcc = ref<Account | null>(null)
 const testingAcc = ref<Account | null>(null)
 const statsAcc = ref<Account | null>(null)
@@ -967,6 +980,7 @@ const isAnyModalOpen = computed(() => {
     showBulkEdit.value ||
     showTempUnsched.value ||
     showDeleteDialog.value ||
+    showAbnormalNoticeDialog.value ||
     showReAuth.value ||
     showTest.value ||
     showStats.value ||
@@ -1005,6 +1019,7 @@ const syncAccountRefs = (nextAccount: Account) => {
   if (reAuthAcc.value?.id === nextAccount.id) reAuthAcc.value = nextAccount
   if (tempUnschedAcc.value?.id === nextAccount.id) tempUnschedAcc.value = nextAccount
   if (deletingAcc.value?.id === nextAccount.id) deletingAcc.value = nextAccount
+  if (abnormalNoticeAcc.value?.id === nextAccount.id) abnormalNoticeAcc.value = nextAccount
   if (menu.acc?.id === nextAccount.id) menu.acc = nextAccount
 }
 
@@ -1174,7 +1189,7 @@ function getAntigravityTierLabel(row: any): string | null {
 // 账号显示邮箱:优先账号自身(extra/credentials),影子账号回退母账号 parent_email。
 // 供名称单元格 v-if/标题/文本三处共用,避免同一回退链在模板里重复三次。
 function accountDisplayEmail(row: any): string {
-  return row.extra?.email_address || row.extra?.email || row.credentials?.email || row.parent_email || ''
+  return row?.extra?.email_address || row?.extra?.email || row?.credentials?.email_address || row?.credentials?.email || row?.parent_email || ''
 }
 
 type OpenAICompactBadgeState = 'active' | 'blocked' | 'auto'
@@ -1284,7 +1299,7 @@ const openMenu = (a: Account, e: MouseEvent) => {
   if (target) {
     const rect = target.getBoundingClientRect()
     const menuWidth = 200
-    const menuHeight = 240
+    const menuHeight = 288
     const padding = 8
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
@@ -1698,6 +1713,32 @@ const handleRecoverState = async (a: Account) => {
   } catch (error: any) {
     console.error('Failed to recover account state:', error)
     appStore.showError(error?.message || t('admin.accounts.recoverStateFailed'))
+  }
+}
+const closeAbnormalNoticeDialog = () => {
+  if (sendingAbnormalNotice.value) return
+  showAbnormalNoticeDialog.value = false
+  abnormalNoticeAcc.value = null
+}
+const handleSendAbnormalNotice = (a: Account) => {
+  abnormalNoticeAcc.value = a
+  showAbnormalNoticeDialog.value = true
+}
+const confirmSendAbnormalNotice = async () => {
+  const account = abnormalNoticeAcc.value
+  if (!account || sendingAbnormalNotice.value) return
+
+  sendingAbnormalNotice.value = true
+  try {
+    const result = await adminAPI.accounts.sendAbnormalNotice(account.id)
+    appStore.showSuccess(t('admin.accounts.sendAbnormalNoticeSuccess', { email: result.recipient_email }))
+    showAbnormalNoticeDialog.value = false
+    abnormalNoticeAcc.value = null
+  } catch (error: any) {
+    console.error('Failed to send account abnormal notice:', error)
+    appStore.showError(error?.message || t('admin.accounts.sendAbnormalNoticeFailed'))
+  } finally {
+    sendingAbnormalNotice.value = false
   }
 }
 const handleResetQuota = async (a: Account) => {

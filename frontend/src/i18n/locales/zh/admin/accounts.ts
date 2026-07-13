@@ -136,6 +136,12 @@ export default {
       privacyAntigravitySet: '已关闭遥测和营销邮件',
       privacyAntigravityFailed: '隐私设置失败',
       setPrivacy: '设置隐私',
+      sendAbnormalNotice: '异常通知',
+      sendAbnormalNoticeHint: '向账号保存的邮箱发送账号异常通知',
+      sendAbnormalNoticeNoEmail: '该账号未保存有效邮箱，无法发送通知',
+      sendAbnormalNoticeConfirm: '确认向 {email} 发送账号“{name}”的异常通知吗？',
+      sendAbnormalNoticeSuccess: '异常通知已发送至 {email}',
+      sendAbnormalNoticeFailed: '发送异常通知失败',
       subscriptionAbnormal: '异常',
       subscriptionExpires: '到期',
       // 容量状态提示

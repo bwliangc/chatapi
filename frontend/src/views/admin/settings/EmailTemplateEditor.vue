@@ -263,6 +263,8 @@ const fallbackPlaceholders = [
   "{{account_id}}",
   "{{account_name}}",
   "{{platform}}",
+  "{{account_status}}",
+  "{{error_message}}",
   "{{quota_dimension}}",
   "{{quota_used}}",
   "{{quota_limit}}",
@@ -362,6 +364,11 @@ const eventDisplayMeta: Record<string, EventDisplayMeta> = {
     timing: "上游账号的用量达到配置的额度告警阈值时发送给管理员通知邮箱。",
     categoryLabel: "管理告警",
   },
+  "account.abnormal_notice": {
+    label: "账号异常通知",
+    timing: "管理员在账号管理中确认发送后，发送至该上游账号保存的邮箱。",
+    categoryLabel: "管理告警",
+  },
   "content_moderation.violation_notice": {
     label: "内容审计违规提醒",
     timing: "用户请求命中内容审计或风控规则、但尚未被禁用时发送。",
@@ -428,6 +435,11 @@ const eventDisplayMetaEn: Record<string, EventDisplayMeta> = {
   "account.quota_alert": {
     label: "Account Quota Alert",
     timing: "Sent to admin notification emails when an upstream account reaches the configured quota alert threshold.",
+    categoryLabel: "Admin",
+  },
+  "account.abnormal_notice": {
+    label: "Account Abnormal Notice",
+    timing: "Sent manually from Account Management to the email saved on the upstream account.",
     categoryLabel: "Admin",
   },
   "content_moderation.violation_notice": {

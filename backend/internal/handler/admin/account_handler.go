@@ -47,19 +47,20 @@ func NewOAuthHandler(oauthService *service.OAuthService) *OAuthHandler {
 
 // AccountHandler handles admin account management
 type AccountHandler struct {
-	adminService            service.AdminService
-	oauthService            *service.OAuthService
-	openaiOAuthService      *service.OpenAIOAuthService
-	geminiOAuthService      *service.GeminiOAuthService
-	antigravityOAuthService *service.AntigravityOAuthService
-	rateLimitService        *service.RateLimitService
-	accountUsageService     *service.AccountUsageService
-	accountTestService      *service.AccountTestService
-	concurrencyService      *service.ConcurrencyService
-	crsSyncService          *service.CRSSyncService
-	sessionLimitCache       service.SessionLimitCache
-	rpmCache                service.RPMCache
-	tokenCacheInvalidator   service.TokenCacheInvalidator
+	adminService             service.AdminService
+	oauthService             *service.OAuthService
+	openaiOAuthService       *service.OpenAIOAuthService
+	geminiOAuthService       *service.GeminiOAuthService
+	antigravityOAuthService  *service.AntigravityOAuthService
+	rateLimitService         *service.RateLimitService
+	accountUsageService      *service.AccountUsageService
+	accountTestService       *service.AccountTestService
+	concurrencyService       *service.ConcurrencyService
+	crsSyncService           *service.CRSSyncService
+	sessionLimitCache        service.SessionLimitCache
+	rpmCache                 service.RPMCache
+	tokenCacheInvalidator    service.TokenCacheInvalidator
+	notificationEmailService accountNotificationEmailSender
 }
 
 // NewAccountHandler creates a new admin account handler

@@ -29,6 +29,7 @@ const (
 	NotificationEmailEventBalanceRechargeSuccess      = "balance.recharge_success"
 	NotificationEmailEventLeaderboardReward           = "leaderboard.reward_granted"
 	NotificationEmailEventAccountQuotaAlert           = "account.quota_alert"
+	NotificationEmailEventAccountAbnormalNotice       = "account.abnormal_notice"
 	NotificationEmailEventContentModerationViolation  = "content_moderation.violation_notice"
 	NotificationEmailEventContentModerationDisabled   = "content_moderation.account_disabled"
 	NotificationEmailEventCyberPolicyNotice           = "content_moderation.cyber_policy_notice"
@@ -41,8 +42,9 @@ const (
 	notificationEmailLocaleUserKeyPrefix  = "notification_email_locale:user:"
 	notificationEmailLocaleEmailKeyPrefix = "notification_email_locale:email:"
 	notificationEmailUnsubscribeSecretKey = "notification_email_unsubscribe_secret"
-	notificationEmailDefaultLocale        = "en"
+	notificationEmailLocaleEnglish        = "en"
 	notificationEmailLocaleChinese        = "zh"
+	notificationEmailDefaultLocale        = notificationEmailLocaleChinese
 	notificationEmailMaxSubjectLength     = 200
 	notificationEmailMaxHTMLLength        = 30000
 	notificationEmailUnsubscribeTTL       = 365 * 24 * time.Hour
@@ -50,7 +52,7 @@ const (
 
 var (
 	notificationEmailPlaceholderPattern = regexp.MustCompile(`{{\s*([a-zA-Z][a-zA-Z0-9_]*)\s*}}`)
-	notificationEmailLocales            = []string{notificationEmailDefaultLocale, notificationEmailLocaleChinese}
+	notificationEmailLocales            = []string{notificationEmailDefaultLocale, notificationEmailLocaleEnglish}
 	notificationEmailCommonPlaceholders = []string{"site_name", "recipient_name", "recipient_email"}
 )
 
@@ -752,7 +754,7 @@ func normalizeNotificationLocale(raw string) string {
 			return notificationEmailLocaleChinese
 		}
 		if strings.HasPrefix(tag, "en") {
-			return notificationEmailDefaultLocale
+			return notificationEmailLocaleEnglish
 		}
 	}
 	return notificationEmailDefaultLocale
@@ -865,6 +867,8 @@ func notificationEmailSampleVariables(locale string) map[string]string {
 			"account_id":          "1001",
 			"account_name":        "openai-main",
 			"platform":            "openai",
+			"account_status":      "异常",
+			"error_message":       "凭据已失效，请重新授权。",
 			"quota_dimension":     "每日额度",
 			"quota_used":          "80.00",
 			"quota_limit":         "100.00",
@@ -911,6 +915,8 @@ func notificationEmailSampleVariables(locale string) map[string]string {
 		"account_id":          "1001",
 		"account_name":        "openai-main",
 		"platform":            "openai",
+		"account_status":      "Error",
+		"error_message":       "Credentials have expired. Please re-authorize the account.",
 		"quota_dimension":     "Daily quota",
 		"quota_used":          "80.00",
 		"quota_limit":         "100.00",
@@ -948,6 +954,7 @@ var notificationEmailEventOrder = []string{
 	NotificationEmailEventBalanceRechargeSuccess,
 	NotificationEmailEventLeaderboardReward,
 	NotificationEmailEventAccountQuotaAlert,
+	NotificationEmailEventAccountAbnormalNotice,
 	NotificationEmailEventContentModerationViolation,
 	NotificationEmailEventContentModerationDisabled,
 	NotificationEmailEventCyberPolicyNotice,
@@ -1029,6 +1036,15 @@ var notificationEmailEventDefinitions = map[string]NotificationEmailEventInfo{
 		Placeholders: append(append([]string{}, notificationEmailCommonPlaceholders...),
 			"account_id", "account_name", "platform", "quota_dimension", "quota_used", "quota_limit", "quota_remaining", "quota_threshold"),
 	},
+	NotificationEmailEventAccountAbnormalNotice: {
+		Event:       NotificationEmailEventAccountAbnormalNotice,
+		Label:       "Account abnormal notice",
+		Description: "Sent manually from account management to the upstream account email when the account is abnormal.",
+		Category:    "admin",
+		Optional:    false,
+		Placeholders: append(append([]string{}, notificationEmailCommonPlaceholders...),
+			"account_id", "account_name", "platform", "account_status", "error_message"),
+	},
 	NotificationEmailEventContentModerationViolation: {
 		Event:       NotificationEmailEventContentModerationViolation,
 		Label:       "Risk control violation notice",
@@ -1078,7 +1094,7 @@ var notificationEmailEventDefinitions = map[string]NotificationEmailEventInfo{
 
 var notificationEmailOfficialTemplates = map[string]map[string]notificationEmailOfficialTemplate{
 	NotificationEmailEventAuthVerifyCode: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] Email verification code",
 			HTML: notificationEmailCard("#4f46e5", "Email verification code", `
 <p>Hello {{recipient_name}},</p>
@@ -1098,7 +1114,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventAuthPasswordReset: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] Password reset request",
 			HTML: notificationEmailCard("#7c3aed", "Password reset", `
 <p>Hello {{recipient_name}},</p>
@@ -1120,7 +1136,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventNotificationEmailVerifyCode: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] Notification email verification code",
 			HTML: notificationEmailCard("#0ea5e9", "Notification email verification", `
 <p>Hello {{recipient_name}},</p>
@@ -1141,7 +1157,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventSubscriptionPurchaseSuccess: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] Subscription purchase successful",
 			HTML: notificationEmailCard("#2563eb", "Subscription activated", `
 <p>Hello {{recipient_name}},</p>
@@ -1159,7 +1175,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventSubscriptionExpiryReminder: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] Subscription expires in {{days_remaining}} day(s)",
 			HTML: notificationEmailCard("#f97316", "Subscription expiry reminder", `
 <p>Hello {{recipient_name}},</p>
@@ -1177,7 +1193,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventBalanceLow: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] Low balance alert",
 			HTML: notificationEmailCard("#d97706", "Low balance alert", `
 <p>Hello {{recipient_name}},</p>
@@ -1197,7 +1213,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventBalanceRechargeSuccess: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] Balance recharge successful",
 			HTML: notificationEmailCard("#16a34a", "Recharge successful", `
 <p>Hello {{recipient_name}},</p>
@@ -1215,7 +1231,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventLeaderboardReward: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] You earned a leaderboard reward",
 			HTML: notificationEmailCard("#f59e0b", "Leaderboard reward", `
 <p>Hello {{recipient_name}},</p>
@@ -1233,7 +1249,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventAccountQuotaAlert: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] Account quota alert - {{account_name}}",
 			HTML: notificationEmailCard("#dc2626", "Account quota alert", `
 <p>The upstream account <strong>{{account_name}}</strong> has crossed its configured quota alert threshold.</p>
@@ -1260,8 +1276,38 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 </table>`),
 		},
 	},
+	NotificationEmailEventAccountAbnormalNotice: {
+		notificationEmailLocaleEnglish: {
+			Subject: "[{{site_name}}] Account abnormal notice - {{account_name}}",
+			HTML: notificationEmailCard("#dc2626", "Account abnormal notice", `
+<p>Hello {{recipient_name}},</p>
+<p>An abnormal condition was detected for your upstream account.</p>
+<table style="width:100%;border-collapse:collapse;">
+  <tr><td>Account ID</td><td>{{account_id}}</td></tr>
+  <tr><td>Account name</td><td>{{account_name}}</td></tr>
+  <tr><td>Platform</td><td>{{platform}}</td></tr>
+  <tr><td>Status</td><td>{{account_status}}</td></tr>
+  <tr><td>Details</td><td>{{error_message}}</td></tr>
+</table>
+<p>Please review and restore the account before using it again.</p>`),
+		},
+		notificationEmailLocaleChinese: {
+			Subject: "[{{site_name}}] 账号异常通知 - {{account_name}}",
+			HTML: notificationEmailCard("#dc2626", "账号异常通知", `
+<p>{{recipient_name}}，您好：</p>
+<p>检测到您的上游账号出现异常。</p>
+<table style="width:100%;border-collapse:collapse;">
+  <tr><td>账号 ID</td><td>{{account_id}}</td></tr>
+  <tr><td>账号名称</td><td>{{account_name}}</td></tr>
+  <tr><td>平台</td><td>{{platform}}</td></tr>
+  <tr><td>状态</td><td>{{account_status}}</td></tr>
+  <tr><td>异常详情</td><td>{{error_message}}</td></tr>
+</table>
+<p>请检查并恢复账号后再继续使用。</p>`),
+		},
+	},
 	NotificationEmailEventContentModerationViolation: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] Risk control notice",
 			HTML: notificationEmailCard("#ef4444", "Risk control notice", `
 <p>Hello {{recipient_name}},</p>
@@ -1289,7 +1335,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventContentModerationDisabled: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] Account disabled by risk control",
 			HTML: notificationEmailCard("#b91c1c", "Account disabled", `
 <p>Hello {{recipient_name}},</p>
@@ -1317,7 +1363,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventCyberPolicyNotice: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[{{site_name}}] Cyber-security policy notice",
 			HTML: notificationEmailCard("#ef4444", "Cyber-security policy notice", `
 <p>Hello {{recipient_name}},</p>
@@ -1345,7 +1391,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventOpsAlert: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[Ops Alert][{{severity}}] {{rule_name}}",
 			HTML: notificationEmailCard("#ea580c", "Ops alert", `
 <p><strong>Rule</strong>: {{rule_name}}</p>
@@ -1367,7 +1413,7 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 		},
 	},
 	NotificationEmailEventOpsScheduledReport: {
-		notificationEmailDefaultLocale: {
+		notificationEmailLocaleEnglish: {
 			Subject: "[Ops Report] {{report_name}}",
 			HTML: notificationEmailCard("#0891b2", "Ops report", `
 <p><strong>Report</strong>: {{report_name}}</p>

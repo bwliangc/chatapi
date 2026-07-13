@@ -180,6 +180,12 @@ export default {
       privacyAntigravitySet: 'Telemetry and marketing emails disabled',
       privacyAntigravityFailed: 'Privacy setting failed',
       setPrivacy: 'Set Privacy',
+      sendAbnormalNotice: 'Abnormal Notice',
+      sendAbnormalNoticeHint: 'Send an abnormal-account notice to the email saved on this account',
+      sendAbnormalNoticeNoEmail: 'No valid email is saved on this account',
+      sendAbnormalNoticeConfirm: 'Send an abnormal notice for "{name}" to {email}?',
+      sendAbnormalNoticeSuccess: 'Abnormal notice sent to {email}',
+      sendAbnormalNoticeFailed: 'Failed to send abnormal notice',
       subscriptionAbnormal: 'Abnormal',
       subscriptionExpires: 'Expires',
       // Capacity status tooltips

@@ -266,6 +266,31 @@ func TestNotificationEmailLocaleMemoryNormalizesAcceptLanguage(t *testing.T) {
 	require.Equal(t, "zh", svc.ResolveRecipientLocale(ctx, 0, "user@example.com"))
 }
 
+func TestNotificationEmailDefaultsToChineseWithoutLocaleHint(t *testing.T) {
+	ctx := context.Background()
+	svc := NewNotificationEmailService(newNotificationEmailMemorySettingRepo(), nil)
+
+	require.Equal(t, "zh", svc.ResolveRecipientLocale(ctx, 42, "user@example.com"))
+	require.Equal(t, "zh", normalizeNotificationLocale(""))
+	require.Equal(t, "en", normalizeNotificationLocale("en-US,en;q=0.9"))
+}
+
+func TestAccountAbnormalNoticeDefaultsToChineseTemplate(t *testing.T) {
+	ctx := context.Background()
+	svc := NewNotificationEmailService(newNotificationEmailMemorySettingRepo(), nil)
+
+	defaultTemplate, err := svc.GetTemplate(ctx, NotificationEmailEventAccountAbnormalNotice, "")
+	require.NoError(t, err)
+	require.Equal(t, "zh", defaultTemplate.Locale)
+	require.Contains(t, defaultTemplate.Subject, "账号异常通知")
+	require.Contains(t, defaultTemplate.HTML, "{{error_message}}")
+
+	englishTemplate, err := svc.GetTemplate(ctx, NotificationEmailEventAccountAbnormalNotice, "en-US")
+	require.NoError(t, err)
+	require.Equal(t, "en", englishTemplate.Locale)
+	require.Contains(t, englishTemplate.Subject, "Account abnormal notice")
+}
+
 func TestNotificationEmailDeliveryKeyUsesShortStableHash(t *testing.T) {
 	key := notificationEmailDeliveryKey(
 		NotificationEmailEventSubscriptionExpiryReminder,
