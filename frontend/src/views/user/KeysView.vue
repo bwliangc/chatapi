@@ -1024,48 +1024,114 @@
       @close="closeUseKeyModal"
     />
 
-    <!-- CCS Client Selection Dialog for Antigravity -->
+    <!-- CCS Import Configuration Dialog -->
     <BaseDialog
-      :show="showCcsClientSelect"
-      :title="t('keys.ccsClientSelect.title')"
-      width="narrow"
-      @close="closeCcsClientSelect"
+      :show="showCcsImportDialog"
+      :title="t('keys.ccsImport.title')"
+      width="normal"
+      @close="closeCcsImportDialog"
     >
-      <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-400">
-          {{ t('keys.ccsClientSelect.description') }}
-	        </p>
-	        <div class="grid grid-cols-2 gap-3">
-	          <button
-	            @click="handleCcsClientSelect('claude')"
-	            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
-	          >
-	            <Icon name="terminal" size="xl" class="text-gray-600 dark:text-gray-400" />
-	            <span class="font-medium text-gray-900 dark:text-white">{{
-	              t('keys.ccsClientSelect.claudeCode')
-	            }}</span>
-	            <span class="text-xs text-gray-500 dark:text-gray-400">{{
-	              t('keys.ccsClientSelect.claudeCodeDesc')
-	            }}</span>
-	          </button>
-	          <button
-	            @click="handleCcsClientSelect('gemini')"
-	            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
-	          >
-	            <Icon name="sparkles" size="xl" class="text-gray-600 dark:text-gray-400" />
-	            <span class="font-medium text-gray-900 dark:text-white">{{
-	              t('keys.ccsClientSelect.geminiCli')
-	            }}</span>
-	            <span class="text-xs text-gray-500 dark:text-gray-400">{{
-	              t('keys.ccsClientSelect.geminiCliDesc')
-	            }}</span>
-	          </button>
-	        </div>
-	      </div>
+      <form id="ccs-import-form" class="space-y-5" @submit.prevent="handleCcsImportSubmit">
+        <div>
+          <label class="input-label">{{ t('keys.ccsImport.platform') }}</label>
+          <div class="grid grid-cols-3 overflow-hidden rounded-lg border border-gray-200 dark:border-dark-600">
+            <button
+              v-for="option in ccsAppOptions"
+              :key="option.value"
+              type="button"
+              :data-test="`ccs-app-${option.value}`"
+              :aria-pressed="ccsImportForm.app === option.value"
+              @click="selectCcsApp(option.value)"
+              :class="[
+                'flex min-h-12 items-center justify-center gap-2 border-r border-gray-200 px-2 py-2 text-sm font-medium transition-colors last:border-r-0 dark:border-dark-600',
+                ccsImportForm.app === option.value
+                  ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                  : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-dark-800 dark:text-gray-300 dark:hover:bg-dark-700'
+              ]"
+            >
+              <Icon :name="option.icon" size="sm" />
+              <span>{{ option.label }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="input-label">
+            {{ t('keys.ccsImport.primaryModel') }}
+          </label>
+          <Select
+            :model-value="ccsImportForm.model"
+            :options="ccsPrimaryModelOptions"
+            :searchable="true"
+            :placeholder="t('keys.ccsImport.selectModel')"
+            data-test="ccs-primary-model"
+            @update:model-value="ccsImportForm.model = String($event || '')"
+          />
+        </div>
+
+        <div
+          v-if="ccsImportForm.app === 'claude'"
+          class="grid gap-4 border-t border-gray-200 pt-5 dark:border-dark-600 sm:grid-cols-3"
+          data-test="ccs-claude-models"
+        >
+          <div>
+            <label class="input-label">
+              {{ t('keys.ccsImport.haikuModel') }}
+            </label>
+            <Select
+              :model-value="ccsImportForm.haikuModel"
+              :options="ccsHaikuModelOptions"
+              :searchable="true"
+              :clearable="true"
+              :placeholder="t('keys.ccsImport.optionalModel')"
+              data-test="ccs-haiku-model"
+              @update:model-value="ccsImportForm.haikuModel = String($event || '')"
+            />
+          </div>
+          <div>
+            <label class="input-label">
+              {{ t('keys.ccsImport.sonnetModel') }}
+            </label>
+            <Select
+              :model-value="ccsImportForm.sonnetModel"
+              :options="ccsSonnetModelOptions"
+              :searchable="true"
+              :clearable="true"
+              :placeholder="t('keys.ccsImport.optionalModel')"
+              data-test="ccs-sonnet-model"
+              @update:model-value="ccsImportForm.sonnetModel = String($event || '')"
+            />
+          </div>
+          <div>
+            <label class="input-label">
+              {{ t('keys.ccsImport.opusModel') }}
+            </label>
+            <Select
+              :model-value="ccsImportForm.opusModel"
+              :options="ccsOpusModelOptions"
+              :searchable="true"
+              :clearable="true"
+              :placeholder="t('keys.ccsImport.optionalModel')"
+              data-test="ccs-opus-model"
+              @update:model-value="ccsImportForm.opusModel = String($event || '')"
+            />
+          </div>
+        </div>
+      </form>
       <template #footer>
-        <div class="flex justify-end">
-          <button @click="closeCcsClientSelect" class="btn btn-secondary">
+        <div class="flex justify-end gap-3">
+          <button type="button" @click="closeCcsImportDialog" class="btn btn-secondary">
             {{ t('common.cancel') }}
+          </button>
+          <button
+            form="ccs-import-form"
+            type="submit"
+            class="btn btn-primary"
+            data-test="ccs-import-submit"
+            :disabled="!ccsImportForm.model.trim()"
+          >
+            <Icon name="upload" size="sm" />
+            {{ t('keys.ccsImport.import') }}
           </button>
         </div>
       </template>
@@ -1204,9 +1270,11 @@ import type { BatchApiKeyUsageStats } from '@/api/usage'
 import { formatDateTime } from '@/utils/format'
 import { maskApiKey } from '@/utils/maskApiKey'
 import {
+  CC_SWITCH_DEFAULT_MODELS,
   buildCcSwitchImportDeeplink,
-  type CcSwitchClientType
+  type CcSwitchAppType
 } from '@/utils/ccswitchImport'
+import { getModelsByPlatform } from '@/composables/useModelWhitelist'
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -1356,9 +1424,16 @@ const showDeleteDialog = ref(false)
 const showResetQuotaDialog = ref(false)
 const showResetRateLimitDialog = ref(false)
 const showUseKeyModal = ref(false)
-const showCcsClientSelect = ref(false)
+const showCcsImportDialog = ref(false)
 const showColumnDropdown = ref(false)
 const pendingCcsRow = ref<ApiKey | null>(null)
+const ccsImportForm = reactive({
+  app: 'claude' as CcSwitchAppType,
+  model: '',
+  haikuModel: '',
+  sonnetModel: '',
+  opusModel: ''
+})
 const selectedKey = ref<ApiKey | null>(null)
 const copiedKeyId = ref<number | null>(null)
 const groupSelectorKeyId = ref<number | null>(null)
@@ -1425,6 +1500,43 @@ const statusOptions = computed(() => [
   { value: 'active', label: t('common.active') },
   { value: 'inactive', label: t('common.inactive') }
 ])
+
+const ccsAppOptions = computed<Array<{
+  value: CcSwitchAppType
+  label: string
+  icon: 'terminal' | 'cpu' | 'sparkles'
+}>>(() => [
+  { value: 'claude', label: t('keys.ccsImport.claudeCode'), icon: 'terminal' },
+  { value: 'codex', label: t('keys.ccsImport.codex'), icon: 'cpu' },
+  { value: 'gemini', label: t('keys.ccsImport.geminiCli'), icon: 'sparkles' }
+])
+
+const toCcsModelOptions = (models: string[]) =>
+  models.map((model) => ({ value: model, label: model }))
+
+const ccsPrimaryModelOptions = computed(() => {
+  const platform = ccsImportForm.app === 'codex' ? 'openai' : ccsImportForm.app
+  const models = getModelsByPlatform(platform).filter((model) => {
+    if (ccsImportForm.app === 'codex') {
+      return !/(audio|image|realtime)/i.test(model)
+    }
+    if (ccsImportForm.app === 'gemini') {
+      return !/image/i.test(model)
+    }
+    return true
+  })
+  return toCcsModelOptions(models)
+})
+
+const ccsHaikuModelOptions = toCcsModelOptions(
+  getModelsByPlatform('claude').filter((model) => model.includes('haiku'))
+)
+const ccsSonnetModelOptions = toCcsModelOptions(
+  getModelsByPlatform('claude').filter((model) => model.includes('sonnet'))
+)
+const ccsOpusModelOptions = toCcsModelOptions(
+  getModelsByPlatform('claude').filter((model) => model.includes('opus'))
+)
 
 const shouldSubmitEditStatus = (key: ApiKey, status: 'active' | 'inactive') => {
   if (key.status === 'quota_exhausted' || key.status === 'expired') {
@@ -1952,18 +2064,21 @@ const resetRateLimitUsage = async () => {
 const importToCcswitch = (row: ApiKey) => {
   const platform = row.group?.platform || 'anthropic'
 
-  // For antigravity platform, show client selection dialog
-  if (platform === 'antigravity') {
-    pendingCcsRow.value = row
-    showCcsClientSelect.value = true
-    return
-  }
-
-  // For other platforms, execute directly
-  executeCcsImport(row, platform === 'gemini' ? 'gemini' : 'claude')
+  pendingCcsRow.value = row
+  ccsImportForm.app = platform === 'openai' ? 'codex' : platform === 'gemini' ? 'gemini' : 'claude'
+  ccsImportForm.model = CC_SWITCH_DEFAULT_MODELS[ccsImportForm.app]
+  ccsImportForm.haikuModel = ''
+  ccsImportForm.sonnetModel = ''
+  ccsImportForm.opusModel = ''
+  showCcsImportDialog.value = true
 }
 
-const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
+const selectCcsApp = (app: CcSwitchAppType) => {
+  ccsImportForm.app = app
+  ccsImportForm.model = CC_SWITCH_DEFAULT_MODELS[app]
+}
+
+const executeCcsImport = (row: ApiKey) => {
   const baseUrl = publicSettings.value?.api_base_url || window.location.origin
   const platform = row.group?.platform || 'anthropic'
 
@@ -1987,7 +2102,11 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
   const deeplink = buildCcSwitchImportDeeplink({
     baseUrl,
     platform,
-    clientType,
+    app: ccsImportForm.app,
+    model: ccsImportForm.model,
+    haikuModel: ccsImportForm.haikuModel,
+    sonnetModel: ccsImportForm.sonnetModel,
+    opusModel: ccsImportForm.opusModel,
     providerName,
     apiKey: row.key,
     usageScript
@@ -2008,16 +2127,15 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
   }
 }
 
-const handleCcsClientSelect = (clientType: CcSwitchClientType) => {
-  if (pendingCcsRow.value) {
-    executeCcsImport(pendingCcsRow.value, clientType)
-  }
-  showCcsClientSelect.value = false
-  pendingCcsRow.value = null
+const handleCcsImportSubmit = () => {
+  if (!pendingCcsRow.value || !ccsImportForm.model.trim()) return
+
+  executeCcsImport(pendingCcsRow.value)
+  closeCcsImportDialog()
 }
 
-const closeCcsClientSelect = () => {
-  showCcsClientSelect.value = false
+const closeCcsImportDialog = () => {
+  showCcsImportDialog.value = false
   pendingCcsRow.value = null
 }
 

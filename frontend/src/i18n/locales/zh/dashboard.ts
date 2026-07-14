@@ -194,13 +194,19 @@ export default {
     ipRestrictionEnabled: '已配置 IP 限制',
     ccSwitchNotInstalled:
       'CC-Switch 未安装或协议处理程序未注册。请先安装 CC-Switch 或手动复制 API 密钥。',
-    ccsClientSelect: {
-      title: '选择客户端',
-      description: '请选择您要导入到 CC-Switch 的客户端类型：',
+    ccsImport: {
+      title: '导入到 CCS',
+      platform: '平台',
       claudeCode: 'Claude Code',
-      claudeCodeDesc: '导入为 Claude Code 配置',
+      codex: 'Codex',
       geminiCli: 'Gemini CLI',
-      geminiCliDesc: '导入为 Gemini CLI 配置'
+      primaryModel: '主模型',
+      haikuModel: 'Haiku 模型',
+      sonnetModel: 'Sonnet 模型',
+      opusModel: 'Opus 模型',
+      selectModel: '请选择模型',
+      optionalModel: '可选',
+      import: '导入',
     },
     // 配额和有效期
     quotaLimit: '额度限制',

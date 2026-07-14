@@ -31,6 +31,7 @@ const {
 
 const messages: Record<string, string> = {
   'common.actions': 'Actions',
+  'common.cancel': 'Cancel',
   'common.name': 'Name',
   'common.refresh': 'Refresh',
   'common.status': 'Status',
@@ -42,6 +43,19 @@ const messages: Record<string, string> = {
   'keys.created': 'Created',
   'keys.expiresAt': 'Expires',
   'keys.group': 'Group',
+  'keys.importToCcSwitch': 'Import to CCS',
+  'keys.ccsImport.title': 'Import to CCS',
+  'keys.ccsImport.platform': 'Platform',
+  'keys.ccsImport.claudeCode': 'Claude Code',
+  'keys.ccsImport.codex': 'Codex',
+  'keys.ccsImport.geminiCli': 'Gemini CLI',
+  'keys.ccsImport.primaryModel': 'Primary Model',
+  'keys.ccsImport.haikuModel': 'Haiku Model',
+  'keys.ccsImport.sonnetModel': 'Sonnet Model',
+  'keys.ccsImport.opusModel': 'Opus Model',
+  'keys.ccsImport.selectModel': 'Select a model',
+  'keys.ccsImport.optionalModel': 'Optional',
+  'keys.ccsImport.import': 'Import',
   'keys.currentConcurrency': 'Current Concurrency',
   'keys.lastUsedAt': 'Last Used',
   'keys.lastUsedIP': 'Last Used IP',
@@ -172,8 +186,24 @@ const DataTableStub = {
         >
           <slot name="cell-last_used_ip" :value="row.last_used_ip" :row="row" />
         </div>
+        <div data-test="row-actions">
+          <slot name="cell-actions" :value="row" :row="row" />
+        </div>
       </div>
       <slot name="empty" />
+    </div>
+  `,
+}
+
+const BaseDialogStub = {
+  name: 'BaseDialog',
+  props: ['show', 'title'],
+  emits: ['close'],
+  template: `
+    <div v-if="show" data-test="base-dialog">
+      <h2>{{ title }}</h2>
+      <slot />
+      <slot name="footer" />
     </div>
   `,
 }
@@ -182,7 +212,13 @@ const SelectStub = {
   name: 'Select',
   props: ['modelValue', 'options'],
   emits: ['update:modelValue'],
-  template: '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"></select>',
+  template: `
+    <select :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
+      <option v-for="option in options" :key="option.value" :value="option.value">
+        {{ option.label }}
+      </option>
+    </select>
+  `,
 }
 
 const SearchInputStub = {
@@ -216,7 +252,7 @@ const mountView = async () => {
         TablePageLayout: TablePageLayoutStub,
         DataTable: DataTableStub,
         Pagination: PaginationStub,
-        BaseDialog: true,
+        BaseDialog: BaseDialogStub,
         ConfirmDialog: true,
         EmptyState: true,
         Select: SelectStub,
@@ -416,5 +452,62 @@ describe('user KeysView column settings', () => {
       },
       expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
+  })
+
+  it('configures the selected CCS app and Claude model aliases before importing', async () => {
+    listKeys.mockResolvedValueOnce({
+      items: [{ ...createApiKey(), group: { platform: 'openai' } as ApiKey['group'] }],
+      total: 1,
+      page: 1,
+      page_size: 20,
+      pages: 1,
+    })
+    getPublicSettings.mockResolvedValueOnce({
+      api_base_url: 'https://api.example.com',
+      site_name: 'Sub2API',
+    })
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const focusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(false)
+    const wrapper = await mountView()
+
+    await getButtonByText(wrapper, 'Import to CCS').trigger('click')
+
+    expect(wrapper.get('[data-test="base-dialog"]').text()).toContain('Import to CCS')
+    expect(wrapper.get('[data-test="ccs-app-codex"]').attributes('aria-pressed')).toBe('true')
+    expect((wrapper.get('[data-test="ccs-primary-model"]').element as HTMLInputElement).value).toBe(
+      'gpt-5.5'
+    )
+    expect(wrapper.find('[data-test="ccs-claude-models"]').exists()).toBe(false)
+
+    await wrapper.get('[data-test="ccs-app-claude"]').trigger('click')
+    expect(wrapper.get('[data-test="ccs-claude-models"]').exists()).toBe(true)
+    expect((wrapper.get('[data-test="ccs-primary-model"]').element as HTMLInputElement).value).toBe('')
+
+    const optionValues = (selector: string) =>
+      wrapper.get(selector).findAll('option').map((option) => option.attributes('value'))
+    expect(optionValues('[data-test="ccs-haiku-model"]')).toEqual(
+      expect.arrayContaining(['claude-3-5-haiku-20241022', 'claude-haiku-4-5-20251001'])
+    )
+    expect(optionValues('[data-test="ccs-haiku-model"]').every((model) => model.includes('haiku'))).toBe(true)
+    expect(optionValues('[data-test="ccs-sonnet-model"]').every((model) => model.includes('sonnet'))).toBe(true)
+    expect(optionValues('[data-test="ccs-opus-model"]').every((model) => model.includes('opus'))).toBe(true)
+
+    await wrapper.get('[data-test="ccs-primary-model"]').setValue('claude-sonnet-5')
+    await wrapper.get('[data-test="ccs-haiku-model"]').setValue('claude-haiku-4-5-20251001')
+    await wrapper.get('[data-test="ccs-sonnet-model"]').setValue('claude-sonnet-5')
+    await wrapper.get('[data-test="ccs-opus-model"]').setValue('claude-opus-4-8')
+    await wrapper.get('#ccs-import-form').trigger('submit')
+
+    expect(openSpy).toHaveBeenCalledOnce()
+    const deeplink = String(openSpy.mock.calls[0][0])
+    const params = new URLSearchParams(deeplink.split('?')[1])
+    expect(params.get('app')).toBe('claude')
+    expect(params.get('model')).toBe('claude-sonnet-5')
+    expect(params.get('haikuModel')).toBe('claude-haiku-4-5-20251001')
+    expect(params.get('sonnetModel')).toBe('claude-sonnet-5')
+    expect(params.get('opusModel')).toBe('claude-opus-4-8')
+
+    openSpy.mockRestore()
+    focusSpy.mockRestore()
   })
 })
