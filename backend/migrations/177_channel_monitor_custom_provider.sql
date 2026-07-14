@@ -1,6 +1,5 @@
--- Migration: 176_channel_monitor_grok_provider
--- Allow Grok as a channel-monitor provider. Grok checks use the existing
--- OpenAI-compatible chat completions protocol with model grok-4.5 by default.
+-- Migration: 177_channel_monitor_custom_provider
+-- Allow custom OpenAI-compatible channel-monitor providers.
 
 DO $$
 DECLARE
@@ -14,12 +13,12 @@ BEGIN
      WHERE t.relname = 'channel_monitors'
        AND c.conname = 'channel_monitors_provider_check';
 
-    IF monitor_constraint_def IS NULL OR position('grok' IN monitor_constraint_def) = 0 THEN
+    IF monitor_constraint_def IS NULL OR position('custom' IN monitor_constraint_def) = 0 THEN
         ALTER TABLE channel_monitors
             DROP CONSTRAINT IF EXISTS channel_monitors_provider_check;
         ALTER TABLE channel_monitors
             ADD CONSTRAINT channel_monitors_provider_check
-            CHECK (provider IN ('openai', 'anthropic', 'gemini', 'grok'));
+            CHECK (provider IN ('openai', 'anthropic', 'gemini', 'grok', 'custom'));
     END IF;
 
     SELECT pg_get_constraintdef(c.oid)
@@ -29,11 +28,11 @@ BEGIN
      WHERE t.relname = 'channel_monitor_request_templates'
        AND c.conname = 'channel_monitor_request_templates_provider_check';
 
-    IF template_constraint_def IS NULL OR position('grok' IN template_constraint_def) = 0 THEN
+    IF template_constraint_def IS NULL OR position('custom' IN template_constraint_def) = 0 THEN
         ALTER TABLE channel_monitor_request_templates
             DROP CONSTRAINT IF EXISTS channel_monitor_request_templates_provider_check;
         ALTER TABLE channel_monitor_request_templates
             ADD CONSTRAINT channel_monitor_request_templates_provider_check
-            CHECK (provider IN ('openai', 'anthropic', 'gemini', 'grok'));
+            CHECK (provider IN ('openai', 'anthropic', 'gemini', 'grok', 'custom'));
     END IF;
 END $$;

@@ -14,7 +14,8 @@ func TestChannelMonitorGrokProviderMigration(t *testing.T) {
 	sql := strings.Join(strings.Fields(string(content)), " ")
 	require.Contains(t, sql, "channel_monitors_provider_check")
 	require.Contains(t, sql, "channel_monitor_request_templates_provider_check")
-	require.Contains(t, sql, "CHECK (provider IN ('openai', 'anthropic', 'gemini', 'grok', 'custom'))")
+	require.Contains(t, sql, "CHECK (provider IN ('openai', 'anthropic', 'gemini', 'grok'))")
+	require.NotContains(t, sql, "'custom'")
 	require.Contains(t, sql, "position('grok' IN monitor_constraint_def) = 0")
 	require.Contains(t, sql, "position('grok' IN template_constraint_def) = 0")
 }
