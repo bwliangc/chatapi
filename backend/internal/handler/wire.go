@@ -115,9 +115,10 @@ func ProvideAdminAccountHandler(
 	sessionLimitCache service.SessionLimitCache,
 	rpmCache service.RPMCache,
 	tokenCacheInvalidator service.TokenCacheInvalidator,
+	grokQuotaService *service.GrokQuotaService,
 	notificationEmailService *service.NotificationEmailService,
 ) *admin.AccountHandler {
-	h := admin.NewAccountHandler(
+	h := admin.ProvideAccountHandler(
 		adminService,
 		oauthService,
 		openaiOAuthService,
@@ -131,6 +132,7 @@ func ProvideAdminAccountHandler(
 		sessionLimitCache,
 		rpmCache,
 		tokenCacheInvalidator,
+		grokQuotaService,
 	)
 	h.SetNotificationEmailService(notificationEmailService)
 	return h

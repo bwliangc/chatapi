@@ -13,6 +13,10 @@ export const PROVIDER_OPENAI: Provider = 'openai'
 export const PROVIDER_ANTHROPIC: Provider = 'anthropic'
 export const PROVIDER_GEMINI: Provider = 'gemini'
 export const PROVIDER_CUSTOM: Provider = 'custom'
+export const PROVIDER_GROK: Provider = 'grok'
+
+export const DEFAULT_GROK_ENDPOINT = 'https://api.x.ai'
+export const DEFAULT_GROK_MODEL = 'grok-4.5'
 
 export const API_MODE_CHAT_COMPLETIONS: APIMode = 'chat_completions'
 export const API_MODE_RESPONSES: APIMode = 'responses'
@@ -22,6 +26,7 @@ export const PROVIDERS: readonly Provider[] = [
   PROVIDER_ANTHROPIC,
   PROVIDER_GEMINI,
   PROVIDER_CUSTOM,
+  PROVIDER_GROK,
 ]
 
 export const API_MODES: readonly APIMode[] = [
