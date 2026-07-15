@@ -15,7 +15,7 @@ import (
 func setupAccountAbnormalNotificationRouter(adminSvc *stubAdminService) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	handler := NewAccountHandler(adminSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	handler := NewAccountHandler(adminSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 	router.GET("/api/v1/admin/accounts/:id/abnormal-notification", handler.GetAbnormalNotification)
 	router.PUT("/api/v1/admin/accounts/:id/abnormal-notification", handler.UpdateAbnormalNotification)
 	return router
