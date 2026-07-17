@@ -1,15 +1,8 @@
 /* eslint-env serviceworker */
 
-const CACHE_NAME = 'sub2api-pwa-v1'
+const CACHE_NAME = 'sub2api-pwa-v2'
 const APP_SHELL_KEY = '/__pwa_shell__'
-const PRECACHE_URLS = [
-  '/manifest.webmanifest',
-  '/logo.png',
-  '/icons/pwa-192.png',
-  '/icons/pwa-512.png',
-  '/icons/pwa-maskable-512.png',
-  '/icons/apple-touch-icon.png'
-]
+const PRECACHE_URLS = ['/logo.png']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -39,8 +32,7 @@ function isApiRequest(pathname) {
 function isStaticAsset(pathname) {
   return pathname.startsWith('/assets/') ||
     pathname.startsWith('/icons/') ||
-    pathname === '/logo.png' ||
-    pathname === '/manifest.webmanifest'
+    pathname === '/logo.png'
 }
 
 async function handleNavigation(request) {
@@ -73,7 +65,12 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return
 
   const url = new URL(request.url)
-  if (url.origin !== self.location.origin || isApiRequest(url.pathname)) return
+  if (
+    url.origin !== self.location.origin ||
+    isApiRequest(url.pathname) ||
+    url.pathname.startsWith('/pwa/') ||
+    url.pathname === '/manifest.webmanifest'
+  ) return
 
   if (request.mode === 'navigate') {
     event.respondWith(handleNavigation(request))

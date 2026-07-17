@@ -112,6 +112,16 @@ func TestInjectSiteTitle(t *testing.T) {
 		assert.Contains(t, string(result), `<div id="app"></div>`)
 		assert.Contains(t, string(result), "<title>TestSite - AI API Gateway</title>")
 	})
+
+	t.Run("updates_installed_app_meta_names", func(t *testing.T) {
+		html := []byte(`<html><head><meta name="apple-mobile-web-app-title" content="Sub2API"><meta name="application-name" content="Sub2API"><title>Sub2API</title></head></html>`)
+		settingsJSON := []byte(`{"site_name":"My & App"}`)
+
+		result := injectSiteTitle(html, settingsJSON)
+
+		assert.Contains(t, string(result), `name="apple-mobile-web-app-title" content="My &amp; App"`)
+		assert.Contains(t, string(result), `name="application-name" content="My &amp; App"`)
+	})
 }
 
 func TestReplaceNoncePlaceholder(t *testing.T) {

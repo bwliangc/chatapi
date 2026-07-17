@@ -24,5 +24,15 @@ describe('PWA assets', () => {
     expect(serviceWorker).toContain("pathname.startsWith('/api/')")
     expect(serviceWorker).toContain("pathname.startsWith('/v1/')")
     expect(serviceWorker).toContain("pathname.startsWith('/setup/')")
+    expect(serviceWorker).toContain("url.pathname.startsWith('/pwa/')")
+    expect(serviceWorker).not.toContain("'/manifest.webmanifest',")
+  })
+
+  it('loads install metadata and icons from the configured-brand endpoints', () => {
+    const html = readFileSync(resolve(frontendRoot, 'index.html'), 'utf8')
+
+    expect(html).toContain('href="/pwa/manifest.webmanifest"')
+    expect(html).toContain('href="/pwa/icon-192.png"')
+    expect(html).toContain('href="/pwa/icon-180.png"')
   })
 })

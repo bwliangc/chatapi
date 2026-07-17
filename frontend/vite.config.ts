@@ -126,6 +126,10 @@ export default defineConfig(({ mode }) => {
         '/setup': {
           target: backendUrl,
           changeOrigin: true
+        },
+        '/pwa': {
+          target: backendUrl,
+          changeOrigin: true
         }
       }
     }

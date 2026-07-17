@@ -50,6 +50,26 @@ export function registerPwaServiceWorker() {
   }, { once: true })
 }
 
+export function applyPwaBranding(siteName: string, siteLogo = '') {
+  const normalizedName = siteName.trim() || 'Sub2API'
+  for (const name of ['apple-mobile-web-app-title', 'application-name']) {
+    const meta = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)
+    if (meta) meta.content = normalizedName
+  }
+
+  let icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+  if (!icon) {
+    icon = document.createElement('link')
+    icon.rel = 'icon'
+    document.head.appendChild(icon)
+  }
+  const normalizedLogo = siteLogo.trim()
+  icon.type = normalizedLogo.startsWith('data:image/svg+xml') || normalizedLogo.endsWith('.svg')
+    ? 'image/svg+xml'
+    : 'image/png'
+  icon.href = normalizedLogo || '/pwa/icon-192.png'
+}
+
 export function usePwaInstall() {
   const canInstall = computed(() => deferredPrompt.value !== null && !installed.value)
 

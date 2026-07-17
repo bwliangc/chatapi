@@ -35,12 +35,13 @@ type PublicSettingsProvider interface {
 
 // FrontendServer serves the embedded frontend with settings injection
 type FrontendServer struct {
-	distFS      fs.FS
-	fileServer  http.Handler
-	baseHTML    []byte
-	cache       *HTMLCache
-	settings    PublicSettingsProvider
-	overrideDir string // local file override directory
+	distFS        fs.FS
+	fileServer    http.Handler
+	baseHTML      []byte
+	cache         *HTMLCache
+	settings      PublicSettingsProvider
+	brandingCache pwaBrandingCache
+	overrideDir   string // local file override directory
 }
 
 // NewFrontendServer creates a new frontend server with settings injection
@@ -80,6 +81,9 @@ func (s *FrontendServer) InvalidateCache() {
 	if s != nil && s.cache != nil {
 		s.cache.Invalidate()
 	}
+	if s != nil {
+		s.brandingCache.Invalidate()
+	}
 }
 
 // Middleware returns the Gin middleware handler
@@ -96,6 +100,10 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 		cleanPath := strings.TrimPrefix(path, "/")
 		if cleanPath == "" {
 			cleanPath = "index.html"
+		}
+
+		if s.tryServePWAResource(c, cleanPath) {
+			return
 		}
 
 		// For index.html or SPA routes, serve with injected settings
@@ -237,6 +245,42 @@ func injectSiteTitle(html, settingsJSON []byte) []byte {
 	buf.Write(html[:titleStart])
 	buf.Write(newTitle)
 	buf.Write(html[titleEnd+len("</title>"):])
+	result := buf.Bytes()
+	result = injectNamedMetaContent(result, "apple-mobile-web-app-title", cfg.SiteName)
+	result = injectNamedMetaContent(result, "application-name", cfg.SiteName)
+	return result
+}
+
+func injectNamedMetaContent(html []byte, name, content string) []byte {
+	nameMarker := []byte(`name="` + name + `"`)
+	nameIndex := bytes.Index(html, nameMarker)
+	if nameIndex == -1 {
+		return html
+	}
+
+	tagStart := bytes.LastIndex(html[:nameIndex], []byte("<meta"))
+	tagEndOffset := bytes.IndexByte(html[nameIndex:], '>')
+	if tagStart == -1 || tagEndOffset == -1 {
+		return html
+	}
+	tagEnd := nameIndex + tagEndOffset
+	tag := html[tagStart : tagEnd+1]
+	contentStart := bytes.Index(tag, []byte(`content="`))
+	if contentStart == -1 {
+		return html
+	}
+	valueStart := contentStart + len(`content="`)
+	valueEndOffset := bytes.IndexByte(tag[valueStart:], '"')
+	if valueEndOffset == -1 {
+		return html
+	}
+	valueEnd := valueStart + valueEndOffset
+
+	escaped := []byte(htmlpkg.EscapeString(content))
+	var buf bytes.Buffer
+	buf.Write(html[:tagStart+valueStart])
+	buf.Write(escaped)
+	buf.Write(html[tagStart+valueEnd:])
 	return buf.Bytes()
 }
 
