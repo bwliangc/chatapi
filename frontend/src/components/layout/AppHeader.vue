@@ -1,15 +1,23 @@
 <template>
-  <header class="glass sticky top-0 z-30 border-b border-gray-200/50 dark:border-dark-700/50">
-    <div class="flex h-16 items-center justify-between px-4 md:px-6">
+  <header class="glass safe-top sticky top-0 z-30 border-b border-gray-200/50 dark:border-dark-700/50">
+    <div class="flex h-14 items-center justify-between px-3 sm:h-16 sm:px-4 md:px-6">
       <!-- Left: Mobile Menu Toggle + Page Title -->
-      <div class="flex items-center gap-4">
+      <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
         <button
           @click="toggleMobileSidebar"
-          class="btn-ghost btn-icon lg:hidden"
-          aria-label="Toggle Menu"
+          class="btn-ghost btn-icon flex-shrink-0 lg:hidden"
+          :aria-label="t('common.more')"
+          :aria-expanded="appStore.mobileOpen"
+          aria-controls="app-sidebar"
         >
           <Icon name="menu" size="md" />
         </button>
+
+        <div class="min-w-0 lg:hidden">
+          <h1 class="truncate text-base font-semibold text-gray-900 dark:text-white">
+            {{ pageTitle }}
+          </h1>
+        </div>
 
         <div class="hidden lg:block">
           <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -22,7 +30,7 @@
       </div>
 
       <!-- Right: Announcements + Docs + Language + Subscriptions + Balance + User Dropdown -->
-      <div class="flex items-center gap-3">
+      <div class="flex flex-shrink-0 items-center gap-1 sm:gap-3">
         <!-- Announcement Bell -->
         <AnnouncementBell v-if="user" />
 
@@ -32,17 +40,21 @@
           :href="docUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
+          class="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white sm:flex"
         >
           <Icon name="book" size="sm" />
           <span class="hidden sm:inline">{{ t('nav.docs') }}</span>
         </a>
 
         <!-- Language Switcher -->
-        <LocaleSwitcher />
+        <div class="hidden sm:block">
+          <LocaleSwitcher />
+        </div>
 
         <!-- Subscription Progress (for users with active subscriptions) -->
-        <SubscriptionProgressMini v-if="user" />
+        <div class="hidden md:block">
+          <SubscriptionProgressMini v-if="user" />
+        </div>
 
         <!-- Balance Display -->
         <div
@@ -153,6 +165,16 @@
                   {{ t('nav.apiKeys') }}
                 </router-link>
 
+                <button
+                  v-if="canInstall"
+                  type="button"
+                  class="dropdown-item w-full"
+                  @click="handleInstallApp"
+                >
+                  <Icon name="download" size="sm" />
+                  {{ t('nav.installApp') }}
+                </button>
+
                 <a
                   v-if="authStore.isAdmin"
                   href="https://github.com/Wei-Shaw/sub2api"
@@ -250,6 +272,7 @@ import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMi
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { sanitizeUrl } from '@/utils/url'
+import { usePwaInstall } from '@/utils/pwa'
 
 const router = useRouter()
 const route = useRoute()
@@ -258,6 +281,7 @@ const appStore = useAppStore()
 const authStore = useAuthStore()
 const adminSettingsStore = useAdminSettingsStore()
 const onboardingStore = useOnboardingStore()
+const { canInstall, installApp } = usePwaInstall()
 
 const user = computed(() => authStore.user)
 const dropdownOpen = ref(false)
@@ -347,6 +371,11 @@ async function handleLogout() {
 function handleReplayGuide() {
   closeDropdown()
   onboardingStore.replay()
+}
+
+async function handleInstallApp() {
+  closeDropdown()
+  await installApp()
 }
 
 function formatHeaderMoney(value: number) {

@@ -25,10 +25,12 @@
       <AppHeader />
 
       <!-- Main Content -->
-      <main class="p-4 md:p-6 lg:p-8">
+      <main class="app-main p-3 sm:p-4 md:p-6 lg:p-8">
         <slot />
       </main>
     </div>
+
+    <MobileBottomNav />
   </div>
 </template>
 
@@ -41,6 +43,7 @@ import { useOnboardingTour } from '@/composables/useOnboardingTour'
 import { useOnboardingStore } from '@/stores/onboarding'
 import AppSidebar from './AppSidebar.vue'
 import AppHeader from './AppHeader.vue'
+import MobileBottomNav from './MobileBottomNav.vue'
 
 const appStore = useAppStore()
 const authStore = useAuthStore()
@@ -60,3 +63,11 @@ onMounted(() => {
 
 defineExpose({ replayTour })
 </script>
+
+<style scoped>
+@media (max-width: 1023px) {
+  .app-main {
+    padding-bottom: calc(5.75rem + env(safe-area-inset-bottom));
+  }
+}
+</style>

@@ -5,6 +5,7 @@ import router from './router'
 import i18n, { initI18n } from './i18n'
 import { useAppStore } from '@/stores/app'
 import { isCosmicCursorEnabled, onCosmicCursorEnabledChange } from '@/utils/cosmicCursor'
+import { initPwaInstall, registerPwaServiceWorker } from '@/utils/pwa'
 import './style.css'
 
 function initThemeClass() {
@@ -982,6 +983,8 @@ async function bootstrap() {
   initThemeClass()
   initCosmicCursor()
   initBackgroundIdlePause()
+  initPwaInstall()
+  registerPwaServiceWorker()
 
   const app = createApp(App)
   const pinia = createPinia()
