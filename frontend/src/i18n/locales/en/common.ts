@@ -197,6 +197,9 @@ export default {
     channelStatus: 'Channel Status',
     costCalculator: 'Cost Calculator',
     riskControl: 'Risk Control',
+    securityAudit: 'Security Audit',
+    contentModeration: 'Content Moderation',
+    promptAudit: 'Prompt Audit',
     auditLogs: 'Audit Logs',
   },
 
