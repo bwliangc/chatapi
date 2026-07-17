@@ -203,28 +203,6 @@
               </div>
 
               <div class="flex flex-wrap items-center gap-3 md:justify-end">
-                <div
-                  role="group"
-                  :aria-label="t('home.pricingTable.contextLabel')"
-                  class="inline-flex rounded-lg bg-slate-950/[0.06] p-1 dark:bg-white/10"
-                >
-                  <button
-                    v-for="tier in contextTiers"
-                    :key="tier.key"
-                    type="button"
-                    :data-context-select="tier.key"
-                    :aria-pressed="selectedContextTier === tier.key"
-                    class="rounded-md px-3 py-1.5 text-xs font-bold transition-colors"
-                    :class="
-                      selectedContextTier === tier.key
-                        ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-800 dark:text-white'
-                        : 'text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white'
-                    "
-                    @click="selectedContextTier = tier.key"
-                  >
-                    {{ tier.label }}
-                  </button>
-                </div>
                 <div class="flex items-baseline gap-2 text-xs text-slate-500 dark:text-slate-400">
                   <span>{{ t('home.pricingTable.uniformMultiplier') }}</span>
                   <strong class="font-mono text-sm text-cyan-700 dark:text-cyan-200">
@@ -253,7 +231,6 @@
                     v-for="item in featuredPrices"
                     :key="item.model"
                     :data-model="item.model"
-                    :data-context-tier="selectedContextTier"
                     class="transition-colors hover:bg-slate-950/[0.03] dark:hover:bg-white/[0.04]"
                   >
                     <td class="px-5 py-4">
@@ -269,7 +246,7 @@
                         data-price-currency="usd"
                         class="whitespace-nowrap font-mono text-sm font-bold text-slate-800 dark:text-slate-200"
                       >
-                        {{ formatPrice(item.prices[selectedContextTier][priceKind.key]) }}
+                        {{ formatPrice(item.prices[priceKind.key]) }}
                       </div>
                       <div
                         data-price-currency="cny"
@@ -277,7 +254,7 @@
                       >
                         {{
                           formatCnyFromPrice(
-                            item.prices[selectedContextTier][priceKind.key],
+                            item.prices[priceKind.key],
                             item.multiplier,
                           )
                         }}
@@ -293,7 +270,6 @@
                 v-for="item in featuredPrices"
                 :key="`${item.model}-mobile`"
                 :data-model="item.model"
-                :data-context-tier="selectedContextTier"
                 class="px-5 py-4"
               >
                 <div class="break-words text-sm font-black text-slate-950 dark:text-white">
@@ -314,7 +290,7 @@
                       data-price-currency="usd"
                       class="whitespace-nowrap font-mono text-xs font-bold text-slate-800 dark:text-slate-200"
                     >
-                      {{ formatPrice(item.prices[selectedContextTier][priceKind.key]) }}
+                      {{ formatPrice(item.prices[priceKind.key]) }}
                     </dd>
                     <dd
                       data-price-currency="cny"
@@ -322,7 +298,7 @@
                     >
                       {{
                         formatCnyFromPrice(
-                          item.prices[selectedContextTier][priceKind.key],
+                          item.prices[priceKind.key],
                           item.multiplier,
                         )
                       }}
@@ -389,7 +365,6 @@ const CNY_PER_CREDIT = EXCHANGE_CNY_PER_100_CREDITS / 100
 const PRICE_SCALE = 1_000_000
 
 type PriceKind = 'input' | 'cacheRead' | 'cacheWrite' | 'output'
-type ContextTier = 'short' | 'long'
 
 interface TokenPrices {
   input: number | null
@@ -401,7 +376,7 @@ interface TokenPrices {
 interface FeaturedPrice {
   model: string
   multiplier: number
-  prices: Record<ContextTier, TokenPrices>
+  prices: TokenPrices
 }
 
 type LeaderboardActivityPublicSettings = {
@@ -414,11 +389,6 @@ const priceKinds = computed<Array<{ key: PriceKind; label: string }>>(() => [
   { key: 'cacheRead', label: t('home.pricingTable.priceCacheRead') },
   { key: 'cacheWrite', label: t('home.pricingTable.priceCacheWrite') },
   { key: 'output', label: t('home.pricingTable.priceOutput') }
-])
-
-const contextTiers = computed<Array<{ key: ContextTier; label: string }>>(() => [
-  { key: 'short', label: t('home.pricingTable.contextShort') },
-  { key: 'long', label: t('home.pricingTable.contextLong') }
 ])
 
 // Site settings - directly from appStore (already initialized from injected config)
@@ -450,65 +420,57 @@ const userInitial = computed(() => {
 const currentYear = computed(() => new Date().getFullYear())
 
 const uniformMultiplier = 1
-const selectedContextTier = ref<ContextTier>('short')
-
-const longContextMultipliers: Record<PriceKind, number> = {
-  input: 2,
-  cacheRead: 2,
-  cacheWrite: 2,
-  output: 1.5
-}
 
 const featuredPrices: FeaturedPrice[] = [
   {
     model: 'gpt-5.6-sol',
     multiplier: uniformMultiplier,
-    prices: buildContextPrices({
+    prices: {
       input: 0.000005,
       cacheRead: 0.0000005,
       cacheWrite: 0.00000625,
       output: 0.00003
-    })
+    }
   },
   {
     model: 'gpt-5.6-terra',
     multiplier: uniformMultiplier,
-    prices: buildContextPrices({
+    prices: {
       input: 0.0000025,
       cacheRead: 0.00000025,
       cacheWrite: 0.000003125,
       output: 0.000015
-    })
+    }
   },
   {
     model: 'gpt-5.6-luna',
     multiplier: uniformMultiplier,
-    prices: buildContextPrices({
+    prices: {
       input: 0.000001,
       cacheRead: 0.0000001,
       cacheWrite: 0.00000125,
       output: 0.000006
-    })
+    }
   },
   {
     model: 'gpt-5.5',
     multiplier: uniformMultiplier,
-    prices: buildContextPrices({
+    prices: {
       input: 0.000005,
       cacheRead: 0.0000005,
       cacheWrite: null,
       output: 0.00003
-    })
+    }
   },
   {
     model: 'gpt-5.4',
     multiplier: uniformMultiplier,
-    prices: buildContextPrices({
+    prices: {
       input: 0.0000025,
       cacheRead: 0.00000025,
       cacheWrite: null,
       output: 0.000015
-    })
+    }
   }
 ]
 
@@ -551,26 +513,6 @@ function formatMultiplier(rate: number): string {
 
 function formatActivityNumber(value: number): string {
   return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
-}
-
-function scaleTokenPrices(prices: TokenPrices, multipliers: Record<PriceKind, number>): TokenPrices {
-  return {
-    input: scalePrice(prices.input, multipliers.input),
-    cacheRead: scalePrice(prices.cacheRead, multipliers.cacheRead),
-    cacheWrite: scalePrice(prices.cacheWrite, multipliers.cacheWrite),
-    output: scalePrice(prices.output, multipliers.output)
-  }
-}
-
-function buildContextPrices(short: TokenPrices): Record<ContextTier, TokenPrices> {
-  return {
-    short,
-    long: scaleTokenPrices(short, longContextMultipliers)
-  }
-}
-
-function scalePrice(value: number | null, multiplier: number): number | null {
-  return value == null ? null : value * multiplier
 }
 
 function formatPrice(value: number | null): string {

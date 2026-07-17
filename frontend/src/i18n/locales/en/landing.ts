@@ -21,16 +21,13 @@ export default {
       kicker: 'Published pricing',
       title: 'AI usage costs',
       titleAccent: 'Calculated by clear public rules',
-      description: 'The home page publishes context-tiered input, cache read, cache write, and output prices, plus platform multipliers, RMB conversion, and ranking activity rules.'
+      description: 'The home page publishes input, cache read, cache write, and output prices, plus platform multipliers, RMB conversion, and ranking activity rules.'
     },
     pricingTable: {
       kicker: 'Transparent pricing',
       title: 'Model pricing',
-      fixedSubtitle: 'Per 1M tokens; RMB converted at ¥15 / $100. The >272K tier applies to the full request.',
+      fixedSubtitle: 'Per 1M tokens; RMB converted at ¥15 / $100. Base pricing applies to all context lengths.',
       model: 'Model',
-      contextLabel: 'Context pricing tier',
-      contextShort: '≤272K',
-      contextLong: '>272K',
       uniformMultiplier: 'Uniform multiplier',
       priceInput: 'Input',
       priceCacheRead: 'Cache read',

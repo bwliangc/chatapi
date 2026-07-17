@@ -40,7 +40,7 @@ vi.mock('vue-i18n', async () => {
 })
 
 describe('HomeView transparent pricing', () => {
-  it('switches five models between short and long context prices', async () => {
+  it('shows one set of base prices for all context lengths', () => {
     const wrapper = mount(HomeView, {
       global: {
         stubs: {
@@ -51,28 +51,21 @@ describe('HomeView transparent pricing', () => {
       },
     })
 
-    const shortRows = [
+    const rows = [
       { model: 'gpt-5.6-sol', prices: ['$5', '$0.5', '$6.25', '$30'] },
       { model: 'gpt-5.6-terra', prices: ['$2.5', '$0.25', '$3.125', '$15'] },
       { model: 'gpt-5.6-luna', prices: ['$1', '$0.1', '$1.25', '$6'] },
       { model: 'gpt-5.5', prices: ['$5', '$0.5', '-', '$30'] },
       { model: 'gpt-5.4', prices: ['$2.5', '$0.25', '-', '$15'] },
     ]
-    const longRows = [
-      { model: 'gpt-5.6-sol', prices: ['$10', '$1', '$12.5', '$45'] },
-      { model: 'gpt-5.6-terra', prices: ['$5', '$0.5', '$6.25', '$22.5'] },
-      { model: 'gpt-5.6-luna', prices: ['$2', '$0.2', '$2.5', '$9'] },
-      { model: 'gpt-5.5', prices: ['$10', '$1', '-', '$45'] },
-      { model: 'gpt-5.4', prices: ['$5', '$0.5', '-', '$22.5'] },
-    ]
     const priceKinds = ['input', 'cacheRead', 'cacheWrite', 'output']
 
-    const expectPrices = (rows: typeof shortRows, tier: 'short' | 'long') => {
+    const expectPrices = () => {
       for (const layout of ['desktop', 'mobile']) {
         const pricingLayout = wrapper.get(`[data-pricing-layout="${layout}"]`)
         expect(pricingLayout.findAll('[data-model]')).toHaveLength(5)
         rows.forEach(({ model, prices }) => {
-          const row = pricingLayout.get(`[data-model="${model}"][data-context-tier="${tier}"]`)
+          const row = pricingLayout.get(`[data-model="${model}"]`)
           priceKinds.forEach((kind, index) => {
             expect(row.get(`[data-price-kind="${kind}"] [data-price-currency="usd"]`).text()).toBe(prices[index])
           })
@@ -80,8 +73,8 @@ describe('HomeView transparent pricing', () => {
       }
     }
 
-    expect(wrapper.get('[data-context-select="short"]').attributes('aria-pressed')).toBe('true')
-    expectPrices(shortRows, 'short')
+    expect(wrapper.find('[data-context-select]').exists()).toBe(false)
+    expectPrices()
 
     const desktop = wrapper.get('[data-pricing-layout="desktop"]')
     expect(
@@ -90,13 +83,5 @@ describe('HomeView transparent pricing', () => {
     expect(
       desktop.get('[data-model="gpt-5.6-luna"] [data-price-kind="cacheRead"] [data-price-currency="cny"]').text(),
     ).toBe('¥0.015')
-
-    await wrapper.get('[data-context-select="long"]').trigger('click')
-
-    expect(wrapper.get('[data-context-select="long"]').attributes('aria-pressed')).toBe('true')
-    expectPrices(longRows, 'long')
-    expect(
-      desktop.get('[data-model="gpt-5.6-sol"] [data-price-kind="output"] [data-price-currency="cny"]').text(),
-    ).toBe('¥6.75')
   })
 })

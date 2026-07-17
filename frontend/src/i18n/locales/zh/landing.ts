@@ -21,16 +21,13 @@ export default {
       kicker: '价格公示',
       title: 'AI 调用成本',
       titleAccent: '按公开规则清晰计算',
-      description: '首页统一展示不同上下文下的官方输入、缓存读写与输出价格、平台倍率、人民币折算结果及排行榜活动规则。'
+      description: '首页统一展示官方输入、缓存读写与输出价格、平台倍率、人民币折算结果及排行榜活动规则。'
     },
     pricingTable: {
       kicker: '透明定价',
       title: '模型价格',
-      fixedSubtitle: '每 1M Tokens；人民币按 ¥15 / $100 换算，>272K 档按整次请求计价。',
+      fixedSubtitle: '每 1M Tokens；人民币按 ¥15 / $100 换算，所有上下文统一按基础价格。',
       model: '模型',
-      contextLabel: '上下文价格档位',
-      contextShort: '≤272K',
-      contextLong: '>272K',
       uniformMultiplier: '统一倍率',
       priceInput: '输入',
       priceCacheRead: '缓存读取',
