@@ -27,6 +27,7 @@ function updateDocumentTitle() {
   document.title = resolveRouteDocumentTitle(route, appStore.siteName, customMenuItems)
 }
 
+// Watch for site settings changes and update favicon/title
 watch(
   [() => appStore.siteName, () => appStore.siteLogo],
   ([siteName, siteLogo]) => applyPwaBranding(siteName, siteLogo),

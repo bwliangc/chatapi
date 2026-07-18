@@ -6,6 +6,7 @@ import i18n, { initI18n } from './i18n'
 import { useAppStore } from '@/stores/app'
 import { isCosmicCursorEnabled, onCosmicCursorEnabledChange } from '@/utils/cosmicCursor'
 import { initPwaInstall, registerPwaServiceWorker } from '@/utils/pwa'
+import { updateFavicon } from '@/utils/branding'
 import './style.css'
 
 function initThemeClass() {
@@ -1000,6 +1001,7 @@ async function bootstrap() {
     document.title = `${appStore.siteName} - AI API Gateway`
   }
   appStore.initTheme()
+  updateFavicon(appStore.siteLogo)
 
   await initI18n()
 
