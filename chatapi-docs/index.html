@@ -41,17 +41,25 @@
           <p class="nav-label">接入</p>
           <a href="#keys" data-route="keys"><span>04</span>API 密钥</a>
           <a href="#api" data-route="api"><span>05</span>API 调用</a>
+
+          <p class="nav-label">客户端</p>
           <a href="#ccswitch" data-route="ccswitch"><span>06</span>CC-Switch 配置</a>
-          <a href="#playground" data-route="playground"><span>07</span>在线测试</a>
+          <a href="#codex-cli" data-route="codex-cli"><span>07</span>Codex CLI</a>
+          <a href="#codex-desktop" data-route="codex-desktop"><span>08</span>Codex Desktop</a>
+          <a href="#claude-code" data-route="claude-code"><span>09</span>Claude Code</a>
+          <a href="#gemini-cli" data-route="gemini-cli"><span>10</span>Gemini CLI</a>
+
+          <p class="nav-label">操作</p>
+          <a href="#playground" data-route="playground"><span>11</span>在线测试</a>
 
           <p class="nav-label">账户</p>
-          <a href="#usage" data-route="usage"><span>08</span>用量与账单</a>
-          <a href="#balance" data-route="balance"><span>09</span>购买与兑换</a>
-          <a href="#features" data-route="features"><span>10</span>其他功能</a>
-          <a href="#security" data-route="security"><span>11</span>安全设置</a>
+          <a href="#usage" data-route="usage"><span>12</span>用量与账单</a>
+          <a href="#balance" data-route="balance"><span>13</span>购买与兑换</a>
+          <a href="#features" data-route="features"><span>14</span>其他功能</a>
+          <a href="#security" data-route="security"><span>15</span>安全设置</a>
 
           <p class="nav-label">支持</p>
-          <a href="#troubleshooting" data-route="troubleshooting"><span>12</span>常见问题</a>
+          <a href="#troubleshooting" data-route="troubleshooting"><span>16</span>常见问题</a>
         </nav>
         <div class="sidebar-footer">
           <span class="status-dot"></span>
@@ -258,13 +266,29 @@ console.log(response.output_text);</code></pre></div>
             <p>首次启动时允许应用注册 <code>ccswitch://</code> 协议；ChatAPI 的一键导入依赖该协议唤起 CC-Switch。</p>
           </section>
 
+          <section><h2>安装目标客户端</h2>
+            <aside class="callout info"><strong>CC-Switch 不包含 AI 客户端</strong><p>CC-Switch 负责管理和切换供应商配置。使用前仍需单独安装目标客户端；ChatAPI 当前一键导入支持 Codex CLI、Codex Desktop、Claude Code 和 Gemini CLI。</p></aside>
+            <div class="client-directory">
+              <a href="#codex-cli"><span>07</span><strong>Codex CLI</strong><small>终端安装、版本检查和 ChatAPI 接入</small></a>
+              <a href="#codex-desktop"><span>08</span><strong>Codex Desktop</strong><small>macOS、Windows 下载与配置目录</small></a>
+              <a href="#claude-code"><span>09</span><strong>Claude Code</strong><small>各系统安装命令和 Messages API 分组</small></a>
+              <a href="#gemini-cli"><span>10</span><strong>Gemini CLI</strong><small>npm、Homebrew 与临时运行方式</small></a>
+            </div>
+
+            <div class="data-table"><table><thead><tr><th>目标客户端</th><th>创建密钥时选择</th><th>CCS 导入应用</th></tr></thead><tbody>
+              <tr><td>Codex CLI / Desktop</td><td>OpenAI 平台分组</td><td>Codex</td></tr>
+              <tr><td>Claude Code</td><td>支持 Messages API 的分组</td><td>Claude Code</td></tr>
+              <tr><td>Gemini CLI</td><td>Gemini 平台分组</td><td>Gemini CLI</td></tr>
+            </tbody></table></div>
+          </section>
+
           <section><h2>从 ChatAPI 一键导入</h2>
             <ol class="steps">
-              <li><span>1</span><div><h3>准备密钥</h3><p>在 ChatAPI“API 密钥”页面创建一个 OpenAI 平台密钥，并确认它已分配可用分组。</p></div></li>
+              <li><span>1</span><div><h3>准备密钥</h3><p>在 ChatAPI“API 密钥”页面创建密钥，平台和分组需与目标客户端匹配，并确认分组存在可用渠道。</p></div></li>
               <li><span>2</span><div><h3>打开导入窗口</h3><p>在该密钥的操作列点击“导入到 CCS”。如果没有此按钮，可能是站点暂时隐藏了 CCS 导入功能。</p></div></li>
-              <li><span>3</span><div><h3>选择应用和模型</h3><p>平台选择“Codex”，主模型选择当前分组实际支持的模型。模型列表发生变化时，以“渠道状态”和导入窗口为准。</p></div></li>
+              <li><span>3</span><div><h3>选择应用和模型</h3><p>按用途选择 Codex、Claude Code 或 Gemini CLI，再选择当前分组实际支持的主模型。Claude Code 还可按需设置 Haiku、Sonnet 和 Opus 模型映射。</p></div></li>
               <li><span>4</span><div><h3>确认导入</h3><p>点击“导入”。系统询问是否打开 CC-Switch 时选择允许，再核对供应商名称、端点、模型和密钥后确认。</p></div></li>
-              <li><span>5</span><div><h3>启用供应商</h3><p>在 CC-Switch 的 Codex 页面选中刚导入的 ChatAPI 供应商并点击“启用”，然后完全退出并重新启动 Codex。</p></div></li>
+              <li><span>5</span><div><h3>启用供应商</h3><p>在 CC-Switch 对应客户端页面选中刚导入的 ChatAPI 供应商并点击“启用”，然后完全退出并重新启动目标客户端。</p></div></li>
             </ol>
           </section>
 
@@ -290,6 +314,143 @@ console.log(response.output_text);</code></pre></div>
           </section>
 
           <aside class="callout warning"><strong>深度链接包含 API Key</strong><p>ChatAPI 生成的 <code>ccswitch://</code> 链接会携带当前密钥。只在自己的设备上完成导入，不要复制、分享或发布该链接；导入确认页也应再次核对来源。</p></aside>
+
+          <section><h2>相关链接</h2>
+            <ul class="related-links">
+              <li><a href="https://ccswitch.io/" target="_blank" rel="noreferrer">CC-Switch 官方网站 ↗</a></li>
+              <li><a href="https://github.com/farion1231/cc-switch/releases/latest" target="_blank" rel="noreferrer">CC-Switch 最新版本 ↗</a></li>
+              <li><a href="https://github.com/farion1231/cc-switch/tree/main/docs/user-manual/zh" target="_blank" rel="noreferrer">CC-Switch 中文使用手册 ↗</a></li>
+            </ul>
+          </section>
+        </article>
+
+        <article class="doc-page" data-page="codex-cli" data-title="Codex CLI">
+          <header class="page-header"><p class="eyebrow">CODEX CLI</p><h1>Codex CLI</h1><p class="lead">在终端中运行 Codex，并通过 CC-Switch 使用 ChatAPI 供应商。</p></header>
+
+          <section><h2>安装与检查</h2>
+            <p>先安装 Node.js 和 npm，再全局安装 Codex CLI：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>Terminal</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>npm install --global @openai/codex
+codex --version</code></pre></div>
+            <p>进入代码项目目录后运行 <code>codex</code> 即可启动终端界面。升级时重新安装最新版：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>Terminal</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>npm install --global @openai/codex@latest</code></pre></div>
+          </section>
+
+          <section><h2>连接 ChatAPI</h2>
+            <ol class="steps">
+              <li><span>1</span><div><h3>创建密钥</h3><p>在 <a href="#keys">API 密钥</a>页面创建 OpenAI 平台密钥，并选择支持目标模型的分组。</p></div></li>
+              <li><span>2</span><div><h3>导入供应商</h3><p>按照 <a href="#ccswitch">CC-Switch 配置</a>页面将密钥导入到 Codex。</p></div></li>
+              <li><span>3</span><div><h3>启用并重启</h3><p>在 CC-Switch 的 Codex 页面启用 ChatAPI，然后完全退出并重新启动 Codex CLI。</p></div></li>
+            </ol>
+            <aside class="callout info"><strong>配置位置</strong><p>CC-Switch 默认管理 <code>~/.codex/config.toml</code> 和认证配置。不要把其中的真实 API Key 提交到 Git。</p></aside>
+          </section>
+
+          <section><h2>相关链接</h2>
+            <ul class="related-links">
+              <li><a href="https://developers.openai.com/codex/cli/" target="_blank" rel="noreferrer">Codex CLI 官方文档 ↗</a></li>
+              <li><a href="https://github.com/openai/codex" target="_blank" rel="noreferrer">OpenAI Codex 官方仓库 ↗</a></li>
+              <li><a href="#codex-desktop">Codex Desktop 安装说明 →</a></li>
+              <li><a href="#ccswitch">返回 CC-Switch 配置 →</a></li>
+            </ul>
+          </section>
+        </article>
+
+        <article class="doc-page" data-page="codex-desktop" data-title="Codex Desktop">
+          <header class="page-header"><p class="eyebrow">CODEX DESKTOP</p><h1>Codex Desktop</h1><p class="lead">在 ChatGPT 桌面应用中选择 Codex，处理本地项目、长任务和代码审查。</p></header>
+
+          <section><h2>下载与安装</h2>
+            <div class="data-table"><table><thead><tr><th>系统</th><th>安装入口</th></tr></thead><tbody>
+              <tr><td>macOS</td><td><a href="https://persistent.oaistatic.com/codex-app-prod/Codex.dmg" target="_blank" rel="noreferrer">下载官方 DMG ↗</a></td></tr>
+              <tr><td>Windows</td><td><a href="https://get.microsoft.com/installer/download/9PLM9XGG6VKS?cid=website_cta_psi" target="_blank" rel="noreferrer">从 Microsoft 下载 ↗</a></td></tr>
+            </tbody></table></div>
+            <p>Windows 也可以通过 PowerShell 安装：</p>
+            <div class="code-block" data-language="powershell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>winget install --id 9PLM9XGG6VKS -s msstore</code></pre></div>
+          </section>
+
+          <section><h2>从终端打开项目</h2>
+            <p>已安装 <a href="#codex-cli">Codex CLI</a> 时，可在项目目录运行：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>Terminal</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>codex app .</code></pre></div>
+            <p>应用已安装时命令会直接启动；未安装时会进入安装流程。macOS 会打开当前工作区，Windows 会在安装后显示需要打开的项目路径。</p>
+          </section>
+
+          <section><h2>配置与 CC-Switch</h2>
+            <p>macOS 和 Windows 原生 Codex 默认与桌面应用使用同一 Codex 配置目录。Windows 桌面应用读取 <code>%USERPROFILE%\.codex</code>；WSL 内的 CLI 默认使用 Linux Home，不会自动共享这份配置。</p>
+            <p>按照 <a href="#ccswitch">CC-Switch 配置</a>页面导入并启用 ChatAPI 后，完全退出并重新打开桌面应用，让模型和供应商配置重新加载。</p>
+          </section>
+
+          <section><h2>相关链接</h2>
+            <ul class="related-links">
+              <li><a href="https://learn.chatgpt.com/docs/quickstart?setup=app" target="_blank" rel="noreferrer">桌面应用官方快速入门 ↗</a></li>
+              <li><a href="https://learn.chatgpt.com/docs/windows/windows-app" target="_blank" rel="noreferrer">Windows 桌面应用文档 ↗</a></li>
+              <li><a href="#codex-cli">Codex CLI 安装说明 →</a></li>
+              <li><a href="#ccswitch">返回 CC-Switch 配置 →</a></li>
+            </ul>
+          </section>
+        </article>
+
+        <article class="doc-page" data-page="claude-code" data-title="Claude Code">
+          <header class="page-header"><p class="eyebrow">CLAUDE CODE</p><h1>Claude Code</h1><p class="lead">安装 Anthropic 的终端编程客户端，并通过 CC-Switch 导入 ChatAPI 配置。</p></header>
+
+          <section><h2>macOS、Linux 与 WSL</h2>
+            <p>使用官方原生安装器，然后检查版本：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>Terminal</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl -fsSL https://claude.ai/install.sh | bash
+claude --version</code></pre></div>
+          </section>
+
+          <section><h2>Windows</h2>
+            <p>在 PowerShell 中运行官方安装命令：</p>
+            <div class="code-block" data-language="powershell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>irm https://claude.ai/install.ps1 | iex
+claude --version</code></pre></div>
+          </section>
+
+          <section><h2>连接 ChatAPI</h2>
+            <ol>
+              <li>在 <a href="#keys">API 密钥</a>页面创建支持 Messages API 的平台和分组密钥。</li>
+              <li>按照 <a href="#ccswitch">CC-Switch 配置</a>页面导入，应用选择 Claude Code。</li>
+              <li>按需设置 Haiku、Sonnet 与 Opus 模型映射，确认后启用供应商。</li>
+              <li>完全退出并重新启动 Claude Code。</li>
+            </ol>
+          </section>
+
+          <section><h2>相关链接</h2>
+            <ul class="related-links">
+              <li><a href="https://code.claude.com/docs/en/setup" target="_blank" rel="noreferrer">Claude Code 官方安装文档 ↗</a></li>
+              <li><a href="https://github.com/anthropics/claude-code" target="_blank" rel="noreferrer">Claude Code 官方仓库 ↗</a></li>
+              <li><a href="#ccswitch">返回 CC-Switch 配置 →</a></li>
+            </ul>
+          </section>
+        </article>
+
+        <article class="doc-page" data-page="gemini-cli" data-title="Gemini CLI">
+          <header class="page-header"><p class="eyebrow">GEMINI CLI</p><h1>Gemini CLI</h1><p class="lead">使用 npm、Homebrew 或 npx 安装 Gemini CLI，并接入 ChatAPI 的 Gemini 分组。</p></header>
+
+          <section><h2>npm 安装</h2>
+            <p>需要 Node.js 20 或更高版本。全局安装后检查版本：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>Terminal</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>npm install --global @google/gemini-cli
+gemini --version</code></pre></div>
+          </section>
+
+          <section><h2>其他安装方式</h2>
+            <p>macOS 或 Linux 可以使用 Homebrew：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>Terminal</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>brew install gemini-cli</code></pre></div>
+            <p>只想临时体验时可直接运行，无需全局安装：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>Terminal</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>npx @google/gemini-cli</code></pre></div>
+          </section>
+
+          <section><h2>连接 ChatAPI</h2>
+            <ol>
+              <li>在 <a href="#keys">API 密钥</a>页面创建 Gemini 平台密钥，并确认分组有可用模型。</li>
+              <li>按照 <a href="#ccswitch">CC-Switch 配置</a>页面导入，应用选择 Gemini CLI。</li>
+              <li>启用 ChatAPI 供应商，然后完全退出并重新启动 Gemini CLI。</li>
+            </ol>
+          </section>
+
+          <section><h2>相关链接</h2>
+            <ul class="related-links">
+              <li><a href="https://geminicli.com/docs/get-started/installation" target="_blank" rel="noreferrer">Gemini CLI 官方安装文档 ↗</a></li>
+              <li><a href="https://github.com/google-gemini/gemini-cli" target="_blank" rel="noreferrer">Gemini CLI 官方仓库 ↗</a></li>
+              <li><a href="#ccswitch">返回 CC-Switch 配置 →</a></li>
+            </ul>
+          </section>
         </article>
 
         <article class="doc-page" data-page="playground" data-title="在线测试">
