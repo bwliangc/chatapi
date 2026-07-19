@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="logo-title logo-description">
+  <title id="logo-title">Sub2API</title>
+  <desc id="logo-description">Three routes converge through a central API gateway into one output.</desc>
+  <defs>
+    <linearGradient id="tile" x1="18" y1="12" x2="110" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1b2e5b" />
+      <stop offset="1" stop-color="#0b1226" />
+    </linearGradient>
+    <linearGradient id="route" x1="18" y1="35" x2="110" y2="92" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#72f5b5" />
+      <stop offset="0.52" stop-color="#3ed4f5" />
+      <stop offset="1" stop-color="#3b76e8" />
+    </linearGradient>
+  </defs>
+
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#tile)" />
+  <rect x="4.5" y="4.5" width="119" height="119" rx="27.5" fill="none" stroke="#5e93f0" stroke-opacity=".24" />
+
+  <g fill="none" stroke="url(#route)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 39h19c6 0 9 2 13 7l6 8" stroke-width="7" />
+    <path d="M18 64h31" stroke-width="7" />
+    <path d="M20 89h19c6 0 9-2 13-7l6-8" stroke-width="7" />
+    <path d="M81 64h28" stroke-width="7" />
+    <path d="M64 39 84 51v26L64 89 44 77V51Z" stroke-width="7.5" />
+  </g>
+
+  <g fill="#dffcff">
+    <circle cx="20" cy="39" r="3.25" />
+    <circle cx="18" cy="64" r="3.25" />
+    <circle cx="20" cy="89" r="3.25" />
+  </g>
+  <circle cx="109" cy="64" r="3.25" fill="#d8e7ff" />
+
+  <path d="m59 55 9 9-9 9" fill="none" stroke="#f8fbff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

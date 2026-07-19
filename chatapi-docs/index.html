@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ChatAPI 使用手册：从注册、充值和创建 API 密钥，到 CC-Switch、OpenAI SDK 接入与用量排查。" />
+    <meta name="theme-color" content="#f7f8f5" />
+    <title>ChatAPI 使用手册</title>
+    <link rel="icon" href="./public/logo.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#doc-content">跳到正文</a>
+
+    <header class="topbar">
+      <div class="topbar-inner">
+        <button class="icon-button mobile-menu" id="menu-toggle" type="button" aria-label="打开目录" title="打开目录">☰</button>
+        <a class="brand" href="#overview" aria-label="ChatAPI 使用手册首页">
+          <img src="./public/logo.svg" alt="ChatAPI" />
+          <span class="brand-copy"><strong>ChatAPI</strong><small>使用手册</small></span>
+        </a>
+        <button class="search-trigger" id="search-trigger" type="button" aria-label="搜索文档">
+          <span aria-hidden="true">⌕</span><span>搜索文档</span>
+        </button>
+        <nav class="top-actions" aria-label="站点链接">
+          <a href="https://chatapi.bwliangc.com/" target="_blank" rel="noreferrer">主站</a>
+          <a href="https://chatapis.cc/" target="_blank" rel="noreferrer">备用站</a>
+          <button class="icon-button" id="theme-toggle" type="button" aria-label="切换深浅色" title="切换深浅色">◐</button>
+        </nav>
+      </div>
+    </header>
+
+    <div class="site-shell">
+      <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav" aria-label="文档目录">
+          <p class="nav-label">开始</p>
+          <a href="#overview" data-route="overview"><span>01</span>手册首页</a>
+          <a href="#quickstart" data-route="quickstart"><span>02</span>五分钟开始</a>
+          <a href="#account" data-route="account"><span>03</span>注册与登录</a>
+
+          <p class="nav-label">接入</p>
+          <a href="#keys" data-route="keys"><span>04</span>API 密钥</a>
+          <a href="#api" data-route="api"><span>05</span>API 调用</a>
+          <a href="#ccswitch" data-route="ccswitch"><span>06</span>CC-Switch 配置</a>
+          <a href="#playground" data-route="playground"><span>07</span>在线测试</a>
+
+          <p class="nav-label">账户</p>
+          <a href="#usage" data-route="usage"><span>08</span>用量与账单</a>
+          <a href="#balance" data-route="balance"><span>09</span>购买与兑换</a>
+          <a href="#features" data-route="features"><span>10</span>其他功能</a>
+          <a href="#security" data-route="security"><span>11</span>安全设置</a>
+
+          <p class="nav-label">支持</p>
+          <a href="#troubleshooting" data-route="troubleshooting"><span>12</span>常见问题</a>
+        </nav>
+        <div class="sidebar-footer">
+          <span class="status-dot"></span>
+          <span>文档核对日期 2026-07-19</span>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+      <main class="content" id="doc-content" tabindex="-1">
+        <article class="doc-page" data-page="overview" data-title="手册首页">
+          <header class="page-header home-header">
+            <div>
+              <p class="eyebrow">CHATAPI DOCUMENTATION</p>
+              <h1>ChatAPI 使用手册</h1>
+              <p class="lead">从获取额度、创建密钥，到使用 CC-Switch 或应用代码完成第一次调用。</p>
+            </div>
+            <img class="header-mark" src="./public/logo.svg" alt="" />
+          </header>
+
+          <div class="endpoint-strip" aria-label="服务地址">
+            <div><span>主站</span><code>https://chatapi.bwliangc.com</code></div>
+            <div><span>备用站</span><code>https://chatapis.cc</code></div>
+          </div>
+
+          <section>
+            <h2>第一次使用</h2>
+            <div class="route-map">
+              <a href="#account"><b>1</b><span><strong>登录账户</strong><small>进入用户控制台</small></span></a>
+              <a href="#balance"><b>2</b><span><strong>准备额度</strong><small>购买并兑换 CDK</small></span></a>
+              <a href="#keys"><b>3</b><span><strong>创建密钥</strong><small>选择平台与分组</small></span></a>
+              <a href="#api"><b>4</b><span><strong>发起调用</strong><small>使用兼容 API</small></span></a>
+            </div>
+          </section>
+
+          <section>
+            <h2>按你的目标阅读</h2>
+            <div class="topic-grid">
+              <a class="topic" href="#ccswitch"><span class="topic-icon">↭</span><strong>用 CC-Switch 配置</strong><small>一键导入并切换 Codex 供应商</small></a>
+              <a class="topic" href="#api"><span class="topic-icon">{ }</span><strong>接入自己的程序</strong><small>cURL、Python 与 JavaScript 示例</small></a>
+              <a class="topic" href="#usage"><span class="topic-icon">▥</span><strong>核对消费</strong><small>查看 Token、费用、延迟和错误请求</small></a>
+              <a class="topic" href="#troubleshooting"><span class="topic-icon">!</span><strong>调用失败排查</strong><small>401、403、429 与模型不可用</small></a>
+            </div>
+          </section>
+
+          <aside class="callout warning">
+            <strong>密钥属于敏感凭证</strong>
+            <p>示例中的 <code>sk-your-api-key</code> 必须替换为你自己的密钥。不要把真实密钥提交到 Git、截图、工单或聊天记录。</p>
+          </aside>
+        </article>
+
+        <article class="doc-page" data-page="quickstart" data-title="五分钟开始">
+          <header class="page-header"><p class="eyebrow">GET STARTED</p><h1>五分钟开始</h1><p class="lead">完成账户、额度、密钥和首次请求四个环节。</p></header>
+
+          <ol class="steps">
+            <li><span>1</span><div><h3>登录控制台</h3><p>打开 <a href="https://chatapi.bwliangc.com/login" target="_blank" rel="noreferrer">登录页</a>，使用邮箱密码或页面提供的第三方方式登录。</p></div></li>
+            <li><span>2</span><div><h3>确认账户余额</h3><p>仪表盘右上角和“余额”卡片都会显示可用余额。余额不足时先完成 <a href="#balance">购买与兑换</a>。</p></div></li>
+            <li><span>3</span><div><h3>创建 API 密钥</h3><p>进入“API 密钥”，点击“创建密钥”，填写名称并选择能访问目标模型的分组。首次使用可先保留额度、速率和有效期为无限制。</p></div></li>
+            <li><span>4</span><div><h3>查询模型并调用</h3><p>先请求模型列表，再从响应中选择一个模型发起对话。这样可以避免使用当前分组不支持的模型名。</p></div></li>
+          </ol>
+
+          <div class="code-block" data-language="bash">
+            <div class="code-head"><span>Terminal</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div>
+            <pre><code>export CHATAPI_BASE_URL="https://chatapi.bwliangc.com/v1"
+export CHATAPI_API_KEY="sk-your-api-key"
+
+curl "$CHATAPI_BASE_URL/models" \
+  -H "Authorization: Bearer $CHATAPI_API_KEY"</code></pre>
+          </div>
+
+          <aside class="callout info"><strong>备用域名</strong><p>主站无法访问时，可将域名替换为 <code>https://chatapis.cc</code>。同一客户端里只保留一个 Base URL。</p></aside>
+        </article>
+
+        <article class="doc-page" data-page="account" data-title="注册与登录">
+          <header class="page-header"><p class="eyebrow">ACCOUNT</p><h1>注册与登录</h1><p class="lead">登录成功后会进入仪表盘，看到余额、密钥数量、请求量、消费和性能概览。</p></header>
+
+          <figure class="doc-figure">
+            <a href="./public/screenshots/register.jpg" target="_blank" aria-label="查看 ChatAPI 注册页大图">
+              <img src="./public/screenshots/register.jpg" alt="ChatAPI 注册页面，包含邮箱、密码、继续按钮和使用 Google 登录入口" width="1272" height="716" loading="lazy" decoding="async" />
+            </a>
+            <figcaption><strong>ChatAPI 注册页</strong><span>支持邮箱验证注册和 Google 登录。</span></figcaption>
+          </figure>
+
+          <section><h2>邮箱注册</h2>
+            <ol>
+              <li>打开 <a href="https://chatapi.bwliangc.com/register" target="_blank" rel="noreferrer">注册页面</a>。</li>
+              <li>填写常用邮箱，并设置至少 6 个字符的密码。</li>
+              <li>点击“继续”，系统会向该邮箱发送 6 位验证码。</li>
+              <li>输入验证码并点击“验证并创建”。未收到邮件时，等待倒计时结束后可重新发送。</li>
+              <li>验证成功后会自动创建账户并进入仪表盘。</li>
+            </ol>
+            <aside class="callout info"><strong>收不到验证码</strong><p>先检查垃圾邮件和邮箱地址是否正确，再使用页面的“重新发送”。验证码输入页失效时，请返回注册页重新开始。</p></aside>
+          </section>
+          <section><h2>使用 Google 注册或登录</h2>
+            <ol>
+              <li>在注册页或登录页点击“使用 Google 登录”。</li>
+              <li>在 Google 授权页选择账号，并确认授权登录 ChatAPI。</li>
+              <li>已完成注册和绑定的账号会直接登录并返回仪表盘。</li>
+              <li>首次使用该 Google 账号时，按回调页面提示补设密码和确认密码；如果站点要求邀请码，还需填写有效邀请码。</li>
+              <li>点击“完成注册”，成功后会自动登录。</li>
+            </ol>
+            <aside class="callout warning"><strong>确认授权站点</strong><p>Google 授权前应核对浏览器地址和 ChatAPI 站点信息。不要在非 Google 页面输入 Google 密码，也不要把授权回调地址或验证码发送给他人。</p></aside>
+          </section>
+          <section><h2>邮箱密码登录</h2><ol><li>打开主站，点击“登录”。</li><li>填写注册邮箱和密码后提交。</li><li>进入仪表盘后，先核对右上角账户名与余额。</li></ol></section>
+          <section><h2>仪表盘怎么看</h2>
+            <div class="data-table"><table><thead><tr><th>区域</th><th>用途</th></tr></thead><tbody>
+              <tr><td>余额</td><td>当前可用于调用的账户余额</td></tr>
+              <tr><td>API 密钥</td><td>密钥总数与启用数量</td></tr>
+              <tr><td>今日请求 / 消费</td><td>当天请求和实际费用</td></tr>
+              <tr><td>Token / 性能</td><td>输入、输出、缓存 Token，以及 RPM、TPM、平均响应时间</td></tr>
+              <tr><td>平台拆分</td><td>按 OpenAI、Anthropic、Gemini、Grok 等平台观察用量</td></tr>
+            </tbody></table></div>
+          </section>
+          <aside class="callout warning"><strong>公共设备</strong><p>不要让浏览器保存密码，使用完成后从右上角用户菜单退出登录。</p></aside>
+        </article>
+
+        <article class="doc-page" data-page="keys" data-title="API 密钥">
+          <header class="page-header"><p class="eyebrow">CREDENTIALS</p><h1>API 密钥</h1><p class="lead">密钥决定请求可使用的平台、分组与消费边界。</p></header>
+
+          <section><h2>创建密钥</h2><ol><li>进入“API 密钥”，点击“创建密钥”。</li><li>填写便于识别的名称，例如 <code>codex-macbook</code> 或 <code>backend-production</code>。</li><li>选择平台，然后选择有可用渠道的分组。</li><li>按需设置安全限制，点击“创建”。</li><li>复制密钥并保存到密码管理器或服务端密钥系统。</li></ol></section>
+
+          <section><h2>创建选项</h2>
+            <div class="data-table"><table><thead><tr><th>选项</th><th>作用</th><th>建议</th></tr></thead><tbody>
+              <tr><td>平台 / 分组</td><td>决定可调度的渠道和模型</td><td>先在“渠道状态”确认可用模型</td></tr>
+              <tr><td>自定义密钥</td><td>自行指定密钥字符串</td><td>至少 16 位，仅字母、数字、下划线和连字符</td></tr>
+              <tr><td>IP 限制</td><td>设置白名单或黑名单，支持 IP/CIDR</td><td>固定出口 IP 的生产服务建议启用</td></tr>
+              <tr><td>额度限制</td><td>限制该密钥可消费的最大 USD 金额</td><td>为测试、CI 或共享项目设置上限</td></tr>
+              <tr><td>速率限制</td><td>设置 5 小时、1 天、7 天消费窗口</td><td>防止异常流量持续消耗</td></tr>
+              <tr><td>有效期</td><td>7/30/90 天或自定义过期时间</td><td>临时项目使用短期密钥</td></tr>
+            </tbody></table></div>
+          </section>
+
+          <section><h2>日常管理</h2><p>密钥列表支持搜索、分组和状态筛选。你可以复制、启用、停用、修改分组、重置额度用量或删除密钥。删除操作不可撤销，轮换密钥时应先部署新密钥并验证，再停用旧密钥。</p></section>
+          <aside class="callout info"><strong>平台必须匹配</strong><p>Codex 和 OpenAI SDK 通常选择 OpenAI 平台；Claude Code 通常选择可提供 Messages API 的平台。可用选项以账户实际分组为准。</p></aside>
+        </article>
+
+        <article class="doc-page" data-page="api" data-title="API 调用">
+          <header class="page-header"><p class="eyebrow">OPENAI COMPATIBLE</p><h1>API 调用</h1><p class="lead">使用 Bearer Token 认证，并优先从 <code>/v1/models</code> 获取当前可用模型。</p></header>
+
+          <section><h2>基础信息</h2>
+            <div class="data-table"><table><tbody>
+              <tr><th>API 根地址</th><td><code>https://chatapi.bwliangc.com/v1</code></td></tr>
+              <tr><th>备用根地址</th><td><code>https://chatapis.cc/v1</code></td></tr>
+              <tr><th>认证请求头</th><td><code>Authorization: Bearer sk-your-api-key</code></td></tr>
+              <tr><th>常用端点</th><td><code>GET /models</code>、<code>POST /responses</code>、<code>POST /chat/completions</code>、<code>POST /messages</code></td></tr>
+            </tbody></table></div>
+          </section>
+
+          <section><h2>Responses API</h2>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl "https://chatapi.bwliangc.com/v1/responses" \
+  -H "Authorization: Bearer sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-5.6-terra",
+    "input": "用一句话解释什么是幂等性"
+  }'</code></pre></div>
+          </section>
+
+          <section><h2>OpenAI Python SDK</h2>
+            <div class="code-block" data-language="python"><div class="code-head"><span>Python</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["CHATAPI_API_KEY"],
+    base_url="https://chatapi.bwliangc.com/v1",
+)
+
+response = client.responses.create(
+    model="gpt-5.6-terra",
+    input="用一句话解释什么是幂等性",
+)
+print(response.output_text)</code></pre></div>
+          </section>
+
+          <section><h2>OpenAI JavaScript SDK</h2>
+            <div class="code-block" data-language="javascript"><div class="code-head"><span>JavaScript</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.CHATAPI_API_KEY,
+  baseURL: "https://chatapi.bwliangc.com/v1",
+});
+
+const response = await client.responses.create({
+  model: "gpt-5.6-terra",
+  input: "用一句话解释什么是幂等性",
+});
+
+console.log(response.output_text);</code></pre></div>
+          </section>
+
+          <aside class="callout warning"><strong>模型名会变化</strong><p>示例模型用于说明请求格式。实际调用前请查询 <code>/v1/models</code> 或在“渠道状态”确认当前分组支持的模型。</p></aside>
+        </article>
+
+        <article class="doc-page" data-page="ccswitch" data-title="CC-Switch 配置">
+          <header class="page-header"><p class="eyebrow">CC-SWITCH</p><h1>CC-Switch 配置</h1><p class="lead">从 ChatAPI 一键导入供应商，无需手动编辑 Codex 配置文件。</p></header>
+
+          <section><h2>安装 CC-Switch</h2>
+            <p><a href="https://github.com/farion1231/cc-switch" target="_blank" rel="noreferrer">CC-Switch</a> 是跨平台的 AI 编程工具供应商管理应用，支持 Codex、Claude Code 和 Gemini CLI 等客户端。</p>
+            <div class="data-table"><table><thead><tr><th>系统</th><th>安装方式</th></tr></thead><tbody>
+              <tr><td>macOS 12+</td><td>运行 <code>brew install --cask cc-switch</code>，或从 Releases 下载 DMG</td></tr>
+              <tr><td>Windows 10+</td><td>从 <a href="https://github.com/farion1231/cc-switch/releases/latest" target="_blank" rel="noreferrer">Releases</a> 下载 MSI 或 Portable ZIP</td></tr>
+              <tr><td>Linux</td><td>从 Releases 选择适合发行版的安装包</td></tr>
+            </tbody></table></div>
+            <p>首次启动时允许应用注册 <code>ccswitch://</code> 协议；ChatAPI 的一键导入依赖该协议唤起 CC-Switch。</p>
+          </section>
+
+          <section><h2>从 ChatAPI 一键导入</h2>
+            <ol class="steps">
+              <li><span>1</span><div><h3>准备密钥</h3><p>在 ChatAPI“API 密钥”页面创建一个 OpenAI 平台密钥，并确认它已分配可用分组。</p></div></li>
+              <li><span>2</span><div><h3>打开导入窗口</h3><p>在该密钥的操作列点击“导入到 CCS”。如果没有此按钮，可能是站点暂时隐藏了 CCS 导入功能。</p></div></li>
+              <li><span>3</span><div><h3>选择应用和模型</h3><p>平台选择“Codex”，主模型选择当前分组实际支持的模型。模型列表发生变化时，以“渠道状态”和导入窗口为准。</p></div></li>
+              <li><span>4</span><div><h3>确认导入</h3><p>点击“导入”。系统询问是否打开 CC-Switch 时选择允许，再核对供应商名称、端点、模型和密钥后确认。</p></div></li>
+              <li><span>5</span><div><h3>启用供应商</h3><p>在 CC-Switch 的 Codex 页面选中刚导入的 ChatAPI 供应商并点击“启用”，然后完全退出并重新启动 Codex。</p></div></li>
+            </ol>
+          </section>
+
+          <section><h2>导入内容</h2>
+            <div class="data-table"><table><thead><tr><th>项目</th><th>ChatAPI 自动填写</th></tr></thead><tbody>
+              <tr><td>应用</td><td>OpenAI 平台密钥默认选择 Codex，也可在导入窗口切换</td></tr>
+              <tr><td>供应商</td><td>名称、ChatAPI 首页与 API 端点</td></tr>
+              <tr><td>认证</td><td>当前 API 密钥</td></tr>
+              <tr><td>模型</td><td>导入窗口选择的主模型</td></tr>
+              <tr><td>用量查询</td><td>启用余额查询，默认每 30 分钟自动更新</td></tr>
+            </tbody></table></div>
+          </section>
+
+          <section><h2>手动添加备用方案</h2>
+            <p>深度链接无法使用时，可在 CC-Switch 点击“添加供应商”，为 Codex 创建自定义供应商：</p>
+            <div class="data-table"><table><tbody>
+              <tr><th>名称</th><td><code>ChatAPI</code></td></tr>
+              <tr><th>API 地址</th><td><code>https://chatapi.bwliangc.com</code></td></tr>
+              <tr><th>API Key</th><td>粘贴自己的 ChatAPI 密钥</td></tr>
+              <tr><th>模型</th><td>填写当前分组支持的模型 ID</td></tr>
+            </tbody></table></div>
+            <p>保存后选中该供应商并点击“启用”。若主站连接失败，可将 API 地址换为 <code>https://chatapis.cc</code>。</p>
+          </section>
+
+          <aside class="callout warning"><strong>深度链接包含 API Key</strong><p>ChatAPI 生成的 <code>ccswitch://</code> 链接会携带当前密钥。只在自己的设备上完成导入，不要复制、分享或发布该链接；导入确认页也应再次核对来源。</p></aside>
+        </article>
+
+        <article class="doc-page" data-page="playground" data-title="在线测试">
+          <header class="page-header"><p class="eyebrow">PLAYGROUND</p><h1>在线测试</h1><p class="lead">无需写代码即可验证密钥、模型和图片输入是否可用。</p></header>
+          <section><h2>发起测试</h2><ol><li>先创建并启用一个 API 密钥。</li><li>进入“在线测试”，选择密钥。</li><li>刷新并选择模型，或输入模型名。</li><li>输入消息，按需添加图片，然后发送。</li></ol></section>
+          <section><h2>适合排查什么</h2><ul><li>密钥是否启用并已分配分组。</li><li>模型是否在当前分组可用。</li><li>图片输入是否受模型支持。</li><li>问题来自平台配置还是本地 SDK/网络环境。</li></ul></section>
+          <aside class="callout info"><strong>隐私说明</strong><p>控制台说明聊天记录不做存储，数据仅用于透传上游。仍不要在测试中发送密码、密钥、身份证件或其他不必要的敏感数据。</p></aside>
+        </article>
+
+        <article class="doc-page" data-page="usage" data-title="用量与账单">
+          <header class="page-header"><p class="eyebrow">OBSERVABILITY</p><h1>用量与账单</h1><p class="lead">从总览定位趋势，再下钻到单次请求。</p></header>
+          <section><h2>用量总览</h2><p>“使用记录”顶部汇总所选时间范围内的请求数、输入/输出/缓存 Token、实际消费、标准消费和平均耗时。图表可按 Token 或实际消费查看模型、分组与端点分布。</p></section>
+          <section><h2>筛选与明细</h2><p>可按 API 密钥、模型、分组、类型、计费类型和计费模式筛选。明细表包含推理强度、端点、IP、Token、费用、延迟和时间；列设置可隐藏暂时不关心的字段。</p></section>
+          <section><h2>导出与错误请求</h2><ul><li>点击“导出 CSV”保留筛选后的账单明细。</li><li>切换“错误请求”查看失败调用，结合状态码和时间定位问题。</li><li>比较“实际”与“标准”费用时，应同时考虑渠道倍率、缓存 Token 和计费模式。</li></ul></section>
+          <aside class="callout warning"><strong>时间范围会影响总数</strong><p>仪表盘“总计”和使用记录默认时间范围可能不同。对账前先统一时间范围、时区和筛选条件。</p></aside>
+        </article>
+
+        <article class="doc-page" data-page="balance" data-title="购买与兑换">
+          <header class="page-header"><p class="eyebrow">BALANCE</p><h1>购买与兑换</h1><p class="lead">通过控制台的 CDK 购买入口获得兑换码，再回到“兑换”页面入账。</p></header>
+          <section><h2>购买 CDK</h2><ol><li>登录后点击侧栏“CDK 购买”。</li><li>在官方购买页面确认商品、金额和支付信息。</li><li>支付完成后取得兑换码。</li><li>回到 ChatAPI 控制台，不要把兑换码发给他人。</li></ol></section>
+          <section><h2>兑换</h2><ol><li>进入“兑换”，确认当前余额与并发数。</li><li>原样粘贴兑换码；兑换码区分大小写。</li><li>点击“兑换”，等待余额、并发数或试用权限更新。</li><li>在“最近活动”核对变更类型、时间和金额。</li></ol></section>
+          <aside class="callout info"><strong>兑换码规则</strong><p>每个兑换码只能使用一次，可能增加余额、并发数或试用权限。成功后额度即时更新。</p></aside>
+        </article>
+
+        <article class="doc-page" data-page="features" data-title="其他功能">
+          <header class="page-header"><p class="eyebrow">CONSOLE</p><h1>其他功能</h1><p class="lead">渠道状态、邀请返利和排行榜都可从用户侧栏进入。</p></header>
+          <section><h2>渠道状态</h2><p>按渠道或模型搜索，查看渠道平台、可访问分组和支持模型。创建密钥前先在这里确认目标模型，能减少“模型不存在”或分组不匹配。</p></section>
+          <section><h2>邀请返利</h2><p>页面提供邀请码和邀请链接。被邀请用户充值后，邀请人按页面显示比例获得返利额度；可用返利可转入账户余额。比例和规则以页面实时显示为准。</p></section>
+          <section><h2>消费排行榜</h2><p>榜单按消费金额实时排名，并提供今日实时与昨日结算两个视图。奖池、参与门槛、奖励名额和分配比例会显示在榜单顶部，以当日规则为准。</p></section>
+        </article>
+
+        <article class="doc-page" data-page="security" data-title="安全设置">
+          <header class="page-header"><p class="eyebrow">SECURITY</p><h1>安全设置</h1><p class="lead">把每个密钥的权限和影响范围控制在完成任务所需的最小范围。</p></header>
+          <section><h2>推荐基线</h2><ul class="check-list"><li>为不同设备、应用和环境创建独立密钥。</li><li>生产密钥配置固定出口 IP 白名单。</li><li>测试和 CI 密钥设置额度、速率和有效期。</li><li>密钥写入环境变量或密钥管理服务，不进入前端代码。</li><li>发现泄露时立即停用旧密钥，创建并部署新密钥。</li></ul></section>
+          <section><h2>个人设置</h2><p>“个人资料”支持修改用户名、头像和密码，管理邮箱及第三方登录绑定，配置余额不足邮件提醒。两步验证是否可用由站点管理员配置。</p></section>
+          <section><h2>余额提醒</h2><p>启用余额不足提醒并填写已验证邮箱。自定义阈值留空时使用系统默认值；生产业务建议设置能覆盖正常补充周期的阈值。</p></section>
+        </article>
+
+        <article class="doc-page" data-page="troubleshooting" data-title="常见问题">
+          <header class="page-header"><p class="eyebrow">TROUBLESHOOTING</p><h1>常见问题</h1><p class="lead">先看状态码，再核对密钥、分组、模型和额度。</p></header>
+
+          <div class="faq-list">
+            <details open><summary><span>401</span>认证失败或密钥无效</summary><div><p>确认使用 <code>Authorization: Bearer ...</code>，没有多余引号或空格；再到密钥列表检查密钥是否启用、过期或已删除。</p></div></details>
+            <details><summary><span>403</span>分组、IP 或权限不允许</summary><div><p>检查密钥分组与目标平台是否匹配；若设置了 IP 白名单，确认请求实际出口 IP 已包含在规则中。</p></div></details>
+            <details><summary><span>404</span>端点或模型不存在</summary><div><p>OpenAI 兼容根地址通常应包含 <code>/v1</code>。先调用 <code>GET /v1/models</code>，使用返回的模型 ID，不要依赖旧配置中的模型名。</p></div></details>
+            <details><summary><span>429</span>消费窗口、并发或上游限流</summary><div><p>检查密钥的 5 小时、1 天和 7 天消费限制，以及账户并发数。短暂上游限流可退避重试，持续失败应查看“错误请求”。</p></div></details>
+            <details><summary><span>余额</span>余额充足但仍无法调用</summary><div><p>账户余额只是条件之一。还需确认密钥额度未耗尽、密钥未过期、分组有可用渠道、模型受支持且 IP 规则允许。</p></div></details>
+            <details><summary><span>CCS</span>导入后 Codex 没有生效</summary><div><p>确认已在 CC-Switch 的 Codex 页面选中 ChatAPI 并点击“启用”，然后完全退出并重启 Codex。若导入链接没有唤起应用，请重新安装 CC-Switch，确认系统已注册 <code>ccswitch://</code> 协议。</p></div></details>
+            <details><summary><span>网络</span>主站连接失败</summary><div><p>将客户端 Base URL 切换到 <code>https://chatapis.cc</code> 后重试。不要同时拼接两个域名，也不要重复添加 <code>/v1/v1</code>。</p></div></details>
+          </div>
+
+          <section><h2>最小诊断请求</h2>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>Terminal</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl -i "https://chatapi.bwliangc.com/v1/models" \
+  -H "Authorization: Bearer sk-your-api-key"</code></pre></div>
+            <p>提交问题时保留请求时间、状态码、端点、模型和请求 ID。密钥只保留前后少量字符用于识别，其余部分必须打码。</p>
+          </section>
+        </article>
+
+        <footer class="content-footer">
+          <span>ChatAPI 使用手册</span>
+          <a href="https://chatapi.bwliangc.com/" target="_blank" rel="noreferrer">打开控制台 ↗</a>
+        </footer>
+      </main>
+
+      <aside class="page-outline" aria-label="当前页目录">
+        <p>本页目录</p>
+        <nav id="page-outline-nav"></nav>
+      </aside>
+    </div>
+
+    <dialog class="search-dialog" id="search-dialog" aria-labelledby="search-title">
+      <div class="search-box">
+        <label id="search-title" for="search-input">搜索使用手册</label>
+        <button class="icon-button dialog-close" id="search-close" type="button" aria-label="关闭搜索" title="关闭">×</button>
+        <input id="search-input" type="search" placeholder="输入关键词，例如：CC-Switch、429、兑换码" autocomplete="off" />
+      </div>
+      <div class="search-results" id="search-results"></div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite">已复制</div>
+    <script src="./app.js"></script>
+  </body>
+</html>
