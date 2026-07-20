@@ -6,7 +6,7 @@
         <button
           @click="toggleMobileSidebar"
           class="btn-ghost btn-icon flex-shrink-0 lg:hidden"
-          :aria-label="t('common.more')"
+          :aria-label="t('common.toggleMenu')"
           :aria-expanded="appStore.mobileOpen"
           aria-controls="app-sidebar"
         >
@@ -108,7 +108,7 @@
           <button
             @click="toggleDropdown"
             class="flex items-center gap-2 rounded-xl p-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-dark-800"
-            aria-label="User Menu"
+            :aria-label="t('common.userMenu')"
           >
             <div class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-medium text-white shadow-sm">
               <img

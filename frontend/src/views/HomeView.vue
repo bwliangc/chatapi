@@ -51,7 +51,7 @@
           <div
             class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-slate-900/10 bg-white shadow-lg shadow-amber-900/10 dark:border-white/10 dark:bg-white/10"
           >
-            <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+            <img :src="siteLogo || '/logo.svg'" alt="Logo" class="h-full w-full object-contain" />
           </div>
           <div class="hidden sm:block">
             <div class="text-sm font-black tracking-tight text-slate-950 dark:text-white">
