@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="ChatAPI 使用手册：从注册、充值和创建 API 密钥，到 CC-Switch、OpenAI SDK 接入与用量排查。" />
+    <meta name="description" content="ChatAPI 使用手册：从注册、充值和创建 API 密钥，到 CC-Switch、Cherry Studio、OpenAI SDK 接入与用量排查。" />
     <meta name="theme-color" content="#f7f8f5" />
     <title>ChatAPI 使用手册</title>
     <link rel="icon" href="./public/logo.svg" type="image/svg+xml" />
@@ -48,22 +48,24 @@
           <a href="#codex-desktop" data-route="codex-desktop"><span>08</span>Codex Desktop</a>
           <a href="#claude-code" data-route="claude-code"><span>09</span>Claude Code</a>
           <a href="#gemini-cli" data-route="gemini-cli"><span>10</span>Gemini CLI</a>
+          <a href="#cherry-studio" data-route="cherry-studio"><span>11</span>Cherry Studio</a>
+          <a href="#cherry-studio-app" data-route="cherry-studio-app"><span>12</span>Cherry Studio App</a>
 
           <p class="nav-label">操作</p>
-          <a href="#playground" data-route="playground"><span>11</span>在线测试</a>
+          <a href="#playground" data-route="playground"><span>13</span>在线测试</a>
 
           <p class="nav-label">账户</p>
-          <a href="#usage" data-route="usage"><span>12</span>用量与账单</a>
-          <a href="#balance" data-route="balance"><span>13</span>购买与兑换</a>
-          <a href="#features" data-route="features"><span>14</span>其他功能</a>
-          <a href="#security" data-route="security"><span>15</span>安全设置</a>
+          <a href="#usage" data-route="usage"><span>14</span>用量与账单</a>
+          <a href="#balance" data-route="balance"><span>15</span>购买与兑换</a>
+          <a href="#features" data-route="features"><span>16</span>其他功能</a>
+          <a href="#security" data-route="security"><span>17</span>安全设置</a>
 
           <p class="nav-label">支持</p>
-          <a href="#troubleshooting" data-route="troubleshooting"><span>16</span>常见问题</a>
+          <a href="#troubleshooting" data-route="troubleshooting"><span>18</span>常见问题</a>
         </nav>
         <div class="sidebar-footer">
           <span class="status-dot"></span>
-          <span>文档核对日期 2026-07-19</span>
+          <span>文档核对日期 2026-07-20</span>
         </div>
       </aside>
 
@@ -99,6 +101,8 @@
             <h2>按你的目标阅读</h2>
             <div class="topic-grid">
               <a class="topic" href="#ccswitch"><span class="topic-icon">↭</span><strong>用 CC-Switch 配置</strong><small>一键导入并切换 Codex 供应商</small></a>
+              <a class="topic" href="#cherry-studio"><span class="topic-icon">CS</span><strong>在电脑上使用 Cherry Studio</strong><small>Windows、macOS、Linux 多模型聊天</small></a>
+              <a class="topic" href="#cherry-studio-app"><span class="topic-icon">▯</span><strong>在手机上使用 ChatAPI</strong><small>Cherry Studio App 的 Android 与 iOS 配置</small></a>
               <a class="topic" href="#api"><span class="topic-icon">{ }</span><strong>接入自己的程序</strong><small>cURL、Python 与 JavaScript 示例</small></a>
               <a class="topic" href="#usage"><span class="topic-icon">▥</span><strong>核对消费</strong><small>查看 Token、费用、延迟和错误请求</small></a>
               <a class="topic" href="#troubleshooting"><span class="topic-icon">!</span><strong>调用失败排查</strong><small>401、403、429 与模型不可用</small></a>
@@ -193,7 +197,7 @@ curl "$CHATAPI_BASE_URL/models" \
           </section>
 
           <section><h2>日常管理</h2><p>密钥列表支持搜索、分组和状态筛选。你可以复制、启用、停用、修改分组、重置额度用量或删除密钥。删除操作不可撤销，轮换密钥时应先部署新密钥并验证，再停用旧密钥。</p></section>
-          <aside class="callout info"><strong>平台必须匹配</strong><p>Codex 和 OpenAI SDK 通常选择 OpenAI 平台；Claude Code 通常选择可提供 Messages API 的平台。可用选项以账户实际分组为准。</p></aside>
+          <aside class="callout info"><strong>平台必须匹配</strong><p>Codex、OpenAI SDK 和 Cherry Studio 自定义 OpenAI 服务商通常选择 OpenAI 平台；Claude Code 通常选择可提供 Messages API 的平台。可用选项以账户实际分组为准。</p></aside>
         </article>
 
         <article class="doc-page" data-page="api" data-title="API 调用">
@@ -449,6 +453,123 @@ gemini --version</code></pre></div>
               <li><a href="https://geminicli.com/docs/get-started/installation" target="_blank" rel="noreferrer">Gemini CLI 官方安装文档 ↗</a></li>
               <li><a href="https://github.com/google-gemini/gemini-cli" target="_blank" rel="noreferrer">Gemini CLI 官方仓库 ↗</a></li>
               <li><a href="#ccswitch">返回 CC-Switch 配置 →</a></li>
+            </ul>
+          </section>
+        </article>
+
+        <article class="doc-page" data-page="cherry-studio" data-title="Cherry Studio">
+          <header class="page-header"><p class="eyebrow">CHERRY STUDIO</p><h1>Cherry Studio</h1><p class="lead">在 Windows、macOS 或 Linux 上添加 ChatAPI 自定义服务商，进行多模型对话。</p></header>
+
+          <section><h2>下载与安装</h2>
+            <p>Cherry Studio 桌面版支持 Windows、macOS 和 Linux。请按系统架构选择安装包：</p>
+            <div class="data-table"><table><thead><tr><th>系统</th><th>安装选择</th></tr></thead><tbody>
+              <tr><td>Windows</td><td>x64 或 ARM64；可选择安装版或便携版</td></tr>
+              <tr><td>macOS</td><td>Intel 芯片选择 x64，M 系列芯片选择 ARM64</td></tr>
+              <tr><td>Linux</td><td>按设备选择 x86_64 或 ARM64 安装包</td></tr>
+            </tbody></table></div>
+            <p><a href="https://docs.cherry-ai.com/cherry-studio/download" target="_blank" rel="noreferrer">打开 Cherry Studio 官方下载页 ↗</a>，也可以从 <a href="https://github.com/CherryHQ/cherry-studio/releases/latest" target="_blank" rel="noreferrer">GitHub Releases ↗</a> 获取最新正式版。</p>
+          </section>
+
+          <section><h2>准备 ChatAPI 密钥</h2>
+            <ol>
+              <li>在 <a href="#keys">API 密钥</a>页面创建密钥。</li>
+              <li>平台选择 OpenAI，并选择包含聊天模型的可用分组。</li>
+              <li>复制密钥并暂存到密码管理器；配置完成后不要在聊天或截图中暴露密钥。</li>
+            </ol>
+          </section>
+
+          <section><h2>添加自定义服务商</h2>
+            <ol class="steps">
+              <li><span>1</span><div><h3>进入模型服务</h3><p>打开 Cherry Studio“设置”，选择“模型服务”，点击服务商列表下方的“添加”。</p></div></li>
+              <li><span>2</span><div><h3>创建服务商</h3><p>名称填写 <code>ChatAPI</code>，提供商类型选择 <code>OpenAI</code>，然后保存。</p></div></li>
+              <li><span>3</span><div><h3>填写连接参数</h3><p>粘贴自己的 ChatAPI 密钥，并填写主站 API 地址。点击密钥右侧的“检查”可验证连接。</p></div></li>
+              <li><span>4</span><div><h3>添加模型</h3><p>点击“管理”获取模型列表，再点击模型旁的“+”加入当前服务商；也可以手动填写模型 ID。</p></div></li>
+              <li><span>5</span><div><h3>启用并开始对话</h3><p>打开服务商右上角开关，回到聊天页选择 ChatAPI 服务商和模型。</p></div></li>
+            </ol>
+          </section>
+
+          <section><h2>连接参数</h2>
+            <div class="data-table"><table><tbody>
+              <tr><th>服务商名称</th><td><code>ChatAPI</code></td></tr>
+              <tr><th>提供商类型</th><td><code>OpenAI</code></td></tr>
+              <tr><th>API 密钥</th><td>粘贴自己的 ChatAPI 密钥</td></tr>
+              <tr><th>API 地址</th><td><code>https://chatapi.bwliangc.com</code></td></tr>
+              <tr><th>备用地址</th><td><code>https://chatapis.cc</code></td></tr>
+            </tbody></table></div>
+            <aside class="callout info"><strong>API 地址不要附加接口路径</strong><p>这里填写站点根地址，不要添加 <code>/v1</code> 或 <code>/v1/chat/completions</code>。Cherry Studio 会自动拼接聊天接口路径。</p></aside>
+          </section>
+
+          <section><h2>模型列表与排查</h2>
+            <ul>
+              <li>“管理”没有返回模型时，先在 ChatAPI <a href="#features">渠道状态</a>确认分组可用，再手动添加当前分组支持的模型 ID。</li>
+              <li>出现 401 时重新复制密钥，确认没有空格、引号或换行。</li>
+              <li>连接超时时将 API 地址切换为 <code>https://chatapis.cc</code> 后重试。</li>
+              <li>模型已经添加但聊天页不可见时，确认服务商右上角开关已启用。</li>
+            </ul>
+          </section>
+
+          <aside class="callout warning"><strong>密钥保存在本地客户端</strong><p>只从 Cherry Studio 官方渠道下载安装包，并保护设备登录与本地数据。不要在公共设备中长期保存 ChatAPI 密钥。</p></aside>
+
+          <section><h2>相关链接</h2>
+            <ul class="related-links">
+              <li><a href="https://github.com/CherryHQ/cherry-studio" target="_blank" rel="noreferrer">Cherry Studio 官方仓库 ↗</a></li>
+              <li><a href="https://github.com/CherryHQ/cherry-studio/releases/latest" target="_blank" rel="noreferrer">Cherry Studio 最新版本 ↗</a></li>
+              <li><a href="https://docs.cherry-ai.com/pre-basic/providers/zi-ding-yi-fu-wu-shang" target="_blank" rel="noreferrer">自定义服务商官方文档 ↗</a></li>
+              <li><a href="#cherry-studio-app">Cherry Studio App 手机端说明 →</a></li>
+              <li><a href="#keys">创建 ChatAPI 密钥 →</a></li>
+            </ul>
+          </section>
+        </article>
+
+        <article class="doc-page" data-page="cherry-studio-app" data-title="Cherry Studio App">
+          <header class="page-header"><p class="eyebrow">CHERRY STUDIO APP</p><h1>Cherry Studio App</h1><p class="lead">在 Android 或 iOS 设备上使用 Cherry Studio 官方移动版连接 ChatAPI。</p></header>
+
+          <section><h2>下载手机端</h2>
+            <p>Cherry Studio App 是 Cherry Studio 的官方移动版本，面向 Android 和 iOS。普通用户应使用官方 Release 安装包，不需要克隆源码或运行 Expo 开发环境。</p>
+            <div class="data-table"><table><thead><tr><th>平台</th><th>安装方式</th></tr></thead><tbody>
+              <tr><td>Android</td><td>在 <a href="https://github.com/CherryHQ/cherry-studio-app/releases/latest" target="_blank" rel="noreferrer">最新 Release ↗</a> 下载 <code>.apk</code> 安装包</td></tr>
+              <tr><td>iOS</td><td>在最新 Release 下载 <code>.ipa</code>；需要使用符合设备与 Apple 账号策略的签名或侧载方式安装</td></tr>
+            </tbody></table></div>
+            <aside class="callout warning"><strong>iOS 安装说明</strong><p>GitHub 提供的 IPA 不是 App Store 安装链接，通常不能直接点开安装。不要把 Apple 账号密码或签名凭据交给不可信的第三方工具。</p></aside>
+          </section>
+
+          <section><h2>添加 ChatAPI 服务商</h2>
+            <ol class="steps">
+              <li><span>1</span><div><h3>创建密钥</h3><p>先在 <a href="#keys">API 密钥</a>页面创建 OpenAI 平台密钥，并确认分组有可用聊天模型。</p></div></li>
+              <li><span>2</span><div><h3>新增提供商</h3><p>在 App 的“设置”中进入模型服务或服务商列表，点击添加；名称填写 <code>ChatAPI</code>，类型选择 <code>OpenAI</code>。</p></div></li>
+              <li><span>3</span><div><h3>填写 API 服务</h3><p>进入该服务商的“API 服务”，粘贴 ChatAPI 密钥，API 地址填写 <code>https://chatapi.bwliangc.com</code>。</p></div></li>
+              <li><span>4</span><div><h3>管理模型</h3><p>打开“管理模型”获取列表，选择需要的模型加入服务商；获取失败时可手动添加模型 ID。</p></div></li>
+              <li><span>5</span><div><h3>启用并测试</h3><p>启用 ChatAPI 服务商，回到聊天页选择模型并发送一条不含敏感信息的测试消息。</p></div></li>
+            </ol>
+            <p>不同版本的菜单文字可能略有差异，但需要填写的服务商类型、API Key、API 地址和模型 ID 与桌面版一致。</p>
+          </section>
+
+          <section><h2>手机端参数</h2>
+            <div class="data-table"><table><tbody>
+              <tr><th>名称</th><td><code>ChatAPI</code></td></tr>
+              <tr><th>类型</th><td><code>OpenAI</code></td></tr>
+              <tr><th>API Key</th><td>粘贴自己的 ChatAPI 密钥</td></tr>
+              <tr><th>API 地址</th><td><code>https://chatapi.bwliangc.com</code>，连接失败时改为 <code>https://chatapis.cc</code></td></tr>
+              <tr><th>模型</th><td>选择或填写当前密钥分组实际支持的模型 ID</td></tr>
+            </tbody></table></div>
+          </section>
+
+          <section><h2>手机端注意事项</h2>
+            <ul>
+              <li>手机必须能通过当前 Wi-Fi 或蜂窝网络访问所填写的 ChatAPI 域名；不要填写电脑上的 <code>localhost</code>。</li>
+              <li>移动版的服务商能力仍在逐步集成。若当前版本没有添加 OpenAI 服务商或 API 服务入口，请升级到最新 Release。</li>
+              <li>启用系统锁屏、应用锁或设备加密，避免设备遗失后密钥和聊天记录被直接访问。</li>
+              <li>APK、IPA 和更新包只从 CherryHQ 官方仓库下载。</li>
+            </ul>
+          </section>
+
+          <section><h2>相关链接</h2>
+            <ul class="related-links">
+              <li><a href="https://github.com/CherryHQ/cherry-studio-app" target="_blank" rel="noreferrer">Cherry Studio App 官方仓库 ↗</a></li>
+              <li><a href="https://github.com/CherryHQ/cherry-studio-app/releases/latest" target="_blank" rel="noreferrer">手机端最新安装包 ↗</a></li>
+              <li><a href="https://github.com/CherryHQ/cherry-studio-app/blob/main/README-zh.md" target="_blank" rel="noreferrer">Cherry Studio App 中文说明 ↗</a></li>
+              <li><a href="#cherry-studio">Cherry Studio 桌面端说明 →</a></li>
+              <li><a href="#keys">创建 ChatAPI 密钥 →</a></li>
             </ul>
           </section>
         </article>
