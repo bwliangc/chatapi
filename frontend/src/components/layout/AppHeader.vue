@@ -1,6 +1,6 @@
 <template>
   <header class="glass safe-top sticky top-0 z-30 border-b border-gray-200/50 dark:border-dark-700/50">
-    <div class="flex h-14 items-center justify-between px-3 sm:h-16 sm:px-4 md:px-6">
+    <div class="flex h-14 items-center justify-between gap-2 px-2 sm:h-16 sm:px-4 md:px-6">
       <!-- Left: Mobile Menu Toggle + Page Title -->
       <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
         <button
@@ -30,7 +30,7 @@
       </div>
 
       <!-- Right: Announcements + Docs + Language + Subscriptions + Balance + User Dropdown -->
-      <div class="flex flex-shrink-0 items-center gap-1 sm:gap-3">
+      <div class="flex min-w-0 flex-shrink-0 items-center gap-1 sm:gap-3">
         <!-- Announcement Bell -->
         <AnnouncementBell v-if="user" />
 
