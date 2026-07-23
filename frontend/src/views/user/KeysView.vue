@@ -1038,7 +1038,7 @@
       <form id="ccs-import-form" class="space-y-5" @submit.prevent="handleCcsImportSubmit">
         <div>
           <label class="input-label">{{ t('keys.ccsImport.platform') }}</label>
-          <div class="grid grid-cols-3 overflow-hidden rounded-lg border border-gray-200 dark:border-dark-600">
+          <div class="grid grid-cols-2 overflow-hidden rounded-lg border border-gray-200 dark:border-dark-600 sm:grid-cols-4">
             <button
               v-for="option in ccsAppOptions"
               :key="option.value"
@@ -1514,14 +1514,20 @@ const ccsAppOptions = computed<Array<{
 }>>(() => [
   { value: 'claude', label: t('keys.ccsImport.claudeCode'), icon: 'terminal' },
   { value: 'codex', label: t('keys.ccsImport.codex'), icon: 'cpu' },
-  { value: 'gemini', label: t('keys.ccsImport.geminiCli'), icon: 'sparkles' }
+  { value: 'gemini', label: t('keys.ccsImport.geminiCli'), icon: 'sparkles' },
+  { value: 'grokbuild', label: t('keys.ccsImport.grokBuild'), icon: 'cpu' }
 ])
 
 const toCcsModelOptions = (models: string[]) =>
   models.map((model) => ({ value: model, label: model }))
 
 const ccsPrimaryModelOptions = computed(() => {
-  const platform = ccsImportForm.app === 'codex' ? 'openai' : ccsImportForm.app
+  const platform =
+    ccsImportForm.app === 'codex'
+      ? 'openai'
+      : ccsImportForm.app === 'grokbuild'
+        ? 'grok'
+        : ccsImportForm.app
   const models = getModelsByPlatform(platform).filter((model) => {
     if (ccsImportForm.app === 'codex') {
       return !/(audio|image|realtime)/i.test(model)
@@ -2074,7 +2080,14 @@ const importToCcswitch = (row: ApiKey) => {
   const platform = row.group?.platform || 'anthropic'
 
   pendingCcsRow.value = row
-  ccsImportForm.app = platform === 'openai' ? 'codex' : platform === 'gemini' ? 'gemini' : 'claude'
+  ccsImportForm.app =
+    platform === 'openai'
+      ? 'codex'
+      : platform === 'gemini'
+        ? 'gemini'
+        : platform === 'grok'
+          ? 'grokbuild'
+          : 'claude'
   ccsImportForm.model = CC_SWITCH_DEFAULT_MODELS[ccsImportForm.app]
   ccsImportForm.haikuModel = ''
   ccsImportForm.sonnetModel = ''

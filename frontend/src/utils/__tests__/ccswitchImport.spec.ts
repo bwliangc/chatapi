@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   CC_SWITCH_DEFAULT_MODELS,
+  GROK_CC_SWITCH_MODEL,
+  OPENAI_CC_SWITCH_CODEX_MODEL,
   buildCcSwitchImportDeeplink
 } from '@/utils/ccswitchImport'
 
@@ -10,6 +12,13 @@ function paramsFromDeeplink(deeplink: string): URLSearchParams {
 }
 
 describe('ccswitchImport utils', () => {
+  it('defaults OpenAI CC Switch imports to the current Codex model', () => {
+    expect(OPENAI_CC_SWITCH_CODEX_MODEL).toBe('gpt-5.5')
+  })
+
+  it('defaults Grok Build imports to the current Grok model', () => {
+    expect(GROK_CC_SWITCH_MODEL).toBe('grok-4.5')
+  })
   const baseInput = {
     baseUrl: 'https://api.example.com',
     providerName: 'Sub2API',
@@ -24,7 +33,8 @@ describe('ccswitchImport utils', () => {
   it.each([
     { app: 'claude' as const, model: 'claude-sonnet-4-6' },
     { app: 'codex' as const, model: 'gpt-5.5' },
-    { app: 'gemini' as const, model: 'gemini-3.1-pro-preview' }
+    { app: 'gemini' as const, model: 'gemini-3.1-pro-preview' },
+    { app: 'grokbuild' as const, model: GROK_CC_SWITCH_MODEL }
   ])('uses the selected $app app and primary model', ({ app, model }) => {
     const params = paramsFromDeeplink(
       buildCcSwitchImportDeeplink({
@@ -40,6 +50,27 @@ describe('ccswitchImport utils', () => {
     expect(params.get('endpoint')).toBe(baseInput.baseUrl)
     expect(params.get('model')).toBe(model)
     expect(atob(params.get('usageScript') || '')).toBe(baseInput.usageScript)
+  })
+
+  it.each([
+    'https://api.example.com',
+    'https://api.example.com/',
+    'https://api.example.com/v1',
+    'https://api.example.com/v1/'
+  ])('imports Grok Build with one /v1 suffix for base URL %s', (baseUrl) => {
+    const params = paramsFromDeeplink(
+      buildCcSwitchImportDeeplink({
+        ...baseInput,
+        baseUrl,
+        platform: 'grok',
+        app: 'grokbuild',
+        model: GROK_CC_SWITCH_MODEL
+      })
+    )
+
+    expect(params.get('app')).toBe('grokbuild')
+    expect(params.get('endpoint')).toBe('https://api.example.com/v1')
+    expect(params.get('model')).toBe(GROK_CC_SWITCH_MODEL)
   })
 
   it('adds Claude model aliases and trims model values', () => {

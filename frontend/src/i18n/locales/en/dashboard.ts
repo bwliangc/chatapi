@@ -208,6 +208,7 @@ export default {
       claudeCode: 'Claude Code',
       codex: 'Codex',
       geminiCli: 'Gemini CLI',
+      grokBuild: 'Grok Build',
       primaryModel: 'Primary Model',
       haikuModel: 'Haiku Model',
       sonnetModel: 'Sonnet Model',

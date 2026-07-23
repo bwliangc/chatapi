@@ -1,11 +1,15 @@
 import type { GroupPlatform } from '@/types'
 
-export type CcSwitchAppType = 'claude' | 'codex' | 'gemini'
+export const OPENAI_CC_SWITCH_CODEX_MODEL = 'gpt-5.5'
+export const GROK_CC_SWITCH_MODEL = 'grok-4.5'
+
+export type CcSwitchAppType = 'claude' | 'codex' | 'gemini' | 'grokbuild'
 
 export const CC_SWITCH_DEFAULT_MODELS: Record<CcSwitchAppType, string> = {
   claude: '',
-  codex: 'gpt-5.5',
-  gemini: ''
+  codex: OPENAI_CC_SWITCH_CODEX_MODEL,
+  gemini: '',
+  grokbuild: GROK_CC_SWITCH_MODEL
 }
 
 export interface CcSwitchImportConfig {
@@ -26,6 +30,11 @@ export interface CcSwitchImportDeeplinkInput {
   usageScript: string
 }
 
+function withV1Endpoint(baseUrl: string): string {
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '')
+  return normalizedBaseUrl.endsWith('/v1') ? normalizedBaseUrl : `${normalizedBaseUrl}/v1`
+}
+
 export function resolveCcSwitchImportConfig(
   platform: GroupPlatform | undefined | null,
   app: CcSwitchAppType,
@@ -33,7 +42,12 @@ export function resolveCcSwitchImportConfig(
 ): CcSwitchImportConfig {
   return {
     app,
-    endpoint: platform === 'antigravity' ? `${baseUrl}/antigravity` : baseUrl
+    endpoint:
+      platform === 'antigravity'
+        ? `${baseUrl}/antigravity`
+        : platform === 'grok'
+          ? withV1Endpoint(baseUrl)
+          : baseUrl
   }
 }
 
