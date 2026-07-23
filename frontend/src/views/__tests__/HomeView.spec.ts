@@ -1,21 +1,12 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import HomeView from '../HomeView.vue'
 
-const { checkAuth, fetchPublicSettings } = vi.hoisted(() => ({
+const { checkAuth, fetchPublicSettings, appStore } = vi.hoisted(() => ({
   checkAuth: vi.fn(),
   fetchPublicSettings: vi.fn(),
-}))
-
-vi.mock('@/stores', () => ({
-  useAuthStore: () => ({
-    isAuthenticated: false,
-    isAdmin: false,
-    user: null,
-    checkAuth,
-  }),
-  useAppStore: () => ({
+  appStore: {
     publicSettingsLoaded: true,
     cachedPublicSettings: {
       site_name: 'Test Site',
@@ -27,8 +18,18 @@ vi.mock('@/stores', () => ({
     siteName: 'Test Site',
     siteLogo: '',
     docUrl: '',
-    fetchPublicSettings,
+    fetchPublicSettings: vi.fn(),
+  },
+}))
+
+vi.mock('@/stores', () => ({
+  useAuthStore: () => ({
+    isAuthenticated: false,
+    isAdmin: false,
+    user: null,
+    checkAuth,
   }),
+  useAppStore: () => ({ ...appStore, fetchPublicSettings }),
 }))
 
 vi.mock('vue-i18n', async () => {
@@ -40,6 +41,29 @@ vi.mock('vue-i18n', async () => {
 })
 
 describe('HomeView transparent pricing', () => {
+  beforeEach(() => {
+    appStore.cachedPublicSettings.doc_url = ''
+  })
+
+  it('shows the configured documentation link below the primary action', () => {
+    appStore.cachedPublicSettings.doc_url = 'https://docs.example.com/guide'
+
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: { template: '<a><slot /></a>' },
+          LocaleSwitcher: true,
+          Icon: true,
+        },
+      },
+    })
+
+    const docLink = wrapper.get('[data-home-doc-link]')
+    expect(docLink.attributes('href')).toBe('https://docs.example.com/guide')
+    expect(docLink.attributes('target')).toBe('_blank')
+    expect(docLink.attributes('rel')).toBe('noopener noreferrer')
+  })
+
   it('shows one set of base prices for all context lengths', () => {
     const wrapper = mount(HomeView, {
       global: {

@@ -131,7 +131,7 @@
               </span>
             </h1>
 
-            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div class="mt-8 flex flex-col items-start gap-3">
               <router-link
                 :to="isAuthenticated ? dashboardPath : '/login'"
                 class="group inline-flex items-center justify-center rounded-2xl bg-slate-950 px-6 py-3.5 text-sm font-black text-white shadow-2xl shadow-slate-950/20 transition-all hover:-translate-y-1 hover:shadow-slate-950/30 dark:bg-white dark:text-slate-950"
@@ -139,6 +139,18 @@
                 {{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}
                 <Icon name="arrowRight" size="sm" class="ml-2 transition-transform group-hover:translate-x-1" :stroke-width="2.3" />
               </router-link>
+
+              <a
+                v-if="docUrl"
+                data-home-doc-link
+                :href="docUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 px-1 text-sm font-bold text-slate-600 transition-colors hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
+              >
+                <Icon name="book" size="sm" />
+                {{ t('home.viewDocs') }}
+              </a>
             </div>
 
           </div>
