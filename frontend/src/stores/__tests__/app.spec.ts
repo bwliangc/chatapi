@@ -57,6 +57,8 @@ function createPublicSettings(overrides: Partial<PublicSettings> = {}): PublicSe
     online_playground_enabled: false,
     leaderboard_ranking_visible_enabled: false,
     subscription_management_enabled: true,
+    model_plaza_enabled: false,
+    model_plaza_require_auth: false,
     service_quota_enabled: false,
     affiliate_enabled: false,
     ...overrides,
