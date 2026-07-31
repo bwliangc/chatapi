@@ -180,6 +180,7 @@ export default {
         passkeyRPID: 'RP ID',
         passkeyOrigins: 'Allowed HTTPS origins',
         passkeyValueNotConfigured: 'Not configured',
+        passkeyDeploymentHint: 'Ask the server operator to set webauthn.enabled to true, configure webauthn.rp_id (domain only) and webauthn.rp_origins (full HTTPS origins), then restart the service.',
         stepUp: 'Step-up 2FA for Sensitive Operations',
         stepUpHint: 'When enabled, sensitive operations (account/proxy export, backup creation and download, S3 config changes, promoting admins) require a recent TOTP verification (valid for 15 minutes). Your own account must have 2FA enabled before turning this on; turning it off also requires step-up verification.',
         stepUpEnableRequiresTotp: 'Enable 2FA (TOTP) for your own account in Profile before turning on step-up verification.',
@@ -584,6 +585,8 @@ export default {
         homeContentPlaceholder: 'Leave empty to use the built-in new home page. Enter a full URL to override the home page with an iframe, or trusted HTML to render a custom page.',
         homeContentHint: 'Best for temporary campaigns, announcements, or external landing pages. When set, it overrides the default home page; leave it empty to use the built-in pricing and leaderboard home page.',
         homeContentIframeWarning: '⚠️ Custom home note: iframe mode depends on the target site allowing embedding via X-Frame-Options/CSP; HTML mode renders directly, so only paste trusted content.',
+        compactHome: 'Compact Home Page',
+        compactHomeHint: 'Show a restrained site identity page when no custom home page content is set.',
         hideCcsImportButton: 'Hide CCS Import Button',
         hideCcsImportButtonHint: 'When enabled, the "Import to CCS" button will be hidden on the API Keys page'
       },

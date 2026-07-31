@@ -77,8 +77,8 @@ describe('HomeView transparent pricing', () => {
 
     const rows = [
       { model: 'gpt-5.6-sol', prices: ['$5', '$0.5', '$6.25', '$30'] },
-      { model: 'gpt-5.6-terra', prices: ['$2.5', '$0.25', '$3.125', '$15'] },
-      { model: 'gpt-5.6-luna', prices: ['$1', '$0.1', '$1.25', '$6'] },
+      { model: 'gpt-5.6-terra', prices: ['$2', '$0.2', '$2.5', '$12'] },
+      { model: 'gpt-5.6-luna', prices: ['$0.2', '$0.02', '$0.25', '$1.2'] },
       { model: 'gpt-5.5', prices: ['$5', '$0.5', '-', '$30'] },
       { model: 'gpt-5.4', prices: ['$2.5', '$0.25', '-', '$15'] },
     ]
@@ -103,9 +103,9 @@ describe('HomeView transparent pricing', () => {
     const desktop = wrapper.get('[data-pricing-layout="desktop"]')
     expect(
       desktop.get('[data-model="gpt-5.6-terra"] [data-price-kind="cacheWrite"] [data-price-currency="cny"]').text(),
-    ).toBe('¥0.46875')
+    ).toBe('¥0.375')
     expect(
       desktop.get('[data-model="gpt-5.6-luna"] [data-price-kind="cacheRead"] [data-price-currency="cny"]').text(),
-    ).toBe('¥0.015')
+    ).toBe('¥0.003')
   })
 })
