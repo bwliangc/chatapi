@@ -385,6 +385,8 @@ func registerAccountRoutes(admin *gin.RouterGroup, h *handler.Handlers, stepUpAu
 		accounts.POST("/:id/test", h.Admin.Account.Test)
 		accounts.GET("/:id/abnormal-notification", h.Admin.Account.GetAbnormalNotification)
 		accounts.PUT("/:id/abnormal-notification", h.Admin.Account.UpdateAbnormalNotification)
+		accounts.GET("/:id/auto-reset", h.Admin.Account.GetAutoReset)
+		accounts.PUT("/:id/auto-reset", h.Admin.Account.UpdateAutoReset)
 		accounts.POST("/:id/recover-state", h.Admin.Account.RecoverState)
 		accounts.POST("/:id/refresh", h.Admin.Account.Refresh)
 		accounts.POST("/:id/apply-oauth-credentials", h.Admin.Account.ApplyOAuthCredentials)

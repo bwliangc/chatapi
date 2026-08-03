@@ -392,6 +392,17 @@ func TestAccountAbnormalNoticeDefaultsToChineseTemplate(t *testing.T) {
 	require.Contains(t, englishTemplate.Subject, "Account abnormal notice")
 }
 
+func TestAccountAutoResetDefaultsToChineseTemplate(t *testing.T) {
+	ctx := context.Background()
+	svc := NewNotificationEmailService(newNotificationEmailMemorySettingRepo(), nil)
+
+	template, err := svc.GetTemplate(ctx, NotificationEmailEventAccountAutoReset, "")
+	require.NoError(t, err)
+	require.Equal(t, "zh", template.Locale)
+	require.Contains(t, template.Subject, "账号已自动重置")
+	require.Contains(t, template.HTML, "{{remaining_credits}}")
+}
+
 func TestNotificationEmailDeliveryKeyUsesShortStableHash(t *testing.T) {
 	key := notificationEmailDeliveryKey(
 		NotificationEmailEventSubscriptionExpiryReminder,

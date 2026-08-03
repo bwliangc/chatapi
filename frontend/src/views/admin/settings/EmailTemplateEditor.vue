@@ -392,6 +392,11 @@ const eventDisplayMeta: Record<string, EventDisplayMeta> = {
     timing: "管理员在账号管理中确认发送后，发送至该上游账号保存的邮箱。",
     categoryLabel: "管理告警",
   },
+  "account.auto_reset": {
+    label: "账号自动重置",
+    timing: "OpenAI 账号按周限额阈值或次数即将过期策略自动使用重置次数后发送。",
+    categoryLabel: "管理告警",
+  },
   "content_moderation.violation_notice": {
     label: "内容审计违规提醒",
     timing: "用户请求命中内容审计或风控规则、但尚未被禁用时发送。",
@@ -463,6 +468,11 @@ const eventDisplayMetaEn: Record<string, EventDisplayMeta> = {
   "account.abnormal_notice": {
     label: "Account Abnormal Notice",
     timing: "Sent manually from Account Management to the email saved on the upstream account.",
+    categoryLabel: "Admin",
+  },
+  "account.auto_reset": {
+    label: "Account Automatic Reset",
+    timing: "Sent after an OpenAI account automatically consumes a reset credit based on its weekly threshold or credit expiry policy.",
     categoryLabel: "Admin",
   },
   "content_moderation.violation_notice": {

@@ -30,6 +30,7 @@ const (
 	NotificationEmailEventLeaderboardReward           = "leaderboard.reward_granted"
 	NotificationEmailEventAccountQuotaAlert           = "account.quota_alert"
 	NotificationEmailEventAccountAbnormalNotice       = "account.abnormal_notice"
+	NotificationEmailEventAccountAutoReset            = "account.auto_reset"
 	NotificationEmailEventContentModerationViolation  = "content_moderation.violation_notice"
 	NotificationEmailEventContentModerationDisabled   = "content_moderation.account_disabled"
 	NotificationEmailEventCyberPolicyNotice           = "content_moderation.cyber_policy_notice"
@@ -1038,6 +1039,7 @@ var notificationEmailEventOrder = []string{
 	NotificationEmailEventLeaderboardReward,
 	NotificationEmailEventAccountQuotaAlert,
 	NotificationEmailEventAccountAbnormalNotice,
+	NotificationEmailEventAccountAutoReset,
 	NotificationEmailEventContentModerationViolation,
 	NotificationEmailEventContentModerationDisabled,
 	NotificationEmailEventCyberPolicyNotice,
@@ -1127,6 +1129,15 @@ var notificationEmailEventDefinitions = map[string]NotificationEmailEventInfo{
 		Optional:    false,
 		Placeholders: append(append([]string{}, notificationEmailCommonPlaceholders...),
 			"account_id", "account_name", "platform", "account_status", "error_message"),
+	},
+	NotificationEmailEventAccountAutoReset: {
+		Event:       NotificationEmailEventAccountAutoReset,
+		Label:       "Account automatic reset",
+		Description: "Sent after an OpenAI account automatically consumes a reset credit.",
+		Category:    "admin",
+		Optional:    false,
+		Placeholders: append(append([]string{}, notificationEmailCommonPlaceholders...),
+			"account_id", "account_name", "strategy", "trigger_value", "windows_reset", "remaining_credits", "reset_time"),
 	},
 	NotificationEmailEventContentModerationViolation: {
 		Event:       NotificationEmailEventContentModerationViolation,
@@ -1392,6 +1403,36 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
   <tr><td>异常详情</td><td>{{error_message}}</td></tr>
 </table>
 <p>请检查并恢复账号后再继续使用。</p>`),
+		},
+	},
+	NotificationEmailEventAccountAutoReset: {
+		notificationEmailLocaleEnglish: {
+			Subject: "[{{site_name}}] Account reset automatically - {{account_name}}",
+			HTML: notificationEmailCard("#ea580c", "Account reset automatically", `
+<p>An OpenAI reset credit was consumed automatically.</p>
+<table style="width:100%;border-collapse:collapse;">
+  <tr><td>Account ID</td><td>{{account_id}}</td></tr>
+  <tr><td>Account name</td><td>{{account_name}}</td></tr>
+  <tr><td>Strategy</td><td>{{strategy}}</td></tr>
+  <tr><td>Trigger</td><td>{{trigger_value}}</td></tr>
+  <tr><td>Windows reset</td><td>{{windows_reset}}</td></tr>
+  <tr><td>Remaining reset credits</td><td>{{remaining_credits}}</td></tr>
+  <tr><td>Reset time</td><td>{{reset_time}}</td></tr>
+</table>`),
+		},
+		notificationEmailLocaleChinese: {
+			Subject: "[{{site_name}}] 账号已自动重置 - {{account_name}}",
+			HTML: notificationEmailCard("#ea580c", "账号已自动重置", `
+<p>系统已自动使用一次 OpenAI 重置次数。</p>
+<table style="width:100%;border-collapse:collapse;">
+  <tr><td>账号 ID</td><td>{{account_id}}</td></tr>
+  <tr><td>账号名称</td><td>{{account_name}}</td></tr>
+  <tr><td>触发策略</td><td>{{strategy}}</td></tr>
+  <tr><td>触发值</td><td>{{trigger_value}}</td></tr>
+  <tr><td>已重置窗口数</td><td>{{windows_reset}}</td></tr>
+  <tr><td>剩余重置次数</td><td>{{remaining_credits}}</td></tr>
+  <tr><td>重置时间</td><td>{{reset_time}}</td></tr>
+</table>`),
 		},
 	},
 	NotificationEmailEventContentModerationViolation: {

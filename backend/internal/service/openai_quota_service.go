@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"log/slog"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/google/uuid"
 	"github.com/imroc/req/v3"
 )
 
@@ -120,6 +122,8 @@ type OpenAIQuotaService struct {
 	privacyClientFactory PrivacyClientFactory
 	agentIdentityTaskMu  sync.Mutex
 	agentIdentityWS      agentIdentityWSConnectionInvalidator
+	resetLockCache       LeaderLockCache
+	resetLockDB          *sql.DB
 }
 
 // NewOpenAIQuotaService constructs a quota service. token provider is required —
@@ -137,6 +141,14 @@ func NewOpenAIQuotaService(
 		tokenProvider:        tokenProvider,
 		privacyClientFactory: privacyClientFactory,
 	}
+}
+
+func (s *OpenAIQuotaService) SetResetLock(lockCache LeaderLockCache, db *sql.DB) {
+	if s == nil {
+		return
+	}
+	s.resetLockCache = lockCache
+	s.resetLockDB = db
 }
 
 // QueryUsage fetches the latest rate-limit/usage snapshot for the given OpenAI
@@ -291,6 +303,18 @@ func (s *OpenAIQuotaService) ResetCredit(ctx context.Context, accountID int64) (
 			return nil, ErrSparkShadowResetNotSupported
 		}
 	}
+	release, acquired := tryAcquireSingletonLeaderLock(
+		ctx,
+		s.resetLockCache,
+		s.resetLockDB,
+		fmt.Sprintf("openai:quota-reset:account:%d", accountID),
+		uuid.NewString(),
+		2*time.Minute,
+	)
+	if !acquired {
+		return nil, infraerrors.New(http.StatusConflict, "OPENAI_QUOTA_RESET_IN_PROGRESS", "another reset is already in progress for this account")
+	}
+	defer release()
 
 	accessToken, chatGPTAccountID, proxyURL, fedRAMP, err := s.prepareUpstreamCall(ctx, accountID)
 	if err != nil {

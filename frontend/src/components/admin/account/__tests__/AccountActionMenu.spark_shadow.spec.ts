@@ -150,6 +150,35 @@ describe('AccountActionMenu — spark shadow 按钮可见性', () => {
     const body = getBodyText()
     expect(body).toContain('admin.accounts.reAuthorize')
     expect(body).toContain('admin.accounts.setPrivacy')
+    expect(body).toContain('admin.accounts.autoReset')
+    wrapper.unmount()
+  })
+
+  it('影子账号和非 OpenAI 账号隐藏自动重置入口', () => {
+    for (const account of [
+      makeAccount({ platform: 'openai', type: 'oauth', parent_account_id: 42 }),
+      makeAccount({ platform: 'anthropic', type: 'oauth', parent_account_id: null }),
+    ]) {
+      const wrapper = mount(AccountActionMenu, {
+        props: { show: true, account, position },
+        attachTo: document.body,
+      })
+      expect(getBodyText()).not.toContain('admin.accounts.autoReset')
+      wrapper.unmount()
+    }
+  })
+
+  it('点击自动重置入口触发 configure-auto-reset 事件', async () => {
+    const account = makeAccount({ platform: 'openai', type: 'oauth', parent_account_id: null })
+    const wrapper = mount(AccountActionMenu, {
+      props: { show: true, account, position },
+      attachTo: document.body,
+    })
+    const button = getBodyButtons().find(b => b.textContent?.includes('admin.accounts.autoReset'))
+    expect(button).toBeDefined()
+    button!.click()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted('configure-auto-reset')?.[0]?.[0]).toMatchObject({ id: account.id })
     wrapper.unmount()
   })
 

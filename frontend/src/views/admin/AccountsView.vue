@@ -452,8 +452,9 @@
     <AccountTestModal :show="showTest" :account="testingAcc" @close="closeTestModal" />
     <AccountStatsModal :show="showStats" :account="statsAcc" @close="closeStatsModal" />
     <ScheduledTestsPanel :show="showSchedulePanel" :account-id="scheduleAcc?.id ?? null" :model-options="scheduleModelOptions" @close="closeSchedulePanel" />
-    <AccountActionMenu :show="menu.show" :account="menu.acc" :position="menu.pos" @close="menu.show = false" @test="handleTest" @stats="handleViewStats" @schedule="handleSchedule" @duplicate="handleDuplicateAccount" @reauth="handleReAuth" @refresh-token="handleRefresh" @recover-state="handleRecoverState" @reset-quota="handleResetQuota" @set-privacy="handleSetPrivacy" @create-spark-shadow="handleCreateSparkShadow" @configure-abnormal-notification="handleConfigureAbnormalNotification" />
+    <AccountActionMenu :show="menu.show" :account="menu.acc" :position="menu.pos" @close="menu.show = false" @test="handleTest" @stats="handleViewStats" @schedule="handleSchedule" @duplicate="handleDuplicateAccount" @reauth="handleReAuth" @refresh-token="handleRefresh" @recover-state="handleRecoverState" @reset-quota="handleResetQuota" @set-privacy="handleSetPrivacy" @create-spark-shadow="handleCreateSparkShadow" @configure-abnormal-notification="handleConfigureAbnormalNotification" @configure-auto-reset="handleConfigureAutoReset" />
     <AccountAbnormalNotificationModal :show="showAbnormalNotificationSettings" :account="abnormalNotificationAcc" @close="closeAbnormalNotificationSettings" />
+    <AccountAutoResetModal :show="showAutoResetSettings" :account="autoResetAcc" @close="closeAutoResetSettings" />
     <SyncFromCrsModal :show="showSync" @close="showSync = false" @synced="reload" />
     <ImportDataModal :show="showImportData" @close="showImportData = false" @imported="handleDataImported" />
     <BulkEditAccountModal
@@ -506,6 +507,7 @@ import AccountTableFilters from '@/components/admin/account/AccountTableFilters.
 import AccountBulkActionsBar from '@/components/admin/account/AccountBulkActionsBar.vue'
 import AccountActionMenu from '@/components/admin/account/AccountActionMenu.vue'
 import AccountAbnormalNotificationModal from '@/components/admin/account/AccountAbnormalNotificationModal.vue'
+import AccountAutoResetModal from '@/components/admin/account/AccountAutoResetModal.vue'
 import ImportDataModal from '@/components/admin/account/ImportDataModal.vue'
 import ReAuthAccountModal from '@/components/admin/account/ReAuthAccountModal.vue'
 import AccountTestModal from '@/components/admin/account/AccountTestModal.vue'
@@ -591,6 +593,7 @@ const showTempUnsched = ref(false)
 const showDeleteDialog = ref(false)
 const showCreateShadowDialog = ref(false)
 const showAbnormalNotificationSettings = ref(false)
+const showAutoResetSettings = ref(false)
 const showReAuth = ref(false)
 const showTest = ref(false)
 const showStats = ref(false)
@@ -601,6 +604,7 @@ const tempUnschedAcc = ref<Account | null>(null)
 const deletingAcc = ref<Account | null>(null)
 const creatingShadowAcc = ref<Account | null>(null)
 const abnormalNotificationAcc = ref<Account | null>(null)
+const autoResetAcc = ref<Account | null>(null)
 const reAuthAcc = ref<Account | null>(null)
 const testingAcc = ref<Account | null>(null)
 const statsAcc = ref<Account | null>(null)
@@ -1106,6 +1110,7 @@ const isAnyModalOpen = computed(() => {
     showTempUnsched.value ||
     showDeleteDialog.value ||
     showAbnormalNotificationSettings.value ||
+    showAutoResetSettings.value ||
     showReAuth.value ||
     showTest.value ||
     showStats.value ||
@@ -2050,6 +2055,14 @@ const closeAbnormalNotificationSettings = () => {
 const handleConfigureAbnormalNotification = (a: Account) => {
   abnormalNotificationAcc.value = a
   showAbnormalNotificationSettings.value = true
+}
+const closeAutoResetSettings = () => {
+  showAutoResetSettings.value = false
+  autoResetAcc.value = null
+}
+const handleConfigureAutoReset = (a: Account) => {
+  autoResetAcc.value = a
+  showAutoResetSettings.value = true
 }
 const handleResetQuota = async (a: Account) => {
   try {
