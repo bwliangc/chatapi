@@ -65,27 +65,27 @@
       </div>
 
       <div v-else>
-        <label for="auto-reset-expiry-hours" class="input-label">
-          {{ t('admin.accounts.autoResetExpiryHours') }}
+        <label for="auto-reset-expiry-minutes" class="input-label">
+          {{ t('admin.accounts.autoResetExpiryMinutes') }}
         </label>
         <div class="relative">
           <input
-            id="auto-reset-expiry-hours"
-            v-model.number="expiryHours"
+            id="auto-reset-expiry-minutes"
+            v-model.number="expiryMinutes"
             type="number"
             min="1"
-            max="720"
+            max="43200"
             step="1"
             class="input pr-16"
             :disabled="loading || saving || !enabled"
             required
           />
           <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-gray-500">
-            {{ t('admin.accounts.hours') }}
+            {{ t('admin.accounts.minutes') }}
           </span>
         </div>
         <p class="mt-1.5 text-xs text-gray-500 dark:text-dark-400">
-          {{ t('admin.accounts.autoResetExpiryHoursHint') }}
+          {{ t('admin.accounts.autoResetExpiryMinutesHint') }}
         </p>
       </div>
 
@@ -148,7 +148,7 @@ const inactiveStrategyClass = 'text-gray-600 hover:text-gray-900 dark:text-gray-
 const enabled = ref(false)
 const strategy = ref<AccountAutoResetStrategy>('weekly_threshold')
 const weeklyThreshold = ref(90)
-const expiryHours = ref(24)
+const expiryMinutes = ref(1440)
 const email = ref('')
 const loading = ref(false)
 const saving = ref(false)
@@ -168,7 +168,7 @@ watch(
       enabled.value = settings.enabled
       strategy.value = settings.strategy
       weeklyThreshold.value = settings.weekly_threshold
-      expiryHours.value = settings.expiry_hours
+      expiryMinutes.value = settings.expiry_minutes
       email.value = settings.email
     } catch (error: any) {
       if (sequence !== loadSequence) return
@@ -193,7 +193,7 @@ const save = async () => {
       enabled: enabled.value,
       strategy: strategy.value,
       weekly_threshold: weeklyThreshold.value,
-      expiry_hours: expiryHours.value,
+      expiry_minutes: expiryMinutes.value,
       email: email.value,
     })
     appStore.showSuccess(t('admin.accounts.autoResetSaved'))

@@ -269,7 +269,7 @@ export interface AccountAutoResetSettings {
   enabled: boolean
   strategy: AccountAutoResetStrategy
   weekly_threshold: number
-  expiry_hours: number
+  expiry_minutes: number
   email: string
   last_reset_at?: string
   last_strategy?: AccountAutoResetStrategy
@@ -283,7 +283,7 @@ export async function getAutoReset(id: number): Promise<AccountAutoResetSettings
 
 export async function updateAutoReset(
   id: number,
-  settings: Pick<AccountAutoResetSettings, 'enabled' | 'strategy' | 'weekly_threshold' | 'expiry_hours' | 'email'>
+  settings: Pick<AccountAutoResetSettings, 'enabled' | 'strategy' | 'weekly_threshold' | 'expiry_minutes' | 'email'>
 ): Promise<AccountAutoResetSettings> {
   const { data } = await apiClient.put<AccountAutoResetSettings>(`/admin/accounts/${id}/auto-reset`, settings)
   return data

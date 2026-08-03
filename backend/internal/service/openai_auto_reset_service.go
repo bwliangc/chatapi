@@ -285,7 +285,7 @@ func openAIAutoResetShouldTrigger(account *Account, settings AccountAutoResetSet
 		if !ok {
 			return false, "", updates
 		}
-		triggerAt := expiresAt.Add(-time.Duration(settings.ExpiryHours) * time.Hour)
+		triggerAt := expiresAt.Add(-time.Duration(settings.ExpiryMinutes) * time.Minute)
 		return !now.Before(triggerAt), expiresAt.Format(time.RFC3339), updates
 	default:
 		return false, "", updates
@@ -332,7 +332,7 @@ func earliestOpenAIResetCreditExpiry(usage *OpenAIQuotaUsage, now time.Time) (ti
 func openAIAutoResetNextCheck(settings AccountAutoResetSettings, usage *OpenAIQuotaUsage, now time.Time) time.Time {
 	if settings.Strategy == AccountAutoResetStrategyCreditExpiry {
 		if expiresAt, ok := earliestOpenAIResetCreditExpiry(usage, now); ok {
-			triggerAt := expiresAt.Add(-time.Duration(settings.ExpiryHours) * time.Hour)
+			triggerAt := expiresAt.Add(-time.Duration(settings.ExpiryMinutes) * time.Minute)
 			if triggerAt.After(now.Add(time.Minute)) && triggerAt.Before(now.Add(openAIAutoResetExpiryPoll)) {
 				return triggerAt
 			}

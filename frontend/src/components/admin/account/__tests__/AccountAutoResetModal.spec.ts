@@ -33,7 +33,7 @@ describe('AccountAutoResetModal', () => {
       enabled: true,
       strategy: 'credit_expiry',
       weekly_threshold: 90,
-      expiry_hours: 24,
+      expiry_minutes: 1440,
       email: 'alerts@example.com',
     })
     api.updateAutoReset.mockResolvedValue({})
@@ -46,10 +46,10 @@ describe('AccountAutoResetModal', () => {
     })
     await flushPromises()
 
-    const expiryInput = document.body.querySelector<HTMLInputElement>('#auto-reset-expiry-hours')
-    expect(expiryInput?.value).toBe('24')
+    const expiryInput = document.body.querySelector<HTMLInputElement>('#auto-reset-expiry-minutes')
+    expect(expiryInput?.value).toBe('1440')
     expect(expiryInput).not.toBeNull()
-    expiryInput!.value = '12'
+    expiryInput!.value = '30'
     expiryInput!.dispatchEvent(new Event('input', { bubbles: true }))
     document.body.querySelector<HTMLFormElement>('#account-auto-reset-form')!
       .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
@@ -59,7 +59,7 @@ describe('AccountAutoResetModal', () => {
       enabled: true,
       strategy: 'credit_expiry',
       weekly_threshold: 90,
-      expiry_hours: 12,
+      expiry_minutes: 30,
       email: 'alerts@example.com',
     })
     expect(notifications.showSuccess).toHaveBeenCalled()

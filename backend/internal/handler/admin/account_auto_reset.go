@@ -13,7 +13,8 @@ type updateAccountAutoResetRequest struct {
 	Enabled         bool    `json:"enabled"`
 	Strategy        string  `json:"strategy"`
 	WeeklyThreshold float64 `json:"weekly_threshold"`
-	ExpiryHours     int     `json:"expiry_hours"`
+	ExpiryMinutes   int     `json:"expiry_minutes"`
+	ExpiryHours     *int    `json:"expiry_hours,omitempty"`
 	Email           string  `json:"email"`
 }
 
@@ -39,11 +40,15 @@ func (h *AccountHandler) UpdateAutoReset(c *gin.Context) {
 		response.BadRequest(c, "invalid request body")
 		return
 	}
+	expiryMinutes := req.ExpiryMinutes
+	if expiryMinutes == 0 && req.ExpiryHours != nil {
+		expiryMinutes = *req.ExpiryHours * 60
+	}
 	settings := service.AccountAutoResetSettings{
 		Enabled:         req.Enabled,
 		Strategy:        strings.TrimSpace(req.Strategy),
 		WeeklyThreshold: req.WeeklyThreshold,
-		ExpiryHours:     req.ExpiryHours,
+		ExpiryMinutes:   expiryMinutes,
 		Email:           strings.TrimSpace(req.Email),
 	}
 	if settings.Email != "" {

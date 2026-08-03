@@ -25,7 +25,7 @@ func TestUpdateAccountAutoResetPersistsStrategy(t *testing.T) {
 	adminSvc.accounts = []service.Account{{ID: 42, Platform: service.PlatformOpenAI, Type: service.AccountTypeOAuth}}
 	router := setupAccountAutoResetRouter(adminSvc)
 	recorder := httptest.NewRecorder()
-	body := strings.NewReader(`{"enabled":true,"strategy":"credit_expiry","weekly_threshold":85,"expiry_hours":12,"email":" alerts@example.com "}`)
+	body := strings.NewReader(`{"enabled":true,"strategy":"credit_expiry","weekly_threshold":85,"expiry_minutes":30,"email":" alerts@example.com "}`)
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPut, "/api/v1/admin/accounts/42/auto-reset", body))
 
 	require.Equal(t, http.StatusOK, recorder.Code)
@@ -43,4 +43,16 @@ func TestAccountAutoResetRejectsUnsupportedAccount(t *testing.T) {
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts/42/auto-reset", nil))
 
 	require.Equal(t, http.StatusBadRequest, recorder.Code)
+}
+
+func TestUpdateAccountAutoResetAcceptsLegacyExpiryHours(t *testing.T) {
+	adminSvc := newStubAdminService()
+	adminSvc.accounts = []service.Account{{ID: 42, Platform: service.PlatformOpenAI, Type: service.AccountTypeOAuth}}
+	router := setupAccountAutoResetRouter(adminSvc)
+	recorder := httptest.NewRecorder()
+	body := strings.NewReader(`{"enabled":true,"strategy":"credit_expiry","weekly_threshold":85,"expiry_hours":2,"email":"alerts@example.com"}`)
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPut, "/api/v1/admin/accounts/42/auto-reset", body))
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, 120, adminSvc.updatedAccountExtra[service.AccountExtraAutoResetExpiryMinutes])
 }

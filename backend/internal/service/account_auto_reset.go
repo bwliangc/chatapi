@@ -11,7 +11,8 @@ const (
 	AccountExtraAutoResetEnabled         = "auto_reset_enabled"
 	AccountExtraAutoResetStrategy        = "auto_reset_strategy"
 	AccountExtraAutoResetWeeklyThreshold = "auto_reset_weekly_threshold"
-	AccountExtraAutoResetExpiryHours     = "auto_reset_expiry_hours"
+	AccountExtraAutoResetExpiryMinutes   = "auto_reset_expiry_minutes"
+	accountExtraAutoResetExpiryHours     = "auto_reset_expiry_hours"
 	AccountExtraAutoResetEmail           = "auto_reset_email"
 	AccountExtraAutoResetNextCheckAt     = "auto_reset_next_check_at"
 	AccountExtraAutoResetWeeklyArmed     = "auto_reset_weekly_armed"
@@ -23,14 +24,14 @@ const (
 	AccountAutoResetStrategyCreditExpiry    = "credit_expiry"
 
 	AccountAutoResetDefaultWeeklyThreshold = 90
-	AccountAutoResetDefaultExpiryHours     = 24
+	AccountAutoResetDefaultExpiryMinutes   = 24 * 60
 )
 
 type AccountAutoResetSettings struct {
 	Enabled         bool    `json:"enabled"`
 	Strategy        string  `json:"strategy"`
 	WeeklyThreshold float64 `json:"weekly_threshold"`
-	ExpiryHours     int     `json:"expiry_hours"`
+	ExpiryMinutes   int     `json:"expiry_minutes"`
 	Email           string  `json:"email"`
 	LastResetAt     string  `json:"last_reset_at,omitempty"`
 	LastStrategy    string  `json:"last_strategy,omitempty"`
@@ -41,7 +42,7 @@ func AccountAutoResetSettingsFrom(account *Account) AccountAutoResetSettings {
 	settings := AccountAutoResetSettings{
 		Strategy:        AccountAutoResetStrategyWeeklyThreshold,
 		WeeklyThreshold: AccountAutoResetDefaultWeeklyThreshold,
-		ExpiryHours:     AccountAutoResetDefaultExpiryHours,
+		ExpiryMinutes:   AccountAutoResetDefaultExpiryMinutes,
 	}
 	if account == nil || account.Extra == nil {
 		return settings
@@ -53,8 +54,10 @@ func AccountAutoResetSettingsFrom(account *Account) AccountAutoResetSettings {
 	if threshold, ok := accountExtraFloat64(account.Extra[AccountExtraAutoResetWeeklyThreshold]); ok {
 		settings.WeeklyThreshold = threshold
 	}
-	if hours, ok := accountExtraInt(account.Extra[AccountExtraAutoResetExpiryHours]); ok {
-		settings.ExpiryHours = hours
+	if minutes, ok := accountExtraInt(account.Extra[AccountExtraAutoResetExpiryMinutes]); ok {
+		settings.ExpiryMinutes = minutes
+	} else if hours, ok := accountExtraInt(account.Extra[accountExtraAutoResetExpiryHours]); ok {
+		settings.ExpiryMinutes = hours * 60
 	}
 	settings.Email, _ = account.Extra[AccountExtraAutoResetEmail].(string)
 	settings.Email = strings.TrimSpace(settings.Email)
@@ -71,8 +74,8 @@ func ValidateAccountAutoResetSettings(settings AccountAutoResetSettings) error {
 	if settings.WeeklyThreshold < 1 || settings.WeeklyThreshold > 100 {
 		return fmt.Errorf("weekly threshold must be between 1 and 100")
 	}
-	if settings.ExpiryHours < 1 || settings.ExpiryHours > 24*30 {
-		return fmt.Errorf("expiry hours must be between 1 and 720")
+	if settings.ExpiryMinutes < 1 || settings.ExpiryMinutes > 30*24*60 {
+		return fmt.Errorf("expiry minutes must be between 1 and 43200")
 	}
 	if settings.Email != "" && NormalizeEmail(settings.Email) == "" {
 		return fmt.Errorf("invalid notification email")
@@ -88,7 +91,7 @@ func AccountAutoResetExtraUpdates(settings AccountAutoResetSettings) map[string]
 		AccountExtraAutoResetEnabled:         settings.Enabled,
 		AccountExtraAutoResetStrategy:        settings.Strategy,
 		AccountExtraAutoResetWeeklyThreshold: settings.WeeklyThreshold,
-		AccountExtraAutoResetExpiryHours:     settings.ExpiryHours,
+		AccountExtraAutoResetExpiryMinutes:   settings.ExpiryMinutes,
 		AccountExtraAutoResetEmail:           strings.TrimSpace(settings.Email),
 		AccountExtraAutoResetNextCheckAt:     nil,
 		AccountExtraAutoResetWeeklyArmed:     true,

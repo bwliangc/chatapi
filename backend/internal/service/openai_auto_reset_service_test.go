@@ -79,7 +79,7 @@ func TestOpenAIAutoResetWeeklyThresholdRunsOnceAndSendsEmail(t *testing.T) {
 			AccountExtraAutoResetEnabled:         true,
 			AccountExtraAutoResetStrategy:        AccountAutoResetStrategyWeeklyThreshold,
 			AccountExtraAutoResetWeeklyThreshold: 90.0,
-			AccountExtraAutoResetExpiryHours:     24.0,
+			AccountExtraAutoResetExpiryMinutes:   1440.0,
 			AccountExtraAutoResetEmail:           "alerts@example.com",
 			AccountExtraAutoResetWeeklyArmed:     true,
 		},
@@ -114,17 +114,17 @@ func TestOpenAIAutoResetWeeklyThresholdRunsOnceAndSendsEmail(t *testing.T) {
 
 func TestOpenAIAutoResetCreditExpiryTriggerBoundary(t *testing.T) {
 	now := time.Date(2026, 8, 3, 8, 0, 0, 0, time.UTC)
-	settings := AccountAutoResetSettings{Strategy: AccountAutoResetStrategyCreditExpiry, ExpiryHours: 24}
+	settings := AccountAutoResetSettings{Strategy: AccountAutoResetStrategyCreditExpiry, ExpiryMinutes: 30}
 	usage := &OpenAIQuotaUsage{RateLimitResetCredits: &OpenAIRateLimitResetCredits{
 		AvailableCount: 1,
-		Credits:        []OpenAIRateLimitResetCreditDetail{{ExpiresAt: now.Add(24 * time.Hour).Format(time.RFC3339)}},
+		Credits:        []OpenAIRateLimitResetCreditDetail{{ExpiresAt: now.Add(30 * time.Minute).Format(time.RFC3339)}},
 	}}
 
 	triggered, expiresAt, _ := openAIAutoResetShouldTrigger(&Account{}, settings, usage, now)
 	require.True(t, triggered)
-	require.Equal(t, now.Add(24*time.Hour).Format(time.RFC3339), expiresAt)
+	require.Equal(t, now.Add(30*time.Minute).Format(time.RFC3339), expiresAt)
 
-	usage.RateLimitResetCredits.Credits[0].ExpiresAt = now.Add(24*time.Hour + time.Second).Format(time.RFC3339)
+	usage.RateLimitResetCredits.Credits[0].ExpiresAt = now.Add(30*time.Minute + time.Second).Format(time.RFC3339)
 	triggered, _, _ = openAIAutoResetShouldTrigger(&Account{}, settings, usage, now)
 	require.False(t, triggered)
 }
@@ -134,7 +134,7 @@ func TestAccountAutoResetSettingsValidation(t *testing.T) {
 		Enabled:         true,
 		Strategy:        AccountAutoResetStrategyWeeklyThreshold,
 		WeeklyThreshold: 90,
-		ExpiryHours:     24,
+		ExpiryMinutes:   1440,
 		Email:           "alerts@example.com",
 	}
 	require.NoError(t, ValidateAccountAutoResetSettings(valid))
@@ -145,4 +145,16 @@ func TestAccountAutoResetSettingsValidation(t *testing.T) {
 	invalid = valid
 	invalid.Email = "invalid"
 	require.Error(t, ValidateAccountAutoResetSettings(invalid))
+}
+
+func TestAccountAutoResetSettingsConvertsLegacyHoursToMinutes(t *testing.T) {
+	account := &Account{Extra: map[string]any{
+		accountExtraAutoResetExpiryHours: 24.0,
+	}}
+	settings := AccountAutoResetSettingsFrom(account)
+	require.Equal(t, 1440, settings.ExpiryMinutes)
+
+	account.Extra[AccountExtraAutoResetExpiryMinutes] = 30.0
+	settings = AccountAutoResetSettingsFrom(account)
+	require.Equal(t, 30, settings.ExpiryMinutes)
 }
