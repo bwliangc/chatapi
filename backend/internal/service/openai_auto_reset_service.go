@@ -21,7 +21,6 @@ const (
 	openAIAutoResetMaxPerCycle   = 10
 	openAIAutoResetRetryDelay    = 10 * time.Minute
 	openAIAutoResetWeeklyPoll    = 5 * time.Minute
-	openAIAutoResetExpiryPoll    = time.Hour
 )
 
 type openAIAutoResetAccountRepository interface {
@@ -213,8 +212,8 @@ func (s *OpenAIAutoResetService) processAccount(ctx context.Context, account *Ac
 		_ = s.quota.CacheResetCreditsSnapshot(ctx, account.ID, usage.RateLimitResetCredits)
 	}
 
-	triggered, triggerValue, updates := openAIAutoResetShouldTrigger(account, settings, usage, now)
-	if !triggered {
+	triggerStrategy, triggerValue, updates := openAIAutoResetShouldTrigger(account, settings, usage, now)
+	if triggerStrategy == "" {
 		updates[AccountExtraAutoResetNextCheckAt] = openAIAutoResetNextCheck(settings, usage, now).Format(time.RFC3339)
 		updates[AccountExtraAutoResetLastError] = ""
 		return s.accountRepo.UpdateExtra(ctx, account.ID, updates)
@@ -247,49 +246,51 @@ func (s *OpenAIAutoResetService) processAccount(ctx context.Context, account *Ac
 	}
 
 	updates[AccountExtraAutoResetLastAt] = now.Format(time.RFC3339)
-	updates[AccountExtraAutoResetLastStrategy] = settings.Strategy
+	updates[AccountExtraAutoResetLastStrategy] = triggerStrategy
 	updates[AccountExtraAutoResetLastError] = ""
 	updates[AccountExtraAutoResetNextCheckAt] = openAIAutoResetNextCheck(settings, usage, now).Format(time.RFC3339)
-	if settings.Strategy == AccountAutoResetStrategyWeeklyThreshold {
+	if strings.Contains(triggerStrategy, AccountAutoResetStrategyWeeklyThreshold) {
 		updates[AccountExtraAutoResetWeeklyArmed] = false
 	}
 	if err := s.accountRepo.UpdateExtra(ctx, account.ID, updates); err != nil {
 		return fmt.Errorf("save automatic reset result: %w", err)
 	}
 
-	s.sendSuccessEmail(ctx, account, settings, result, triggerValue, remaining, now)
+	s.sendSuccessEmail(ctx, account, settings, result, triggerStrategy, triggerValue, remaining, now)
 	return nil
 }
 
-func openAIAutoResetShouldTrigger(account *Account, settings AccountAutoResetSettings, usage *OpenAIQuotaUsage, now time.Time) (bool, string, map[string]any) {
+func openAIAutoResetShouldTrigger(account *Account, settings AccountAutoResetSettings, usage *OpenAIQuotaUsage, now time.Time) (string, string, map[string]any) {
 	updates := make(map[string]any)
-	switch settings.Strategy {
-	case AccountAutoResetStrategyWeeklyThreshold:
-		used, ok := openAIWeeklyUsedPercent(usage)
-		if !ok {
-			return false, "", updates
-		}
+	strategies := make([]string, 0, 2)
+	values := make([]string, 0, 2)
+
+	weeklyThreshold, weeklyEnabled := accountAutoResetConditionValue(settings, AccountAutoResetStrategyWeeklyThreshold)
+	if used, ok := openAIWeeklyUsedPercent(usage); weeklyEnabled && ok {
 		armed := true
 		if account != nil && account.Extra != nil {
 			if stored, ok := account.Extra[AccountExtraAutoResetWeeklyArmed].(bool); ok {
 				armed = stored
 			}
 		}
-		if used < settings.WeeklyThreshold {
+		if used < weeklyThreshold {
 			updates[AccountExtraAutoResetWeeklyArmed] = true
-			return false, fmt.Sprintf("%.2f%%", used), updates
+		} else if armed {
+			strategies = append(strategies, AccountAutoResetStrategyWeeklyThreshold)
+			values = append(values, fmt.Sprintf("weekly_used=%.2f%%", used))
 		}
-		return armed, fmt.Sprintf("%.2f%%", used), updates
-	case AccountAutoResetStrategyCreditExpiry:
-		expiresAt, ok := earliestOpenAIResetCreditExpiry(usage, now)
-		if !ok {
-			return false, "", updates
-		}
-		triggerAt := expiresAt.Add(-time.Duration(settings.ExpiryMinutes) * time.Minute)
-		return !now.Before(triggerAt), expiresAt.Format(time.RFC3339), updates
-	default:
-		return false, "", updates
 	}
+
+	expiryMinutes, expiryEnabled := accountAutoResetConditionValue(settings, AccountAutoResetStrategyCreditExpiry)
+	if expiresAt, ok := earliestOpenAIResetCreditExpiry(usage, now); expiryEnabled && ok {
+		triggerAt := expiresAt.Add(-time.Duration(expiryMinutes) * time.Minute)
+		if !now.Before(triggerAt) {
+			strategies = append(strategies, AccountAutoResetStrategyCreditExpiry)
+			values = append(values, "credit_expires_at="+expiresAt.Format(time.RFC3339))
+		}
+	}
+
+	return strings.Join(strategies, "+"), strings.Join(values, "; "), updates
 }
 
 func openAIWeeklyUsedPercent(usage *OpenAIQuotaUsage) (float64, bool) {
@@ -330,16 +331,15 @@ func earliestOpenAIResetCreditExpiry(usage *OpenAIQuotaUsage, now time.Time) (ti
 }
 
 func openAIAutoResetNextCheck(settings AccountAutoResetSettings, usage *OpenAIQuotaUsage, now time.Time) time.Time {
-	if settings.Strategy == AccountAutoResetStrategyCreditExpiry {
-		if expiresAt, ok := earliestOpenAIResetCreditExpiry(usage, now); ok {
-			triggerAt := expiresAt.Add(-time.Duration(settings.ExpiryMinutes) * time.Minute)
-			if triggerAt.After(now.Add(time.Minute)) && triggerAt.Before(now.Add(openAIAutoResetExpiryPoll)) {
-				return triggerAt
-			}
+	next := now.Add(openAIAutoResetWeeklyPoll)
+	expiryMinutes, expiryEnabled := accountAutoResetConditionValue(settings, AccountAutoResetStrategyCreditExpiry)
+	if expiresAt, ok := earliestOpenAIResetCreditExpiry(usage, now); expiryEnabled && ok {
+		triggerAt := expiresAt.Add(-time.Duration(expiryMinutes) * time.Minute)
+		if triggerAt.After(now) && triggerAt.Before(next) {
+			return triggerAt
 		}
-		return now.Add(openAIAutoResetExpiryPoll)
 	}
-	return now.Add(openAIAutoResetWeeklyPoll)
+	return next
 }
 
 func (s *OpenAIAutoResetService) recordFailure(ctx context.Context, accountID int64, now time.Time, err error) {
@@ -361,6 +361,7 @@ func (s *OpenAIAutoResetService) sendSuccessEmail(
 	account *Account,
 	settings AccountAutoResetSettings,
 	result *OpenAIQuotaResetResult,
+	triggerStrategy string,
 	triggerValue string,
 	remaining int,
 	now time.Time,
@@ -369,8 +370,10 @@ func (s *OpenAIAutoResetService) sendSuccessEmail(
 		return
 	}
 	strategyLabel := "Weekly usage threshold"
-	if settings.Strategy == AccountAutoResetStrategyCreditExpiry {
+	if triggerStrategy == AccountAutoResetStrategyCreditExpiry {
 		strategyLabel = "Reset credit nearing expiry"
+	} else if triggerStrategy == AccountAutoResetStrategyBothConditions {
+		strategyLabel = "Weekly usage threshold or reset credit nearing expiry"
 	}
 	reminderKey := now.Format(time.RFC3339Nano)
 	if result.Credit != nil {

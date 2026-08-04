@@ -19,74 +19,71 @@
         <Toggle v-model="enabled" :disabled="loading || saving" />
       </label>
 
-      <fieldset :disabled="loading || saving || !enabled">
-        <legend class="input-label">{{ t('admin.accounts.autoResetStrategy') }}</legend>
-        <div class="grid grid-cols-2 rounded-md bg-gray-100 p-1 dark:bg-dark-800">
-          <button
-            type="button"
-            class="min-h-10 rounded px-3 py-2 text-sm font-medium transition-colors"
-            :class="strategy === 'weekly_threshold' ? activeStrategyClass : inactiveStrategyClass"
-            @click="strategy = 'weekly_threshold'"
-          >
-            {{ t('admin.accounts.autoResetWeeklyStrategy') }}
-          </button>
-          <button
-            type="button"
-            class="min-h-10 rounded px-3 py-2 text-sm font-medium transition-colors"
-            :class="strategy === 'credit_expiry' ? activeStrategyClass : inactiveStrategyClass"
-            @click="strategy = 'credit_expiry'"
-          >
-            {{ t('admin.accounts.autoResetExpiryStrategy') }}
-          </button>
+      <div>
+        <div class="mb-2">
+          <span class="input-label">{{ t('admin.accounts.autoResetConditions') }}</span>
+          <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">
+            {{ t('admin.accounts.autoResetConditionsHint') }}
+          </p>
         </div>
-      </fieldset>
 
-      <div v-if="strategy === 'weekly_threshold'">
-        <label for="auto-reset-weekly-threshold" class="input-label">
-          {{ t('admin.accounts.autoResetWeeklyThreshold') }}
-        </label>
-        <div class="relative">
-          <input
-            id="auto-reset-weekly-threshold"
-            v-model.number="weeklyThreshold"
-            type="number"
-            min="1"
-            max="100"
-            step="1"
-            class="input pr-10"
-            :disabled="loading || saving || !enabled"
-            required
-          />
-          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-gray-500">%</span>
+        <div v-if="conditions.length" class="divide-y divide-gray-200 border-y border-gray-200 dark:divide-dark-700 dark:border-dark-700">
+          <div v-for="condition in conditions" :key="condition.type" class="py-4 first:pt-3 last:pb-3">
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <label :for="conditionInputID(condition.type)" class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ conditionLabel(condition.type) }}
+              </label>
+              <button
+                type="button"
+                class="inline-flex h-8 w-8 flex-none items-center justify-center rounded text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                :disabled="loading || saving || !enabled"
+                :title="t('admin.accounts.autoResetRemoveCondition')"
+                :aria-label="t('admin.accounts.autoResetRemoveCondition')"
+                @click="removeCondition(condition.type)"
+              >
+                <Icon name="trash" size="sm" />
+              </button>
+            </div>
+            <div class="relative">
+              <input
+                :id="conditionInputID(condition.type)"
+                v-model.number="condition.value"
+                type="number"
+                min="1"
+                :max="condition.type === 'weekly_threshold' ? 100 : 43200"
+                step="1"
+                class="input"
+                :class="condition.type === 'weekly_threshold' ? 'pr-10' : 'pr-16'"
+                :disabled="loading || saving || !enabled"
+                required
+              />
+              <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-gray-500">
+                {{ condition.type === 'weekly_threshold' ? '%' : t('admin.accounts.minutes') }}
+              </span>
+            </div>
+            <p class="mt-1.5 text-xs text-gray-500 dark:text-dark-400">
+              {{ conditionHint(condition.type) }}
+            </p>
+          </div>
         </div>
-        <p class="mt-1.5 text-xs text-gray-500 dark:text-dark-400">
-          {{ t('admin.accounts.autoResetWeeklyThresholdHint') }}
-        </p>
-      </div>
 
-      <div v-else>
-        <label for="auto-reset-expiry-minutes" class="input-label">
-          {{ t('admin.accounts.autoResetExpiryMinutes') }}
-        </label>
-        <div class="relative">
-          <input
-            id="auto-reset-expiry-minutes"
-            v-model.number="expiryMinutes"
-            type="number"
-            min="1"
-            max="43200"
-            step="1"
-            class="input pr-16"
-            :disabled="loading || saving || !enabled"
-            required
-          />
-          <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-gray-500">
-            {{ t('admin.accounts.minutes') }}
-          </span>
-        </div>
-        <p class="mt-1.5 text-xs text-gray-500 dark:text-dark-400">
-          {{ t('admin.accounts.autoResetExpiryMinutesHint') }}
+        <p v-else class="border-y border-gray-200 py-4 text-sm text-gray-500 dark:border-dark-700 dark:text-dark-400">
+          {{ t('admin.accounts.autoResetNoConditions') }}
         </p>
+
+        <div v-if="availableConditionTypes.length" class="mt-3 flex flex-wrap gap-2">
+          <button
+            v-for="conditionType in availableConditionTypes"
+            :key="conditionType"
+            type="button"
+            class="btn btn-secondary btn-sm"
+            :disabled="loading || saving || !enabled"
+            @click="addCondition(conditionType)"
+          >
+            <Icon name="plus" size="sm" />
+            <span>{{ t('admin.accounts.autoResetAddCondition', { condition: conditionLabel(conditionType) }) }}</span>
+          </button>
+        </div>
       </div>
 
       <div>
@@ -119,7 +116,7 @@
           type="submit"
           form="account-auto-reset-form"
           class="btn btn-primary"
-          :disabled="loading || saving"
+          :disabled="loading || saving || (enabled && conditions.length === 0)"
         >
           {{ saving ? t('common.processing') : t('common.save') }}
         </button>
@@ -129,31 +126,58 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Toggle from '@/components/common/Toggle.vue'
+import { Icon } from '@/components/icons'
 import { adminAPI } from '@/api/admin'
 import { useAppStore } from '@/stores/app'
 import type { Account } from '@/types'
-import type { AccountAutoResetStrategy } from '@/api/admin/accounts'
+import type { AccountAutoResetCondition, AccountAutoResetConditionType } from '@/api/admin/accounts'
 
 const props = defineProps<{ show: boolean; account: Account | null }>()
 const emit = defineEmits<{ (e: 'close'): void; (e: 'saved'): void }>()
 const { t } = useI18n()
 const appStore = useAppStore()
 
-const activeStrategyClass = 'bg-white text-primary-700 shadow-sm dark:bg-dark-700 dark:text-primary-300'
-const inactiveStrategyClass = 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
 const enabled = ref(false)
-const strategy = ref<AccountAutoResetStrategy>('weekly_threshold')
-const weeklyThreshold = ref(90)
-const expiryMinutes = ref(1440)
+const conditions = ref<AccountAutoResetCondition[]>([])
 const email = ref('')
 const loading = ref(false)
 const saving = ref(false)
 const loadError = ref('')
 let loadSequence = 0
+
+const allConditionTypes: AccountAutoResetConditionType[] = ['weekly_threshold', 'credit_expiry']
+const availableConditionTypes = computed(() =>
+  allConditionTypes.filter((conditionType) => !conditions.value.some((condition) => condition.type === conditionType))
+)
+
+const conditionLabel = (conditionType: AccountAutoResetConditionType) =>
+  t(conditionType === 'weekly_threshold'
+    ? 'admin.accounts.autoResetWeeklyThreshold'
+    : 'admin.accounts.autoResetExpiryMinutes')
+
+const conditionHint = (conditionType: AccountAutoResetConditionType) =>
+  t(conditionType === 'weekly_threshold'
+    ? 'admin.accounts.autoResetWeeklyThresholdHint'
+    : 'admin.accounts.autoResetExpiryMinutesHint')
+
+const conditionInputID = (conditionType: AccountAutoResetConditionType) =>
+  conditionType === 'weekly_threshold' ? 'auto-reset-weekly-threshold' : 'auto-reset-expiry-minutes'
+
+const addCondition = (conditionType: AccountAutoResetConditionType) => {
+  if (conditions.value.some((condition) => condition.type === conditionType)) return
+  conditions.value.push({
+    type: conditionType,
+    value: conditionType === 'weekly_threshold' ? 90 : 1440,
+  })
+}
+
+const removeCondition = (conditionType: AccountAutoResetConditionType) => {
+  conditions.value = conditions.value.filter((condition) => condition.type !== conditionType)
+}
 
 watch(
   () => [props.show, props.account?.id] as const,
@@ -166,9 +190,10 @@ watch(
       const settings = await adminAPI.accounts.getAutoReset(accountID)
       if (sequence !== loadSequence) return
       enabled.value = settings.enabled
-      strategy.value = settings.strategy
-      weeklyThreshold.value = settings.weekly_threshold
-      expiryMinutes.value = settings.expiry_minutes
+      conditions.value = (settings.conditions ?? [
+        { type: 'weekly_threshold', value: settings.weekly_threshold },
+        { type: 'credit_expiry', value: settings.expiry_minutes },
+      ]).map((condition) => ({ ...condition }))
       email.value = settings.email
     } catch (error: any) {
       if (sequence !== loadSequence) return
@@ -191,9 +216,7 @@ const save = async () => {
   try {
     await adminAPI.accounts.updateAutoReset(accountID, {
       enabled: enabled.value,
-      strategy: strategy.value,
-      weekly_threshold: weeklyThreshold.value,
-      expiry_minutes: expiryMinutes.value,
+      conditions: conditions.value.map((condition) => ({ ...condition })),
       email: email.value,
     })
     appStore.showSuccess(t('admin.accounts.autoResetSaved'))

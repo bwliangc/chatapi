@@ -263,16 +263,22 @@ export async function updateAbnormalNotification(
   return data
 }
 
-export type AccountAutoResetStrategy = 'weekly_threshold' | 'credit_expiry'
+export type AccountAutoResetTrigger = 'weekly_threshold' | 'credit_expiry' | 'weekly_threshold+credit_expiry'
+export type AccountAutoResetConditionType = 'weekly_threshold' | 'credit_expiry'
+
+export interface AccountAutoResetCondition {
+  type: AccountAutoResetConditionType
+  value: number
+}
 
 export interface AccountAutoResetSettings {
   enabled: boolean
-  strategy: AccountAutoResetStrategy
+  conditions: AccountAutoResetCondition[]
   weekly_threshold: number
   expiry_minutes: number
   email: string
   last_reset_at?: string
-  last_strategy?: AccountAutoResetStrategy
+  last_strategy?: AccountAutoResetTrigger
   last_error?: string
 }
 
@@ -283,7 +289,7 @@ export async function getAutoReset(id: number): Promise<AccountAutoResetSettings
 
 export async function updateAutoReset(
   id: number,
-  settings: Pick<AccountAutoResetSettings, 'enabled' | 'strategy' | 'weekly_threshold' | 'expiry_minutes' | 'email'>
+  settings: Pick<AccountAutoResetSettings, 'enabled' | 'conditions' | 'email'>
 ): Promise<AccountAutoResetSettings> {
   const { data } = await apiClient.put<AccountAutoResetSettings>(`/admin/accounts/${id}/auto-reset`, settings)
   return data

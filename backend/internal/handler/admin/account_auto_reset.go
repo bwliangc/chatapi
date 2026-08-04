@@ -10,12 +10,13 @@ import (
 )
 
 type updateAccountAutoResetRequest struct {
-	Enabled         bool    `json:"enabled"`
-	Strategy        string  `json:"strategy"`
-	WeeklyThreshold float64 `json:"weekly_threshold"`
-	ExpiryMinutes   int     `json:"expiry_minutes"`
-	ExpiryHours     *int    `json:"expiry_hours,omitempty"`
-	Email           string  `json:"email"`
+	Enabled         bool                                 `json:"enabled"`
+	Strategy        string                               `json:"strategy"`
+	Conditions      *[]service.AccountAutoResetCondition `json:"conditions"`
+	WeeklyThreshold float64                              `json:"weekly_threshold"`
+	ExpiryMinutes   int                                  `json:"expiry_minutes"`
+	ExpiryHours     *int                                 `json:"expiry_hours,omitempty"`
+	Email           string                               `json:"email"`
 }
 
 func (h *AccountHandler) GetAutoReset(c *gin.Context) {
@@ -44,12 +45,28 @@ func (h *AccountHandler) UpdateAutoReset(c *gin.Context) {
 	if expiryMinutes == 0 && req.ExpiryHours != nil {
 		expiryMinutes = *req.ExpiryHours * 60
 	}
-	settings := service.AccountAutoResetSettings{
-		Enabled:         req.Enabled,
-		Strategy:        strings.TrimSpace(req.Strategy),
-		WeeklyThreshold: req.WeeklyThreshold,
-		ExpiryMinutes:   expiryMinutes,
-		Email:           strings.TrimSpace(req.Email),
+	strategy := service.AccountAutoResetSettingsFrom(account).Strategy
+	if requestedStrategy := strings.TrimSpace(req.Strategy); requestedStrategy != "" {
+		strategy = requestedStrategy
+	}
+	settings := service.AccountAutoResetSettingsFrom(account)
+	settings.Enabled = req.Enabled
+	settings.Strategy = strategy
+	settings.Email = strings.TrimSpace(req.Email)
+	if req.Conditions != nil {
+		settings.Conditions = *req.Conditions
+		for _, condition := range settings.Conditions {
+			switch strings.TrimSpace(condition.Type) {
+			case service.AccountAutoResetStrategyWeeklyThreshold:
+				settings.WeeklyThreshold = condition.Value
+			case service.AccountAutoResetStrategyCreditExpiry:
+				settings.ExpiryMinutes = int(condition.Value)
+			}
+		}
+	} else {
+		settings.WeeklyThreshold = req.WeeklyThreshold
+		settings.ExpiryMinutes = expiryMinutes
+		settings.Conditions = nil
 	}
 	if settings.Email != "" {
 		settings.Email = service.NormalizeEmail(settings.Email)

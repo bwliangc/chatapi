@@ -32,7 +32,36 @@ func TestUpdateAccountAutoResetPersistsStrategy(t *testing.T) {
 	require.Equal(t, int64(42), adminSvc.updatedAccountExtraID)
 	require.Equal(t, true, adminSvc.updatedAccountExtra[service.AccountExtraAutoResetEnabled])
 	require.Equal(t, service.AccountAutoResetStrategyCreditExpiry, adminSvc.updatedAccountExtra[service.AccountExtraAutoResetStrategy])
+	require.Equal(t, []service.AccountAutoResetCondition{
+		{Type: service.AccountAutoResetStrategyWeeklyThreshold, Value: 85},
+		{Type: service.AccountAutoResetStrategyCreditExpiry, Value: 30},
+	}, adminSvc.updatedAccountExtra[service.AccountExtraAutoResetConditions])
 	require.Equal(t, "alerts@example.com", adminSvc.updatedAccountExtra[service.AccountExtraAutoResetEmail])
+}
+
+func TestUpdateAccountAutoResetPersistsCustomConditions(t *testing.T) {
+	adminSvc := newStubAdminService()
+	adminSvc.accounts = []service.Account{{ID: 42, Platform: service.PlatformOpenAI, Type: service.AccountTypeOAuth}}
+	router := setupAccountAutoResetRouter(adminSvc)
+	recorder := httptest.NewRecorder()
+	body := strings.NewReader(`{"enabled":true,"conditions":[{"type":"credit_expiry","value":15}],"email":"alerts@example.com"}`)
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPut, "/api/v1/admin/accounts/42/auto-reset", body))
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, []service.AccountAutoResetCondition{{
+		Type: service.AccountAutoResetStrategyCreditExpiry, Value: 15,
+	}}, adminSvc.updatedAccountExtra[service.AccountExtraAutoResetConditions])
+}
+
+func TestUpdateAccountAutoResetRequiresConditionWhenEnabled(t *testing.T) {
+	adminSvc := newStubAdminService()
+	adminSvc.accounts = []service.Account{{ID: 42, Platform: service.PlatformOpenAI, Type: service.AccountTypeOAuth}}
+	router := setupAccountAutoResetRouter(adminSvc)
+	recorder := httptest.NewRecorder()
+	body := strings.NewReader(`{"enabled":true,"conditions":[],"email":"alerts@example.com"}`)
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPut, "/api/v1/admin/accounts/42/auto-reset", body))
+
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
 }
 
 func TestAccountAutoResetRejectsUnsupportedAccount(t *testing.T) {

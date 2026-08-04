@@ -1,7 +1,9 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -10,6 +12,7 @@ import (
 const (
 	AccountExtraAutoResetEnabled         = "auto_reset_enabled"
 	AccountExtraAutoResetStrategy        = "auto_reset_strategy"
+	AccountExtraAutoResetConditions      = "auto_reset_conditions"
 	AccountExtraAutoResetWeeklyThreshold = "auto_reset_weekly_threshold"
 	AccountExtraAutoResetExpiryMinutes   = "auto_reset_expiry_minutes"
 	accountExtraAutoResetExpiryHours     = "auto_reset_expiry_hours"
@@ -22,20 +25,27 @@ const (
 
 	AccountAutoResetStrategyWeeklyThreshold = "weekly_threshold"
 	AccountAutoResetStrategyCreditExpiry    = "credit_expiry"
+	AccountAutoResetStrategyBothConditions  = "weekly_threshold+credit_expiry"
 
 	AccountAutoResetDefaultWeeklyThreshold = 90
 	AccountAutoResetDefaultExpiryMinutes   = 24 * 60
 )
 
+type AccountAutoResetCondition struct {
+	Type  string  `json:"type"`
+	Value float64 `json:"value"`
+}
+
 type AccountAutoResetSettings struct {
-	Enabled         bool    `json:"enabled"`
-	Strategy        string  `json:"strategy"`
-	WeeklyThreshold float64 `json:"weekly_threshold"`
-	ExpiryMinutes   int     `json:"expiry_minutes"`
-	Email           string  `json:"email"`
-	LastResetAt     string  `json:"last_reset_at,omitempty"`
-	LastStrategy    string  `json:"last_strategy,omitempty"`
-	LastError       string  `json:"last_error,omitempty"`
+	Enabled         bool                        `json:"enabled"`
+	Strategy        string                      `json:"strategy"`
+	Conditions      []AccountAutoResetCondition `json:"conditions"`
+	WeeklyThreshold float64                     `json:"weekly_threshold"`
+	ExpiryMinutes   int                         `json:"expiry_minutes"`
+	Email           string                      `json:"email"`
+	LastResetAt     string                      `json:"last_reset_at,omitempty"`
+	LastStrategy    string                      `json:"last_strategy,omitempty"`
+	LastError       string                      `json:"last_error,omitempty"`
 }
 
 func AccountAutoResetSettingsFrom(account *Account) AccountAutoResetSettings {
@@ -44,6 +54,7 @@ func AccountAutoResetSettingsFrom(account *Account) AccountAutoResetSettings {
 		WeeklyThreshold: AccountAutoResetDefaultWeeklyThreshold,
 		ExpiryMinutes:   AccountAutoResetDefaultExpiryMinutes,
 	}
+	settings.Conditions = legacyAccountAutoResetConditions(settings)
 	if account == nil || account.Extra == nil {
 		return settings
 	}
@@ -64,18 +75,38 @@ func AccountAutoResetSettingsFrom(account *Account) AccountAutoResetSettings {
 	settings.LastResetAt, _ = account.Extra[AccountExtraAutoResetLastAt].(string)
 	settings.LastStrategy, _ = account.Extra[AccountExtraAutoResetLastStrategy].(string)
 	settings.LastError, _ = account.Extra[AccountExtraAutoResetLastError].(string)
+	if rawConditions, ok := account.Extra[AccountExtraAutoResetConditions]; ok {
+		settings.Conditions = parseAccountAutoResetConditions(rawConditions)
+	} else {
+		settings.Conditions = legacyAccountAutoResetConditions(settings)
+	}
 	return settings
 }
 
 func ValidateAccountAutoResetSettings(settings AccountAutoResetSettings) error {
-	if settings.Strategy != AccountAutoResetStrategyWeeklyThreshold && settings.Strategy != AccountAutoResetStrategyCreditExpiry {
-		return fmt.Errorf("invalid auto reset strategy")
+	conditions := effectiveAccountAutoResetConditions(settings)
+	if settings.Enabled && len(conditions) == 0 {
+		return fmt.Errorf("at least one auto reset condition is required when enabled")
 	}
-	if settings.WeeklyThreshold < 1 || settings.WeeklyThreshold > 100 {
-		return fmt.Errorf("weekly threshold must be between 1 and 100")
-	}
-	if settings.ExpiryMinutes < 1 || settings.ExpiryMinutes > 30*24*60 {
-		return fmt.Errorf("expiry minutes must be between 1 and 43200")
+	seen := make(map[string]struct{}, len(conditions))
+	for _, condition := range conditions {
+		conditionType := strings.TrimSpace(condition.Type)
+		if _, exists := seen[conditionType]; exists {
+			return fmt.Errorf("duplicate auto reset condition: %s", conditionType)
+		}
+		seen[conditionType] = struct{}{}
+		switch conditionType {
+		case AccountAutoResetStrategyWeeklyThreshold:
+			if condition.Value < 1 || condition.Value > 100 {
+				return fmt.Errorf("weekly threshold must be between 1 and 100")
+			}
+		case AccountAutoResetStrategyCreditExpiry:
+			if condition.Value < 1 || condition.Value > 30*24*60 || math.Trunc(condition.Value) != condition.Value {
+				return fmt.Errorf("expiry minutes must be an integer between 1 and 43200")
+			}
+		default:
+			return fmt.Errorf("unsupported auto reset condition: %s", conditionType)
+		}
 	}
 	if settings.Email != "" && NormalizeEmail(settings.Email) == "" {
 		return fmt.Errorf("invalid notification email")
@@ -90,6 +121,7 @@ func AccountAutoResetExtraUpdates(settings AccountAutoResetSettings) map[string]
 	return map[string]any{
 		AccountExtraAutoResetEnabled:         settings.Enabled,
 		AccountExtraAutoResetStrategy:        settings.Strategy,
+		AccountExtraAutoResetConditions:      effectiveAccountAutoResetConditions(settings),
 		AccountExtraAutoResetWeeklyThreshold: settings.WeeklyThreshold,
 		AccountExtraAutoResetExpiryMinutes:   settings.ExpiryMinutes,
 		AccountExtraAutoResetEmail:           strings.TrimSpace(settings.Email),
@@ -97,6 +129,44 @@ func AccountAutoResetExtraUpdates(settings AccountAutoResetSettings) map[string]
 		AccountExtraAutoResetWeeklyArmed:     true,
 		AccountExtraAutoResetLastError:       "",
 	}
+}
+
+func legacyAccountAutoResetConditions(settings AccountAutoResetSettings) []AccountAutoResetCondition {
+	return []AccountAutoResetCondition{
+		{Type: AccountAutoResetStrategyWeeklyThreshold, Value: settings.WeeklyThreshold},
+		{Type: AccountAutoResetStrategyCreditExpiry, Value: float64(settings.ExpiryMinutes)},
+	}
+}
+
+func effectiveAccountAutoResetConditions(settings AccountAutoResetSettings) []AccountAutoResetCondition {
+	if settings.Conditions == nil {
+		return legacyAccountAutoResetConditions(settings)
+	}
+	return settings.Conditions
+}
+
+func accountAutoResetConditionValue(settings AccountAutoResetSettings, conditionType string) (float64, bool) {
+	for _, condition := range effectiveAccountAutoResetConditions(settings) {
+		if strings.TrimSpace(condition.Type) == conditionType {
+			return condition.Value, true
+		}
+	}
+	return 0, false
+}
+
+func parseAccountAutoResetConditions(value any) []AccountAutoResetCondition {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return []AccountAutoResetCondition{}
+	}
+	var conditions []AccountAutoResetCondition
+	if err := json.Unmarshal(encoded, &conditions); err != nil || conditions == nil {
+		return []AccountAutoResetCondition{}
+	}
+	for index := range conditions {
+		conditions[index].Type = strings.TrimSpace(conditions[index].Type)
+	}
+	return conditions
 }
 
 func accountExtraFloat64(value any) (float64, bool) {

@@ -68,7 +68,7 @@ func (s *autoResetEmailStub) Send(_ context.Context, input NotificationEmailSend
 	return nil
 }
 
-func TestOpenAIAutoResetWeeklyThresholdRunsOnceAndSendsEmail(t *testing.T) {
+func TestOpenAIAutoResetWeeklyThresholdTriggersWithLegacyExpiryStrategy(t *testing.T) {
 	now := time.Date(2026, 8, 3, 8, 0, 0, 0, time.UTC)
 	account := Account{
 		ID:       42,
@@ -77,7 +77,7 @@ func TestOpenAIAutoResetWeeklyThresholdRunsOnceAndSendsEmail(t *testing.T) {
 		Type:     AccountTypeOAuth,
 		Extra: map[string]any{
 			AccountExtraAutoResetEnabled:         true,
-			AccountExtraAutoResetStrategy:        AccountAutoResetStrategyWeeklyThreshold,
+			AccountExtraAutoResetStrategy:        AccountAutoResetStrategyCreditExpiry,
 			AccountExtraAutoResetWeeklyThreshold: 90.0,
 			AccountExtraAutoResetExpiryMinutes:   1440.0,
 			AccountExtraAutoResetEmail:           "alerts@example.com",
@@ -114,19 +114,117 @@ func TestOpenAIAutoResetWeeklyThresholdRunsOnceAndSendsEmail(t *testing.T) {
 
 func TestOpenAIAutoResetCreditExpiryTriggerBoundary(t *testing.T) {
 	now := time.Date(2026, 8, 3, 8, 0, 0, 0, time.UTC)
-	settings := AccountAutoResetSettings{Strategy: AccountAutoResetStrategyCreditExpiry, ExpiryMinutes: 30}
+	settings := AccountAutoResetSettings{
+		Strategy:        AccountAutoResetStrategyWeeklyThreshold,
+		WeeklyThreshold: 90,
+		ExpiryMinutes:   30,
+	}
 	usage := &OpenAIQuotaUsage{RateLimitResetCredits: &OpenAIRateLimitResetCredits{
 		AvailableCount: 1,
 		Credits:        []OpenAIRateLimitResetCreditDetail{{ExpiresAt: now.Add(30 * time.Minute).Format(time.RFC3339)}},
 	}}
 
-	triggered, expiresAt, _ := openAIAutoResetShouldTrigger(&Account{}, settings, usage, now)
-	require.True(t, triggered)
-	require.Equal(t, now.Add(30*time.Minute).Format(time.RFC3339), expiresAt)
+	triggerStrategy, triggerValue, _ := openAIAutoResetShouldTrigger(&Account{}, settings, usage, now)
+	require.Equal(t, AccountAutoResetStrategyCreditExpiry, triggerStrategy)
+	require.Equal(t, "credit_expires_at="+now.Add(30*time.Minute).Format(time.RFC3339), triggerValue)
 
 	usage.RateLimitResetCredits.Credits[0].ExpiresAt = now.Add(30*time.Minute + time.Second).Format(time.RFC3339)
-	triggered, _, _ = openAIAutoResetShouldTrigger(&Account{}, settings, usage, now)
-	require.False(t, triggered)
+	triggerStrategy, _, _ = openAIAutoResetShouldTrigger(&Account{}, settings, usage, now)
+	require.Empty(t, triggerStrategy)
+}
+
+func TestOpenAIAutoResetCombinedConditionsConsumeOneCredit(t *testing.T) {
+	now := time.Date(2026, 8, 3, 8, 0, 0, 0, time.UTC)
+	account := Account{
+		ID:       42,
+		Name:     "codex-account",
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeOAuth,
+		Extra: map[string]any{
+			AccountExtraAutoResetEnabled:         true,
+			AccountExtraAutoResetStrategy:        AccountAutoResetStrategyWeeklyThreshold,
+			AccountExtraAutoResetWeeklyThreshold: 90.0,
+			AccountExtraAutoResetExpiryMinutes:   30.0,
+			AccountExtraAutoResetEmail:           "alerts@example.com",
+			AccountExtraAutoResetWeeklyArmed:     true,
+		},
+	}
+	triggerUsage := &OpenAIQuotaUsage{
+		RateLimit: &OpenAIRateLimit{
+			PrimaryWindow:   &OpenAIRateLimitWindow{UsedPercent: 30, LimitWindowSeconds: 5 * 60 * 60},
+			SecondaryWindow: &OpenAIRateLimitWindow{UsedPercent: 92, LimitWindowSeconds: 7 * 24 * 60 * 60},
+		},
+		RateLimitResetCredits: &OpenAIRateLimitResetCredits{
+			AvailableCount: 2,
+			Credits: []OpenAIRateLimitResetCreditDetail{{
+				ExpiresAt: now.Add(20 * time.Minute).Format(time.RFC3339),
+			}},
+		},
+	}
+	refreshedUsage := &OpenAIQuotaUsage{
+		RateLimit: &OpenAIRateLimit{
+			SecondaryWindow: &OpenAIRateLimitWindow{UsedPercent: 4, LimitWindowSeconds: 7 * 24 * 60 * 60},
+		},
+		RateLimitResetCredits: &OpenAIRateLimitResetCredits{AvailableCount: 1},
+	}
+	repo := &autoResetRepoStub{accounts: []Account{account}}
+	quota := &autoResetQuotaStub{usage: []*OpenAIQuotaUsage{triggerUsage, refreshedUsage}}
+	email := &autoResetEmailStub{}
+	svc := NewOpenAIAutoResetService(repo, quota, &autoResetRecovererStub{}, email)
+	svc.now = func() time.Time { return now }
+
+	require.NoError(t, svc.RunDue(context.Background()))
+	require.Equal(t, 1, quota.resetCalls)
+	require.Len(t, email.inputs, 1)
+	require.NotEmpty(t, repo.updates)
+	last := repo.updates[len(repo.updates)-1]
+	require.Equal(t, AccountAutoResetStrategyBothConditions, last[AccountExtraAutoResetLastStrategy])
+	require.Equal(t, false, last[AccountExtraAutoResetWeeklyArmed])
+}
+
+func TestOpenAIAutoResetExpiryTriggerRearmsWeeklyConditionBelowThreshold(t *testing.T) {
+	now := time.Date(2026, 8, 3, 8, 0, 0, 0, time.UTC)
+	account := &Account{Extra: map[string]any{AccountExtraAutoResetWeeklyArmed: false}}
+	settings := AccountAutoResetSettings{WeeklyThreshold: 90, ExpiryMinutes: 30}
+	usage := &OpenAIQuotaUsage{
+		RateLimit: &OpenAIRateLimit{
+			SecondaryWindow: &OpenAIRateLimitWindow{UsedPercent: 25, LimitWindowSeconds: 7 * 24 * 60 * 60},
+		},
+		RateLimitResetCredits: &OpenAIRateLimitResetCredits{
+			AvailableCount: 1,
+			Credits: []OpenAIRateLimitResetCreditDetail{{
+				ExpiresAt: now.Add(15 * time.Minute).Format(time.RFC3339),
+			}},
+		},
+	}
+
+	triggerStrategy, _, updates := openAIAutoResetShouldTrigger(account, settings, usage, now)
+	require.Equal(t, AccountAutoResetStrategyCreditExpiry, triggerStrategy)
+	require.Equal(t, true, updates[AccountExtraAutoResetWeeklyArmed])
+}
+
+func TestOpenAIAutoResetOnlyEvaluatesConfiguredConditions(t *testing.T) {
+	now := time.Date(2026, 8, 3, 8, 0, 0, 0, time.UTC)
+	settings := AccountAutoResetSettings{
+		Conditions: []AccountAutoResetCondition{{
+			Type:  AccountAutoResetStrategyCreditExpiry,
+			Value: 30,
+		}},
+	}
+	usage := &OpenAIQuotaUsage{
+		RateLimit: &OpenAIRateLimit{
+			SecondaryWindow: &OpenAIRateLimitWindow{UsedPercent: 99, LimitWindowSeconds: 7 * 24 * 60 * 60},
+		},
+		RateLimitResetCredits: &OpenAIRateLimitResetCredits{
+			AvailableCount: 1,
+			Credits: []OpenAIRateLimitResetCreditDetail{{
+				ExpiresAt: now.Add(2 * time.Hour).Format(time.RFC3339),
+			}},
+		},
+	}
+
+	triggerStrategy, _, _ := openAIAutoResetShouldTrigger(&Account{}, settings, usage, now)
+	require.Empty(t, triggerStrategy)
 }
 
 func TestAccountAutoResetSettingsValidation(t *testing.T) {
@@ -153,8 +251,26 @@ func TestAccountAutoResetSettingsConvertsLegacyHoursToMinutes(t *testing.T) {
 	}}
 	settings := AccountAutoResetSettingsFrom(account)
 	require.Equal(t, 1440, settings.ExpiryMinutes)
+	require.Equal(t, []AccountAutoResetCondition{
+		{Type: AccountAutoResetStrategyWeeklyThreshold, Value: 90},
+		{Type: AccountAutoResetStrategyCreditExpiry, Value: 1440},
+	}, settings.Conditions)
 
 	account.Extra[AccountExtraAutoResetExpiryMinutes] = 30.0
 	settings = AccountAutoResetSettingsFrom(account)
 	require.Equal(t, 30, settings.ExpiryMinutes)
+}
+
+func TestAccountAutoResetSettingsReadsCustomConditions(t *testing.T) {
+	account := &Account{Extra: map[string]any{
+		AccountExtraAutoResetConditions: []any{
+			map[string]any{"type": AccountAutoResetStrategyCreditExpiry, "value": 15.0},
+		},
+	}}
+
+	settings := AccountAutoResetSettingsFrom(account)
+	require.Equal(t, []AccountAutoResetCondition{{
+		Type:  AccountAutoResetStrategyCreditExpiry,
+		Value: 15,
+	}}, settings.Conditions)
 }
