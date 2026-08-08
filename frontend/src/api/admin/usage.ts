@@ -84,6 +84,7 @@ export interface AdminUsageQueryParams extends UsageQueryParams {
   user_id?: number
   exact_total?: boolean
   billing_mode?: string
+  upstream_model_mismatch?: boolean
   sort_by?: string
   sort_order?: 'asc' | 'desc'
   // 错误请求 tab 专属筛选(仅传给错误列表接口;共用同一 filters 对象)
@@ -106,6 +107,7 @@ export interface AdminUsageStatsParams {
   timezone?: string
   nocache?: number
   exclude_admins?: boolean
+  upstream_model_mismatch?: boolean
 }
 
 // ==================== API Functions ====================

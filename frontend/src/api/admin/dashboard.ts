@@ -56,6 +56,7 @@ export interface TrendParams {
   request_type?: UsageRequestType
   stream?: boolean
   billing_type?: number | null
+	upstream_model_mismatch?: boolean
 }
 
 export interface TrendResponse {
@@ -88,6 +89,7 @@ export interface ModelStatsParams {
   stream?: boolean
   billing_type?: number | null
   exclude_admins?: boolean
+  upstream_model_mismatch?: boolean
 }
 
 export interface ModelStatsResponse {
@@ -117,6 +119,7 @@ export interface GroupStatsParams {
   stream?: boolean
   billing_type?: number | null
   exclude_admins?: boolean
+  upstream_model_mismatch?: boolean
 }
 
 export interface GroupStatsResponse {
