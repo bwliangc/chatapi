@@ -47,6 +47,9 @@ const (
 	LeaderboardRewardMinSpendMin               = 0.0        // 参与门槛下限
 	LeaderboardRewardTopNDefault               = 0          // 默认奖励名额 0（不发放）
 	LeaderboardRewardTopNMax                   = 1000       // 奖励名额上限，避免误配置
+	LeaderboardDisplayTopNDefault              = 10         // 用户榜单默认展示前 10 名
+	LeaderboardDisplayTopNMin                  = 1          // 用户榜单至少展示 1 名
+	LeaderboardDisplayTopNMax                  = 1000       // 用户榜单展示名额上限
 	LeaderboardRewardModeAverage               = "average"  // 平均分配：奖池 / N
 	LeaderboardRewardModeWeighted              = "weighted" // 按自定义权重数组分配
 	LeaderboardRewardModeDefault               = LeaderboardRewardModeAverage
@@ -189,6 +192,7 @@ const (
 	SettingKeyLeaderboardRewardEmailNotifyEnabled = "leaderboard_reward_email_notify_enabled" // 排行榜激励发放邮件通知开关
 	SettingKeyLeaderboardRewardPoolRate           = "leaderboard_reward_pool_rate"            // 奖池比例（昨日总消费的百分比，0-100）
 	SettingKeyLeaderboardRewardTopN               = "leaderboard_reward_top_n"                // 奖励排行榜前 N 名
+	SettingKeyLeaderboardDisplayTopN              = "leaderboard_display_top_n"               // 用户榜单公开展示前 N 名
 	SettingKeyLeaderboardRewardDistributionMode   = "leaderboard_reward_distribution_mode"    // 分配模式 average/weighted
 	SettingKeyLeaderboardRewardWeights            = "leaderboard_reward_weights"              // 自定义权重（逗号分隔，仅 weighted 模式生效）
 	SettingKeyLeaderboardRewardMinSpend           = "leaderboard_reward_min_spend"            // 每人参与门槛（个人消费≥该值才进入中奖区，0=无门槛）

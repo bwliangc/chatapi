@@ -397,6 +397,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		LeaderboardRewardEmailNotifyEnabled: settings.LeaderboardRewardEmailNotifyEnabled,
 		LeaderboardRewardPoolRate:           settings.LeaderboardRewardPoolRate,
 		LeaderboardRewardTopN:               settings.LeaderboardRewardTopN,
+		LeaderboardDisplayTopN:              settings.LeaderboardDisplayTopN,
 		LeaderboardRewardDistributionMode:   settings.LeaderboardRewardDistributionMode,
 		LeaderboardRewardWeights:            settings.LeaderboardRewardWeights,
 		LeaderboardRewardMinSpend:           settings.LeaderboardRewardMinSpend,

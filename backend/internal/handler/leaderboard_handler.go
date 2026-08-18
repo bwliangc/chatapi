@@ -15,8 +15,6 @@ import (
 )
 
 const (
-	// leaderboardDisplayLimit 榜单对外展示的最大名次数。
-	leaderboardDisplayLimit = 20
 	// leaderboardScanLimit 取榜深度：用于定位「当前用户排名」（即便不在展示区内）。
 	// total_actual_cost 由 SQL 的 SUM() OVER () 在 LIMIT 之前对全量分组求和，
 	// 故无论取多深，总额都是全站口径；这里取较深仅为找到本人名次。
@@ -65,8 +63,13 @@ type leaderboardResponse struct {
 	TotalCost          float64            `json:"total_cost"`
 	PoolAmount         float64            `json:"pool_amount"`
 	MinSpend           float64            `json:"min_spend"` // 每人参与门槛（0=无门槛）
+	DisplayTopN        int                `json:"display_top_n"`
 	Ranking            []leaderboardEntry `json:"ranking"`
 	Me                 *leaderboardEntry  `json:"me"`
+	Total              int                `json:"total"`
+	Page               int                `json:"page"`
+	PageSize           int                `json:"page_size"`
+	Pages              int                `json:"pages"`
 }
 
 type leaderboardSettlement struct {
@@ -89,6 +92,7 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		return
 	}
 	ctx := c.Request.Context()
+	requestedPage, pageSize := response.ParsePagination(c)
 
 	// 受「用户排行榜展示」开关控制（与是否发奖解耦）。
 	if !h.settingService.IsLeaderboardRankingVisibleEnabled(ctx) {
@@ -113,6 +117,7 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 	rewardEnabled := h.settingService.IsLeaderboardRewardEnabled(ctx)
 	poolRate := h.settingService.GetLeaderboardRewardPoolRate(ctx)
 	topN := h.settingService.GetLeaderboardRewardTopN(ctx)
+	displayTopN := h.settingService.GetLeaderboardDisplayTopN(ctx)
 	minSpend := h.settingService.GetLeaderboardRewardMinSpend(ctx)
 	currentMinSpend := minSpend
 	mode := h.settingService.GetLeaderboardRewardDistributionMode(ctx)
@@ -141,15 +146,23 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		PoolRate:         poolRate,
 		TopN:             topN,
 		MinSpend:         roundLeaderboard(minSpend),
+		DisplayTopN:      displayTopN,
 		DistributionMode: mode,
 		Ranking:          []leaderboardEntry{},
+		Page:             1,
+		PageSize:         pageSize,
+		Pages:            1,
 	}
 	// weighted 模式：附带各名次奖励占比，供前端展示实际分配比例。
 	if mode == service.LeaderboardRewardModeWeighted {
 		resp.DistributionShares = service.LeaderboardWeightedShares(weights, topN)
 	}
 
-	ranking, err := h.dashboardService.GetUserSpendingRanking(ctx, windowStart, windowEnd, leaderboardScanLimit)
+	scanLimit := leaderboardScanLimit
+	if displayTopN > scanLimit {
+		scanLimit = displayTopN
+	}
+	ranking, err := h.dashboardService.GetUserSpendingRanking(ctx, windowStart, windowEnd, scanLimit)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -161,6 +174,10 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		excluded := h.settingService.GetLeaderboardExcludedEmailSet(ctx)
 		totalCost := ranking.TotalActualCost
 		filtered, totalCost := filterLeaderboardExcludedItems(ranking.Ranking, excluded, totalCost, settlement == nil)
+		resp.Total = min(len(filtered), displayTopN)
+		page, pages, pageStart, pageEnd := leaderboardPageWindow(requestedPage, pageSize, resp.Total)
+		resp.Page = page
+		resp.Pages = pages
 
 		if settlement != nil {
 			resp.TotalCost = roundLeaderboard(settlement.totalCost)
@@ -171,10 +188,8 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 		if settlement == nil && rewardEnabled && poolRate > 0 {
 			resp.PoolAmount = roundLeaderboard(totalCost * poolRate / 100.0)
 		}
-		// 榜单按消费降序：达标用户（actual_cost ≥ 门槛）必然是顶部连续的一段，未达门槛者
-		// 一定排在更后、金额更小，不存在「跳过未达者再由后面递补」的情况。
-		// 故中奖区 = 前 topN 名且达标；榜单只展示达标用户；本人始终带回全站名次供前端单独展示。
-		applyThreshold := rewardEnabled && minSpend > 0
+		// 展示范围与奖励资格相互独立：公开榜单展示配置的前 N 名并分页，
+		// 奖励名额和参与门槛只决定 is_winner。本人仍带回全站名次供前端单独展示。
 		winners := 0
 		for i, item := range filtered {
 			rank := i + 1
@@ -208,7 +223,7 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 			if hasSettledReward {
 				entry.RewardAmount = rewardAmount
 			}
-			if (!applyThreshold || qualified) && len(resp.Ranking) < leaderboardDisplayLimit {
+			if rank > pageStart && rank <= pageEnd {
 				resp.Ranking = append(resp.Ranking, entry)
 			}
 			if isMe {
@@ -232,6 +247,23 @@ func (h *LeaderboardHandler) GetLeaderboard(c *gin.Context) {
 	}
 
 	response.Success(c, resp)
+}
+
+func leaderboardPageWindow(requestedPage, pageSize, total int) (page, pages, start, end int) {
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	pages = max(1, (total+pageSize-1)/pageSize)
+	page = requestedPage
+	if page < 1 {
+		page = 1
+	}
+	if page > pages {
+		page = pages
+	}
+	start = (page - 1) * pageSize
+	end = min(start+pageSize, total)
+	return page, pages, start, end
 }
 
 func newLeaderboardSettlement(logs []service.LeaderboardRewardLog) *leaderboardSettlement {

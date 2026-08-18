@@ -226,6 +226,18 @@ func (s *SettingService) GetLeaderboardRewardTopN(ctx context.Context) int {
 	return value
 }
 
+func (s *SettingService) GetLeaderboardDisplayTopN(ctx context.Context) int {
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardDisplayTopN)
+	if err != nil {
+		return LeaderboardDisplayTopNDefault
+	}
+	value, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil {
+		return LeaderboardDisplayTopNDefault
+	}
+	return clampLeaderboardDisplayTopN(value)
+}
+
 func (s *SettingService) GetLeaderboardRewardDistributionMode(ctx context.Context) string {
 	raw, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardDistributionMode)
 	if err != nil {

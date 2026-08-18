@@ -180,6 +180,7 @@ type SystemSettings struct {
 	LeaderboardRewardEmailNotifyEnabled bool    // 发放排行榜激励时是否发送邮件通知
 	LeaderboardRewardPoolRate           float64 // 奖池比例（昨日总消费的百分比，0-100）
 	LeaderboardRewardTopN               int     // 奖励前 N 名
+	LeaderboardDisplayTopN              int     // 用户榜单公开展示前 N 名
 	LeaderboardRewardDistributionMode   string  // average / weighted
 	LeaderboardRewardWeights            string  // 逗号分隔权重，仅 weighted 模式生效
 	LeaderboardRewardMinSpend           float64 // 每人参与门槛（个人消费≥该值才进入中奖区，0=无门槛）

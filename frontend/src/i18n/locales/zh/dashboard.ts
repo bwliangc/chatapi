@@ -520,7 +520,7 @@ export default {
     modeAverage: '平均分配',
     rankShare: '第{rank}名 {pct}%',
     belowThreshold: '未达门槛',
-    noWinnersYet: '暂无人上榜',
+    noWinnersYet: '暂无排行数据',
     rewardResult: '奖励结果',
     rewardDisabledNote: '当前仅展示消费排行，未开启奖励发放。',
     thresholdNote: '参与门槛：当日消费满 {amount} 才能进入中奖区（前 {topN} 名）。',

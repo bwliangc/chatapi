@@ -106,11 +106,11 @@
                 <span v-else class="text-gray-400">—</span>
               </td>
             </tr>
-            <!-- 正式榜单为空（无人达门槛）时的占位提示 -->
+            <!-- 当前榜单没有消费数据时的占位提示 -->
             <tr v-if="data.ranking.length === 0">
               <td :colspan="period === 'yesterday' ? 4 : 3" class="px-4 py-6 text-center text-sm text-gray-400">{{ t('leaderboard.noWinnersYet') }}</td>
             </tr>
-            <!-- 本人排名：若未出现在上方榜单中（未达门槛或不在前列），用虚线分隔后单独展示 -->
+            <!-- 本人未出现在当前页时，用虚线分隔后单独展示全站排名。 -->
             <template v-if="data.me && !meInList">
               <tr aria-hidden="true">
                 <td :colspan="period === 'yesterday' ? 4 : 3" class="px-4 py-1.5">
@@ -138,15 +138,24 @@
             </template>
           </tbody>
         </table>
+        <Pagination
+          v-if="data && data.total > data.page_size"
+          :page="data.page"
+          :total="data.total"
+          :page-size="data.page_size"
+          :show-page-size-selector="false"
+          @update:page="handlePageChange"
+        />
       </div>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import {
   getLeaderboard,
   type LeaderboardResponse,
@@ -159,13 +168,20 @@ const { t } = useI18n()
 const appStore = useAppStore()
 
 const period = ref<LeaderboardPeriod>('today')
-const loading = ref(false)
-// 按周期缓存，切换 tab 时立即显示该周期数据（无需等待请求）。
-const cache = ref<Partial<Record<LeaderboardPeriod, LeaderboardResponse>>>({})
-const data = computed<LeaderboardResponse | null>(() => cache.value[period.value] ?? null)
+const pageSize = 10
+const pageByPeriod = reactive<Record<LeaderboardPeriod, number>>({ today: 1, yesterday: 1 })
+// 按周期和页码缓存，切换 tab 或翻回已访问页时可立即显示。
+const cache = ref<Record<string, LeaderboardResponse>>({})
+const loadingKeys = reactive(new Set<string>())
+const cacheKey = (p: LeaderboardPeriod, page: number) => `${p}:${page}`
+const currentCacheKey = computed(() => cacheKey(period.value, pageByPeriod[period.value]))
+const data = computed<LeaderboardResponse | null>(
+  () => cache.value[currentCacheKey.value] ?? null,
+)
+const loading = computed(() => loadingKeys.has(currentCacheKey.value))
 
 const showReward = computed(() => !!data.value?.reward_enabled)
-// 本人是否已出现在上方榜单中（用于决定是否在表底用虚线单独补一行本人排名）。
+// 本人是否已出现在当前页中（用于决定是否在表底用虚线单独补一行本人排名）。
 const meInList = computed(() => !!data.value?.ranking?.some((e) => e.is_me))
 // 本人是否未达参与门槛（用于在本人行标注「未达门槛」）。
 const meBelowThreshold = computed(() => {
@@ -199,24 +215,35 @@ const distributionText = computed(() => {
   return t('leaderboard.modeAverage')
 })
 
-async function load(p: LeaderboardPeriod = period.value) {
-  // 仅在该周期尚无缓存时显示加载态，避免切回已缓存周期时闪烁；有缓存则为静默刷新。
-  if (!cache.value[p]) loading.value = true
+async function load(
+  p: LeaderboardPeriod = period.value,
+  page: number = pageByPeriod[p],
+) {
+  const key = cacheKey(p, page)
+  // 仅在该页尚无缓存时显示加载态；有缓存则静默刷新。
+  if (!cache.value[key]) loadingKeys.add(key)
   try {
-    const res = await getLeaderboard(p)
-    cache.value = { ...cache.value, [p]: res }
+    const res = await getLeaderboard(p, page, pageSize)
+    pageByPeriod[p] = res.page
+    cache.value = { ...cache.value, [cacheKey(p, res.page)]: res }
   } catch (err: unknown) {
     appStore.showError(extractApiErrorMessage(err, t('common.error')))
   } finally {
-    loading.value = false
+    loadingKeys.delete(key)
   }
 }
 
 function switchPeriod(p: LeaderboardPeriod) {
   if (period.value === p) return
   period.value = p // 立即切到该周期缓存，无需等待
+  const page = pageByPeriod[p]
   // 昨日已结算（静态）：有缓存则不重复请求；今日实时：始终后台刷新。
-  if (p === 'today' || !cache.value[p]) load(p)
+  if (p === 'today' || !cache.value[cacheKey(p, page)]) load(p, page)
+}
+
+function handlePageChange(page: number) {
+  pageByPeriod[period.value] = page
+  load(period.value, page)
 }
 
 function money(n: number): string {

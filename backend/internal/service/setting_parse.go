@@ -134,6 +134,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyLeaderboardRewardPoolRate:                 strconv.FormatFloat(LeaderboardRewardPoolRateDefault, 'f', 8, 64),
 		SettingKeyLeaderboardRewardMinSpend:                 strconv.FormatFloat(LeaderboardRewardMinSpendDefault, 'f', 8, 64),
 		SettingKeyLeaderboardRewardTopN:                     strconv.Itoa(LeaderboardRewardTopNDefault),
+		SettingKeyLeaderboardDisplayTopN:                    strconv.Itoa(LeaderboardDisplayTopNDefault),
 		SettingKeyLeaderboardRewardDistributionMode:         LeaderboardRewardModeDefault,
 		SettingKeyLeaderboardRewardWeights:                  "",
 		SettingKeyLeaderboardExcludedEmails:                 LeaderboardExcludedEmailsDefault,
@@ -441,6 +442,11 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 			topN = LeaderboardRewardTopNMax
 		}
 		result.LeaderboardRewardTopN = topN
+	}
+	if displayTopN, err := strconv.Atoi(settings[SettingKeyLeaderboardDisplayTopN]); err == nil {
+		result.LeaderboardDisplayTopN = clampLeaderboardDisplayTopN(displayTopN)
+	} else {
+		result.LeaderboardDisplayTopN = LeaderboardDisplayTopNDefault
 	}
 	result.LeaderboardRewardDistributionMode = normalizeLeaderboardRewardMode(settings[SettingKeyLeaderboardRewardDistributionMode])
 	result.LeaderboardRewardWeights = strings.TrimSpace(settings[SettingKeyLeaderboardRewardWeights])
@@ -1041,6 +1047,16 @@ func clampLeaderboardRewardPoolRate(value float64) float64 {
 func clampLeaderboardRewardMinSpend(value float64) float64 {
 	if math.IsNaN(value) || math.IsInf(value, 0) || value < LeaderboardRewardMinSpendMin {
 		return LeaderboardRewardMinSpendDefault
+	}
+	return value
+}
+
+func clampLeaderboardDisplayTopN(value int) int {
+	if value < LeaderboardDisplayTopNMin {
+		return LeaderboardDisplayTopNDefault
+	}
+	if value > LeaderboardDisplayTopNMax {
+		return LeaderboardDisplayTopNMax
 	}
 	return value
 }

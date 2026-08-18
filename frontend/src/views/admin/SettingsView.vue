@@ -7362,6 +7362,24 @@
 
             <div>
               <label class="input-label">
+                {{ t('admin.settings.features.leaderboardReward.displayTopN') }}
+              </label>
+              <input
+                v-model.number="form.leaderboard_display_top_n"
+                type="number"
+                step="1"
+                min="1"
+                max="1000"
+                class="input"
+                placeholder="10"
+              />
+              <p class="mt-1 text-xs text-gray-400">
+                {{ t('admin.settings.features.leaderboardReward.displayTopNHint') }}
+              </p>
+            </div>
+
+            <div>
+              <label class="input-label">
                 {{ t('admin.settings.features.leaderboardReward.excludedEmails') }}
               </label>
               <textarea
@@ -10001,6 +10019,7 @@ const form = reactive<SettingsForm>({
   leaderboard_reward_email_notify_enabled: false,
   leaderboard_reward_pool_rate: 0,
   leaderboard_reward_top_n: 0,
+  leaderboard_display_top_n: 10,
   leaderboard_reward_distribution_mode: "average",
   leaderboard_reward_weights: "",
   leaderboard_reward_min_spend: 0,
@@ -11686,6 +11705,10 @@ async function saveSettings() {
       leaderboard_reward_top_n: Math.max(
         0,
         Math.floor(Number(form.leaderboard_reward_top_n) || 0),
+      ),
+      leaderboard_display_top_n: Math.min(
+        1000,
+        Math.max(1, Math.floor(Number(form.leaderboard_display_top_n) || 10)),
       ),
       leaderboard_reward_distribution_mode:
         form.leaderboard_reward_distribution_mode,

@@ -515,7 +515,7 @@ export default {
     modeAverage: 'Equal Split',
     rankShare: '#{rank} {pct}%',
     belowThreshold: 'Below threshold',
-    noWinnersYet: 'No one on the leaderboard yet',
+    noWinnersYet: 'No ranking data yet',
     rewardResult: 'Reward',
     rewardDisabledNote: 'Showing the spending ranking only; rewards are not being granted.',
     thresholdNote: 'Qualification: spend at least {amount} that day to enter the winner zone (top {topN}).',

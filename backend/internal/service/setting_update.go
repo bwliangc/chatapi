@@ -396,6 +396,8 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 		settings.LeaderboardRewardTopN = LeaderboardRewardTopNMax
 	}
 	updates[SettingKeyLeaderboardRewardTopN] = strconv.Itoa(settings.LeaderboardRewardTopN)
+	settings.LeaderboardDisplayTopN = clampLeaderboardDisplayTopN(settings.LeaderboardDisplayTopN)
+	updates[SettingKeyLeaderboardDisplayTopN] = strconv.Itoa(settings.LeaderboardDisplayTopN)
 	settings.LeaderboardRewardDistributionMode = normalizeLeaderboardRewardMode(settings.LeaderboardRewardDistributionMode)
 	updates[SettingKeyLeaderboardRewardDistributionMode] = settings.LeaderboardRewardDistributionMode
 	settings.LeaderboardRewardWeights = strings.TrimSpace(settings.LeaderboardRewardWeights)

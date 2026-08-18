@@ -7,6 +7,28 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
+func TestLeaderboardPageWindow(t *testing.T) {
+	tests := []struct {
+		name                           string
+		requestedPage, pageSize, total int
+		page, pages, start, end        int
+	}{
+		{name: "first page", requestedPage: 1, pageSize: 10, total: 25, page: 1, pages: 3, start: 0, end: 10},
+		{name: "last partial page", requestedPage: 3, pageSize: 10, total: 25, page: 3, pages: 3, start: 20, end: 25},
+		{name: "page past end", requestedPage: 8, pageSize: 10, total: 25, page: 3, pages: 3, start: 20, end: 25},
+		{name: "empty ranking", requestedPage: 4, pageSize: 10, total: 0, page: 1, pages: 1, start: 0, end: 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			page, pages, start, end := leaderboardPageWindow(tt.requestedPage, tt.pageSize, tt.total)
+			if page != tt.page || pages != tt.pages || start != tt.start || end != tt.end {
+				t.Fatalf("got page=%d pages=%d start=%d end=%d", page, pages, start, end)
+			}
+		})
+	}
+}
+
 func TestNewLeaderboardSettlementUsesSnapshotTopN(t *testing.T) {
 	settlement := newLeaderboardSettlement([]service.LeaderboardRewardLog{
 		{

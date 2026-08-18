@@ -347,6 +347,7 @@ type SystemSettings struct {
 	LeaderboardRewardEmailNotifyEnabled bool    `json:"leaderboard_reward_email_notify_enabled"`
 	LeaderboardRewardPoolRate           float64 `json:"leaderboard_reward_pool_rate"`
 	LeaderboardRewardTopN               int     `json:"leaderboard_reward_top_n"`
+	LeaderboardDisplayTopN              int     `json:"leaderboard_display_top_n"`
 	LeaderboardRewardDistributionMode   string  `json:"leaderboard_reward_distribution_mode"`
 	LeaderboardRewardWeights            string  `json:"leaderboard_reward_weights"`
 	LeaderboardRewardMinSpend           float64 `json:"leaderboard_reward_min_spend"`

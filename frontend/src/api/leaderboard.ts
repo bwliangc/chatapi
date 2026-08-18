@@ -23,16 +23,24 @@ export interface LeaderboardResponse {
   total_cost: number
   pool_amount: number
   min_spend: number
+  display_top_n: number
   ranking: LeaderboardEntry[]
   me: LeaderboardEntry | null
+  total: number
+  page: number
+  page_size: number
+  pages: number
 }
 
-/** 获取今日/昨日消费排行榜（脱敏，受展示开关控制）。 */
+/** 分页获取今日/昨日消费排行榜（脱敏，受展示开关控制）。 */
 export async function getLeaderboard(
   period: LeaderboardPeriod,
+  page: number = 1,
+  pageSize: number = 10,
 ): Promise<LeaderboardResponse> {
   const { data } = await apiClient.get<LeaderboardResponse>(
-    `/leaderboard?period=${encodeURIComponent(period)}`,
+    '/leaderboard',
+    { params: { period, page, page_size: pageSize } },
   )
   return data
 }

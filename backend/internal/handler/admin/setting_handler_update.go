@@ -362,6 +362,7 @@ type UpdateSettingsRequest struct {
 	LeaderboardRewardEmailNotifyEnabled *bool    `json:"leaderboard_reward_email_notify_enabled"`
 	LeaderboardRewardPoolRate           *float64 `json:"leaderboard_reward_pool_rate"`
 	LeaderboardRewardTopN               *int     `json:"leaderboard_reward_top_n"`
+	LeaderboardDisplayTopN              *int     `json:"leaderboard_display_top_n"`
 	LeaderboardRewardDistributionMode   *string  `json:"leaderboard_reward_distribution_mode"`
 	LeaderboardRewardWeights            *string  `json:"leaderboard_reward_weights"`
 	LeaderboardRewardMinSpend           *float64 `json:"leaderboard_reward_min_spend"`
@@ -634,6 +635,16 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	}
 	if leaderboardRewardTopN > service.LeaderboardRewardTopNMax {
 		leaderboardRewardTopN = service.LeaderboardRewardTopNMax
+	}
+	leaderboardDisplayTopN := previousSettings.LeaderboardDisplayTopN
+	if req.LeaderboardDisplayTopN != nil {
+		leaderboardDisplayTopN = *req.LeaderboardDisplayTopN
+	}
+	if leaderboardDisplayTopN < service.LeaderboardDisplayTopNMin {
+		leaderboardDisplayTopN = service.LeaderboardDisplayTopNDefault
+	}
+	if leaderboardDisplayTopN > service.LeaderboardDisplayTopNMax {
+		leaderboardDisplayTopN = service.LeaderboardDisplayTopNMax
 	}
 	leaderboardRewardDistributionMode := previousSettings.LeaderboardRewardDistributionMode
 	if req.LeaderboardRewardDistributionMode != nil {
@@ -1698,6 +1709,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		AffiliateRebatePerInviteeCap:           affiliateRebatePerInviteeCap,
 		LeaderboardRewardPoolRate:              leaderboardRewardPoolRate,
 		LeaderboardRewardTopN:                  leaderboardRewardTopN,
+		LeaderboardDisplayTopN:                 leaderboardDisplayTopN,
 		LeaderboardRewardDistributionMode:      leaderboardRewardDistributionMode,
 		LeaderboardRewardWeights:               leaderboardRewardWeights,
 		LeaderboardRewardMinSpend:              leaderboardRewardMinSpend,
@@ -2472,6 +2484,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		LeaderboardRewardEmailNotifyEnabled: updatedSettings.LeaderboardRewardEmailNotifyEnabled,
 		LeaderboardRewardPoolRate:           updatedSettings.LeaderboardRewardPoolRate,
 		LeaderboardRewardTopN:               updatedSettings.LeaderboardRewardTopN,
+		LeaderboardDisplayTopN:              updatedSettings.LeaderboardDisplayTopN,
 		LeaderboardRewardDistributionMode:   updatedSettings.LeaderboardRewardDistributionMode,
 		LeaderboardRewardWeights:            updatedSettings.LeaderboardRewardWeights,
 		LeaderboardRewardMinSpend:           updatedSettings.LeaderboardRewardMinSpend,
