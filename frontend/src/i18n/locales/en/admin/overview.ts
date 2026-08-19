@@ -1048,6 +1048,9 @@ export default {
         antigravity: 'Antigravity',
         custom: 'Custom',
         grok: 'Grok',
+        kimi: 'Kimi',
+        zhipu: 'Zhipu GLM',
+        deepseek: 'DeepSeek',
         composite: 'Composite',
       },
       deleteConfirm:
