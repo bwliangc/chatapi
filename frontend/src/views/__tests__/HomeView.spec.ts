@@ -32,6 +32,10 @@ vi.mock('@/stores', () => ({
   useAppStore: () => ({ ...appStore, fetchPublicSettings }),
 }))
 
+vi.mock('@/stores/app', () => ({
+  useAppStore: () => appStore,
+}))
+
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
   return {
