@@ -176,6 +176,7 @@ func ProvideAdminSettingHandler(settingService *service.SettingService, emailSer
 // ProvideAdminAccountHandler attaches the notification-email service without
 // expanding the constructor used by focused account-handler tests.
 func ProvideAdminAccountHandler(
+	cfg *config.Config,
 	adminService service.AdminService,
 	oauthService *service.OAuthService,
 	openaiOAuthService *service.OpenAIOAuthService,
@@ -194,6 +195,7 @@ func ProvideAdminAccountHandler(
 	notificationEmailService *service.NotificationEmailService,
 ) *admin.AccountHandler {
 	h := admin.ProvideAccountHandler(
+		cfg,
 		adminService,
 		oauthService,
 		openaiOAuthService,
@@ -296,7 +298,7 @@ var ProviderSet = wire.NewSet(
 	// Admin handlers
 	admin.NewDashboardHandler,
 	admin.NewUserHandler,
-	admin.NewGroupHandler,
+	admin.NewGroupHandlerWithConfig,
 	ProvideAdminAccountHandler,
 	admin.NewAnnouncementHandler,
 	admin.NewDataManagementHandler,

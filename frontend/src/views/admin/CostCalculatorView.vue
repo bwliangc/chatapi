@@ -246,7 +246,7 @@
                   {{ t('admin.costCalculator.subscriptions') }}
                 </th>
                 <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
-                  {{ t('admin.users.status') }}
+                  {{ t('common.status') }}
                 </th>
               </tr>
             </thead>
