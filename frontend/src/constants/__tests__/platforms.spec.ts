@@ -13,7 +13,8 @@ const concretePlatforms = [
   'grok',
   'kimi',
   'zhipu',
-  'deepseek'
+  'deepseek',
+  'minimax'
 ]
 const accountPlatforms = [
   ...concretePlatforms.slice(0, 5),
