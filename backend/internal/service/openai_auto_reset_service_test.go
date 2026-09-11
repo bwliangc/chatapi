@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -13,16 +14,51 @@ type autoResetRepoStub struct {
 	updates  []map[string]any
 }
 
-func (s *autoResetRepoStub) FindByExtraField(context.Context, string, any) ([]Account, error) {
-	return s.accounts, nil
+func (s *autoResetRepoStub) FindByExtraField(ctx context.Context, key string, value any) ([]Account, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	var accounts []Account
+	for _, account := range s.accounts {
+		if account.Extra[key] == value {
+			// Model database snapshots, not shared maps that change before a write.
+			raw, err := json.Marshal(account)
+			if err != nil {
+				return nil, err
+			}
+			var snapshot Account
+			if err := json.Unmarshal(raw, &snapshot); err != nil {
+				return nil, err
+			}
+			accounts = append(accounts, snapshot)
+		}
+	}
+	return accounts, nil
 }
 
-func (s *autoResetRepoStub) UpdateExtra(_ context.Context, _ int64, updates map[string]any) error {
-	copyUpdates := make(map[string]any, len(updates))
-	for key, value := range updates {
-		copyUpdates[key] = value
+func (s *autoResetRepoStub) UpdateExtra(ctx context.Context, id int64, updates map[string]any) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	raw, err := json.Marshal(updates)
+	if err != nil {
+		return err
+	}
+	var copyUpdates map[string]any
+	if err := json.Unmarshal(raw, &copyUpdates); err != nil {
+		return err
 	}
 	s.updates = append(s.updates, copyUpdates)
+	for i := range s.accounts {
+		if s.accounts[i].ID == id {
+			if s.accounts[i].Extra == nil {
+				s.accounts[i].Extra = make(map[string]any)
+			}
+			for key, value := range copyUpdates {
+				s.accounts[i].Extra[key] = value
+			}
+		}
+	}
 	return nil
 }
 
@@ -107,7 +143,7 @@ func TestOpenAIAutoResetWeeklyThresholdTriggersWithLegacyExpiryStrategy(t *testi
 	require.Equal(t, NotificationEmailEventAccountAutoReset, email.inputs[0].Event)
 	require.Equal(t, "1", email.inputs[0].Variables["remaining_credits"])
 	require.NotEmpty(t, repo.updates)
-	last := repo.updates[len(repo.updates)-1]
+	last := repo.accounts[0].Extra
 	require.Equal(t, false, last[AccountExtraAutoResetWeeklyArmed])
 	require.Equal(t, AccountAutoResetStrategyWeeklyThreshold, last[AccountExtraAutoResetLastStrategy])
 }
@@ -177,7 +213,7 @@ func TestOpenAIAutoResetCombinedConditionsConsumeOneCredit(t *testing.T) {
 	require.Equal(t, 1, quota.resetCalls)
 	require.Len(t, email.inputs, 1)
 	require.NotEmpty(t, repo.updates)
-	last := repo.updates[len(repo.updates)-1]
+	last := repo.accounts[0].Extra
 	require.Equal(t, AccountAutoResetStrategyBothConditions, last[AccountExtraAutoResetLastStrategy])
 	require.Equal(t, false, last[AccountExtraAutoResetWeeklyArmed])
 }

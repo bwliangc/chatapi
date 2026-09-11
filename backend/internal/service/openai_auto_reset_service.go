@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -17,10 +16,13 @@ import (
 const (
 	openAIAutoResetCycleInterval = time.Minute
 	openAIAutoResetLockKey       = "openai:auto-reset:leader"
-	openAIAutoResetLockTTL       = 10 * time.Minute
-	openAIAutoResetMaxPerCycle   = 10
-	openAIAutoResetRetryDelay    = 10 * time.Minute
-	openAIAutoResetWeeklyPoll    = 5 * time.Minute
+	// Cover both quota processing and the bounded email batch, including SMTP timeouts.
+	openAIAutoResetLockTTL        = 30 * time.Minute
+	openAIAutoResetMaxPerCycle    = 10
+	openAIAutoResetRetryDelay     = 10 * time.Minute
+	openAIAutoResetWeeklyPoll     = 5 * time.Minute
+	openAIAutoResetPersistTimeout = 5 * time.Second
+	openAIAutoResetRefreshTimeout = 8 * time.Second
 )
 
 type openAIAutoResetAccountRepository interface {
@@ -162,6 +164,9 @@ func (s *OpenAIAutoResetService) RunDue(ctx context.Context) error {
 	now := s.now().UTC()
 	processed := 0
 	for i := range accounts {
+		if ctx.Err() != nil {
+			break
+		}
 		account := &accounts[i]
 		if !openAIAutoResetAccountEligible(account) || !openAIAutoResetDue(account, now) {
 			continue
@@ -177,7 +182,7 @@ func (s *OpenAIAutoResetService) RunDue(ctx context.Context) error {
 		}
 		cancel()
 	}
-	return nil
+	return s.deliverPendingEmails(ctx)
 }
 
 func openAIAutoResetAccountEligible(account *Account) bool {
@@ -219,6 +224,10 @@ func (s *OpenAIAutoResetService) processAccount(ctx context.Context, account *Ac
 		return s.accountRepo.UpdateExtra(ctx, account.ID, updates)
 	}
 
+	pending, err := openAIAutoResetPendingEmails(account)
+	if err != nil {
+		return err
+	}
 	credits := usage.RateLimitResetCredits
 	if credits == nil || credits.AvailableCount <= 0 {
 		return fmt.Errorf("no reset credits available")
@@ -230,33 +239,50 @@ func (s *OpenAIAutoResetService) processAccount(ctx context.Context, account *Ac
 	if result == nil {
 		return fmt.Errorf("consume reset credit returned empty result")
 	}
-	if s.recoverer != nil {
-		if _, err := s.recoverer.RecoverAccountState(ctx, account.ID, AccountRecoveryOptions{InvalidateToken: true}); err != nil {
-			slog.Warn("openai_auto_reset_recovery_failed", "account_id", account.ID, "error", err)
-		}
+	if strings.EqualFold(strings.TrimSpace(result.Code), "no_credit") {
+		return fmt.Errorf("no reset credit consumed")
 	}
 
+	// Persist the successful side effect and its notification before any optional
+	// upstream refresh. A spent credit must not lose its email to the quota deadline.
 	remaining := max(credits.AvailableCount-1, 0)
-	if refreshed, refreshErr := s.quota.QueryUsage(ctx, account.ID); refreshErr == nil && refreshed != nil {
-		usage = refreshed
-		if refreshed.RateLimitResetCredits != nil {
-			remaining = refreshed.RateLimitResetCredits.AvailableCount
-			_ = s.quota.CacheResetCreditsSnapshot(ctx, account.ID, refreshed.RateLimitResetCredits)
-		}
-	}
-
+	pending = append(pending, buildOpenAIAutoResetEmail(account, settings, result, triggerStrategy, triggerValue, remaining, now))
 	updates[AccountExtraAutoResetLastAt] = now.Format(time.RFC3339)
 	updates[AccountExtraAutoResetLastStrategy] = triggerStrategy
 	updates[AccountExtraAutoResetLastError] = ""
-	updates[AccountExtraAutoResetNextCheckAt] = openAIAutoResetNextCheck(settings, usage, now).Format(time.RFC3339)
+	updates[AccountExtraAutoResetNextCheckAt] = now.Add(openAIAutoResetWeeklyPoll).Format(time.RFC3339)
+	updates[AccountExtraAutoResetPendingEmails] = pending
+	updates[AccountExtraAutoResetEmailPending] = true
 	if strings.Contains(triggerStrategy, AccountAutoResetStrategyWeeklyThreshold) {
 		updates[AccountExtraAutoResetWeeklyArmed] = false
 	}
-	if err := s.accountRepo.UpdateExtra(ctx, account.ID, updates); err != nil {
-		return fmt.Errorf("save automatic reset result: %w", err)
+	if err := s.persistResetExtra(ctx, account.ID, updates); err != nil {
+		return fmt.Errorf("save automatic reset result and notification: %w", err)
 	}
 
-	s.sendSuccessEmail(ctx, account, settings, result, triggerStrategy, triggerValue, remaining, now)
+	refreshCtx, cancelRefresh := context.WithTimeout(context.WithoutCancel(ctx), openAIAutoResetRefreshTimeout)
+	defer cancelRefresh()
+	if s.recoverer != nil {
+		if _, err := s.recoverer.RecoverAccountState(refreshCtx, account.ID, AccountRecoveryOptions{InvalidateToken: true}); err != nil {
+			slog.Warn("openai_auto_reset_recovery_failed", "account_id", account.ID, "error", err)
+		}
+	}
+	if refreshed, refreshErr := s.quota.QueryUsage(refreshCtx, account.ID); refreshErr == nil && refreshed != nil {
+		if refreshed.RateLimitResetCredits != nil {
+			remaining = refreshed.RateLimitResetCredits.AvailableCount
+			_ = s.quota.CacheResetCreditsSnapshot(refreshCtx, account.ID, refreshed.RateLimitResetCredits)
+		}
+		pending[len(pending)-1].Variables["remaining_credits"] = fmt.Sprint(remaining)
+		if err := s.persistResetExtra(ctx, account.ID, map[string]any{
+			AccountExtraAutoResetPendingEmails: pending,
+			AccountExtraAutoResetNextCheckAt:   openAIAutoResetNextCheck(settings, refreshed, now).Format(time.RFC3339),
+		}); err != nil {
+			slog.Warn("openai_auto_reset_refresh_save_failed", "account_id", account.ID, "error", err)
+		}
+	} else {
+		slog.Warn("openai_auto_reset_refresh_failed", "account_id", account.ID, "error", refreshErr)
+	}
+
 	return nil
 }
 
@@ -350,52 +376,18 @@ func (s *OpenAIAutoResetService) recordFailure(ctx context.Context, accountID in
 	if len(message) > 240 {
 		message = message[:240]
 	}
-	_ = s.accountRepo.UpdateExtra(ctx, accountID, map[string]any{
+	if persistErr := s.persistResetExtra(ctx, accountID, map[string]any{
 		AccountExtraAutoResetLastError:   message,
 		AccountExtraAutoResetNextCheckAt: now.Add(openAIAutoResetRetryDelay).Format(time.RFC3339),
-	})
+	}); persistErr != nil {
+		slog.Warn("openai_auto_reset_failure_save_failed", "account_id", accountID, "error", persistErr)
+	}
 }
 
-func (s *OpenAIAutoResetService) sendSuccessEmail(
-	ctx context.Context,
-	account *Account,
-	settings AccountAutoResetSettings,
-	result *OpenAIQuotaResetResult,
-	triggerStrategy string,
-	triggerValue string,
-	remaining int,
-	now time.Time,
-) {
-	if s == nil || s.emailSender == nil || account == nil {
-		return
-	}
-	strategyLabel := "Weekly usage threshold"
-	if triggerStrategy == AccountAutoResetStrategyCreditExpiry {
-		strategyLabel = "Reset credit nearing expiry"
-	} else if triggerStrategy == AccountAutoResetStrategyBothConditions {
-		strategyLabel = "Weekly usage threshold or reset credit nearing expiry"
-	}
-	reminderKey := now.Format(time.RFC3339Nano)
-	if result.Credit != nil {
-		reminderKey = firstNonEmpty(result.Credit.ID, result.Credit.RedeemedAt, reminderKey)
-	}
-	if err := s.emailSender.Send(ctx, NotificationEmailSendInput{
-		Event:          NotificationEmailEventAccountAutoReset,
-		RecipientEmail: settings.Email,
-		RecipientName:  NotificationRecipientName(settings.Email),
-		SourceType:     "account",
-		SourceID:       strconv.FormatInt(account.ID, 10),
-		ReminderKey:    reminderKey,
-		Variables: map[string]string{
-			"account_id":        strconv.FormatInt(account.ID, 10),
-			"account_name":      account.Name,
-			"strategy":          strategyLabel,
-			"trigger_value":     triggerValue,
-			"windows_reset":     strconv.Itoa(result.WindowsReset),
-			"remaining_credits": strconv.Itoa(remaining),
-			"reset_time":        now.Format("2006-01-02 15:04:05 MST"),
-		},
-	}); err != nil {
-		slog.Warn("openai_auto_reset_email_failed", "account_id", account.ID, "error", err)
-	}
+// Give result persistence its own bounded budget after an upstream side effect,
+// even if the operation context has expired or shutdown has started.
+func (s *OpenAIAutoResetService) persistResetExtra(ctx context.Context, accountID int64, updates map[string]any) error {
+	persistCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), openAIAutoResetPersistTimeout)
+	defer cancel()
+	return s.accountRepo.UpdateExtra(persistCtx, accountID, updates)
 }

@@ -22,6 +22,10 @@ const (
 	AccountExtraAutoResetLastAt          = "auto_reset_last_at"
 	AccountExtraAutoResetLastStrategy    = "auto_reset_last_strategy"
 	AccountExtraAutoResetLastError       = "auto_reset_last_error"
+	AccountExtraAutoResetPendingEmails   = "auto_reset_pending_emails"
+	AccountExtraAutoResetEmailPending    = "auto_reset_email_pending"
+	AccountExtraAutoResetEmailNextRetry  = "auto_reset_email_next_retry_at"
+	AccountExtraAutoResetEmailLastError  = "auto_reset_email_last_error"
 
 	AccountAutoResetStrategyWeeklyThreshold = "weekly_threshold"
 	AccountAutoResetStrategyCreditExpiry    = "credit_expiry"
@@ -75,6 +79,9 @@ func AccountAutoResetSettingsFrom(account *Account) AccountAutoResetSettings {
 	settings.LastResetAt, _ = account.Extra[AccountExtraAutoResetLastAt].(string)
 	settings.LastStrategy, _ = account.Extra[AccountExtraAutoResetLastStrategy].(string)
 	settings.LastError, _ = account.Extra[AccountExtraAutoResetLastError].(string)
+	if emailError, _ := account.Extra[AccountExtraAutoResetEmailLastError].(string); emailError != "" {
+		settings.LastError = strings.TrimSpace(settings.LastError + " " + emailError)
+	}
 	if rawConditions, ok := account.Extra[AccountExtraAutoResetConditions]; ok {
 		settings.Conditions = parseAccountAutoResetConditions(rawConditions)
 	} else {
