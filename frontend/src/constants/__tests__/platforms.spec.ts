@@ -14,7 +14,8 @@ const concretePlatforms = [
   'kimi',
   'zhipu',
   'deepseek',
-  'minimax'
+  'minimax',
+  'opencode_go'
 ]
 const accountPlatforms = [
   ...concretePlatforms.slice(0, 5),

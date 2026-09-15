@@ -21,6 +21,7 @@ type CustomMenuItem struct {
 	// (legacy items) is treated as true to preserve existing behavior.
 	WithUserParams *bool `json:"with_user_params,omitempty"`
 	SortOrder      int   `json:"sort_order"`
+	HideOpenButton bool  `json:"hide_open_button,omitempty"`
 }
 
 // CustomEndpoint represents an admin-configured API endpoint for quick copy.
@@ -329,6 +330,9 @@ type SystemSettings struct {
 	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
 	// Leaderboard ranking page switch (user-facing spending board; opt-in)
 	LeaderboardRankingVisibleEnabled bool `json:"leaderboard_ranking_visible_enabled"`
+	// Subscription feature switch: gates the whole user-facing subscription surface
+	// (sidebar entries, purchase-page subscription tab, header badge, /subscriptions route).
+	SubscriptionEnabled bool `json:"subscription_enabled"`
 
 	// Model Plaza feature (public group/model pricing showcase)
 	ModelPlazaEnabled       bool   `json:"model_plaza_enabled"`
@@ -427,7 +431,11 @@ type PublicSettings struct {
 	GoogleOAuthEnabled                  bool                     `json:"google_oauth_enabled"`
 	BackendModeEnabled                  bool                     `json:"backend_mode_enabled"`
 	PaymentEnabled                      bool                     `json:"payment_enabled"`
-	Version                             string                   `json:"version"`
+	// PaymentBalanceDisabled mirrors the payment-config BALANCE_PAYMENT_DISABLED switch so the
+	// user shell can derive the site billing mode (recharge & subscription / recharge only /
+	// subscription only) before any authenticated checkout call.
+	PaymentBalanceDisabled bool   `json:"payment_balance_disabled"`
+	Version                string `json:"version"`
 	// 服务器全局时区（IANA 名称与当前 UTC 偏移，如 "Asia/Shanghai" / "+08:00"）。
 	// 高峰时段等按服务器本地时间判定的窗口，前端展示时据此标注，避免用户按浏览器本地时间误读。
 	ServerTimezone              string  `json:"server_timezone"`
@@ -455,6 +463,7 @@ type PublicSettings struct {
 	LeaderboardRankingVisibleEnabled bool    `json:"leaderboard_ranking_visible_enabled"`
 	LeaderboardRewardPoolRate        float64 `json:"leaderboard_reward_pool_rate"`
 	LeaderboardRewardTopN            int     `json:"leaderboard_reward_top_n"`
+	SubscriptionEnabled              bool    `json:"subscription_enabled"`
 
 	ModelPlazaEnabled       bool `json:"model_plaza_enabled"`
 	ModelPlazaRequireAuth   bool `json:"model_plaza_require_auth"`

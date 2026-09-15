@@ -103,11 +103,12 @@ describe('channel monitor Grok provider', () => {
     expect(PROVIDERS).toContain(PROVIDER_GROK)
     expect(PROVIDERS).toContain(PROVIDER_CUSTOM)
     const providerButtons = wrapper.findAll('[data-testid^="monitor-provider-"]')
-    expect(providerButtons).toHaveLength(10)
+    expect(providerButtons).toHaveLength(PROVIDERS.length)
     expect(providerButtons[0].element.parentElement?.className).toContain('grid-cols-2')
     expect(providerButtons[0].element.parentElement?.className).toContain('sm:grid-cols-5')
     expect(wrapper.find('[data-testid="monitor-provider-custom"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="monitor-provider-minimax"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="monitor-provider-opencode_go"]').exists()).toBe(true)
 
     const grokButton = wrapper.get('[data-testid="monitor-provider-grok"]')
     expect(grokButton.find('svg').exists()).toBe(true)

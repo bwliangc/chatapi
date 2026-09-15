@@ -12,6 +12,15 @@ import (
 )
 
 func TestMigration237PreservesCustomPlatforms(t *testing.T) {
+	testPlatformMigrationPreservesCustom(t, "237_add_minimax_platform.sql", "minimax")
+}
+
+func TestMigration238PreservesCustomPlatforms(t *testing.T) {
+	testPlatformMigrationPreservesCustom(t, "238_opencode_go_platform.sql", "opencode_go")
+}
+
+func testPlatformMigrationPreservesCustom(t *testing.T, filename, newPlatform string) {
+	t.Helper()
 	tx := testTx(t)
 	ctx := context.Background()
 
@@ -51,11 +60,11 @@ VALUES ($1, $1, 'https://example.com', 'test-key', 'test-model', 60, $2)`, platf
 	}
 	insertPlatform("custom")
 
-	migration, err := dbmigrations.FS.ReadFile("237_add_minimax_platform.sql")
+	migration, err := dbmigrations.FS.ReadFile(filename)
 	require.NoError(t, err)
 	_, err = tx.ExecContext(ctx, string(migration))
 	require.NoError(t, err, "upgrade must accept existing custom rows")
-	insertPlatform("minimax")
+	insertPlatform(newPlatform)
 
 	// Replaying the migration must preserve both sets of rows.
 	_, err = tx.ExecContext(ctx, string(migration))
@@ -68,7 +77,7 @@ VALUES ($1, $1, 'https://example.com', 'test-key', 'test-model', 60, $2)`, platf
 			column = "target_platform"
 		}
 		var count int
-		require.NoError(t, tx.QueryRowContext(ctx, fmt.Sprintf("SELECT count(DISTINCT %s) FROM %s WHERE %s IN ('custom', 'minimax')", column, table, column)).Scan(&count))
+		require.NoError(t, tx.QueryRowContext(ctx, fmt.Sprintf("SELECT count(DISTINCT %s) FROM %s WHERE %s IN ('custom', $1)", column, table, column), newPlatform).Scan(&count))
 		require.Equal(t, 2, count, table)
 	}
 }
