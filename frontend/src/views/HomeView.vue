@@ -535,6 +535,16 @@ const uniformMultiplier = 1
 
 const featuredPrices: FeaturedPrice[] = [
   {
+    model: 'gpt-6-astra',
+    multiplier: uniformMultiplier,
+    prices: {
+      input: 0.00001,
+      cacheRead: 0.000001,
+      cacheWrite: 0.0000125,
+      output: 0.00005
+    }
+  },
+  {
     model: 'gpt-5.6-sol',
     multiplier: uniformMultiplier,
     prices: {
@@ -572,16 +582,6 @@ const featuredPrices: FeaturedPrice[] = [
       cacheRead: 0.0000005,
       cacheWrite: null,
       output: 0.00003
-    }
-  },
-  {
-    model: 'gpt-5.4',
-    multiplier: uniformMultiplier,
-    prices: {
-      input: 0.0000025,
-      cacheRead: 0.00000025,
-      cacheWrite: null,
-      output: 0.000015
     }
   }
 ]

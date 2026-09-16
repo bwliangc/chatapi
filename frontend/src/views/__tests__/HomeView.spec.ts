@@ -80,11 +80,11 @@ describe('HomeView transparent pricing', () => {
     })
 
     const rows = [
+      { model: 'gpt-6-astra', prices: ['$10', '$1', '$12.5', '$50'] },
       { model: 'gpt-5.6-sol', prices: ['$5', '$0.5', '$6.25', '$30'] },
       { model: 'gpt-5.6-terra', prices: ['$2', '$0.2', '$2.5', '$12'] },
       { model: 'gpt-5.6-luna', prices: ['$0.2', '$0.02', '$0.25', '$1.2'] },
       { model: 'gpt-5.5', prices: ['$5', '$0.5', '-', '$30'] },
-      { model: 'gpt-5.4', prices: ['$2.5', '$0.25', '-', '$15'] },
     ]
     const priceKinds = ['input', 'cacheRead', 'cacheWrite', 'output']
 
