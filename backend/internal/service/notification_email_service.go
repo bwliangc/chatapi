@@ -1124,11 +1124,11 @@ var notificationEmailEventDefinitions = map[string]NotificationEmailEventInfo{
 	NotificationEmailEventAccountAbnormalNotice: {
 		Event:       NotificationEmailEventAccountAbnormalNotice,
 		Label:       "Account abnormal notice",
-		Description: "Sent manually from account management to the upstream account email when the account is abnormal.",
+		Description: "Sent automatically to the configured account notification email when a selected error, rate limit, temporary scheduling block, or overload state begins.",
 		Category:    "admin",
 		Optional:    false,
 		Placeholders: append(append([]string{}, notificationEmailCommonPlaceholders...),
-			"account_id", "account_name", "platform", "account_status", "error_message"),
+			"account_id", "account_name", "platform", "account_status", "error_message", "reset_time"),
 	},
 	NotificationEmailEventAccountAutoReset: {
 		Event:       NotificationEmailEventAccountAutoReset,
@@ -1387,8 +1387,9 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
   <tr><td>Platform</td><td>{{platform}}</td></tr>
   <tr><td>Status</td><td>{{account_status}}</td></tr>
   <tr><td>Details</td><td>{{error_message}}</td></tr>
+  <tr><td>Expected recovery</td><td>{{reset_time}}</td></tr>
 </table>
-<p>Please review and restore the account before using it again.</p>`),
+<p>Please review the account details. Temporary limits recover when their cooldown ends.</p>`),
 		},
 		notificationEmailLocaleChinese: {
 			Subject: "[{{site_name}}] 账号异常通知 - {{account_name}}",
@@ -1401,8 +1402,9 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
   <tr><td>平台</td><td>{{platform}}</td></tr>
   <tr><td>状态</td><td>{{account_status}}</td></tr>
   <tr><td>异常详情</td><td>{{error_message}}</td></tr>
+  <tr><td>预计恢复时间</td><td>{{reset_time}}</td></tr>
 </table>
-<p>请检查并恢复账号后再继续使用。</p>`),
+<p>请根据异常详情检查账号；临时限流或冷却状态将在到期后恢复。</p>`),
 		},
 	},
 	NotificationEmailEventAccountAutoReset: {

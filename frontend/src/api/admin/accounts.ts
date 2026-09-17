@@ -306,9 +306,12 @@ export async function testAccount(id: number): Promise<{
   return data
 }
 
+export type AccountNotificationStatus = 'error' | 'rate_limited' | 'temp_unschedulable' | 'overloaded'
+
 export interface AccountAbnormalNotificationSettings {
   enabled: boolean
   email: string
+  statuses: AccountNotificationStatus[]
 }
 
 export async function getAbnormalNotification(id: number): Promise<AccountAbnormalNotificationSettings> {

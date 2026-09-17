@@ -389,7 +389,7 @@ const eventDisplayMeta: Record<string, EventDisplayMeta> = {
   },
   "account.abnormal_notice": {
     label: "账号异常通知",
-    timing: "管理员在账号管理中确认发送后，发送至该上游账号保存的邮箱。",
+    timing: "账号进入勾选的异常、限流、临时不可调度或上游过载状态时，自动发送至账号配置的通知邮箱。",
     categoryLabel: "管理告警",
   },
   "account.auto_reset": {

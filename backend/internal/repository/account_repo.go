@@ -67,11 +67,12 @@ var schedulerNeutralExtraKeyPrefixes = []string{
 }
 
 var schedulerNeutralExtraKeys = map[string]struct{}{
-	"codex_usage_updated_at":                  {},
-	"grok_billing_snapshot":                   {},
-	"session_window_utilization":              {},
-	service.AccountExtraAbnormalNotifyEnabled: {},
-	service.AccountExtraAbnormalNotifyEmail:   {},
+	"codex_usage_updated_at":                   {},
+	"grok_billing_snapshot":                    {},
+	"session_window_utilization":               {},
+	service.AccountExtraAbnormalNotifyEnabled:  {},
+	service.AccountExtraAbnormalNotifyEmail:    {},
+	service.AccountExtraAbnormalNotifyStatuses: {},
 }
 
 const postgresParameterBatchSize = 50000
@@ -1394,13 +1395,16 @@ func (r *accountRepository) SetError(ctx context.Context, id int64, errorMsg str
 	}
 	r.syncSchedulerAccountSnapshot(ctx, id)
 	if updated > 0 {
-		r.sendAbnormalNotification(ctx, id, errorMsg)
+		r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusError, errorMsg, nil)
 	}
 	return nil
 }
 
-func (r *accountRepository) sendAbnormalNotification(ctx context.Context, id int64, errorMsg string) {
+func (r *accountRepository) sendAbnormalNotification(ctx context.Context, id int64, status, errorMsg string, resetAt *time.Time) {
 	if r == nil || r.abnormalNotificationSender == nil {
+		return
+	}
+	if resetAt != nil && !resetAt.After(time.Now()) {
 		return
 	}
 	account, err := r.GetByID(ctx, id)
@@ -1409,7 +1413,7 @@ func (r *accountRepository) sendAbnormalNotification(ctx context.Context, id int
 		return
 	}
 	settings := service.AccountAbnormalNotificationSettingsFrom(account)
-	if !settings.Enabled {
+	if !settings.Includes(status) {
 		return
 	}
 	recipient := service.NormalizeEmail(settings.Email)
@@ -1426,6 +1430,10 @@ func (r *accountRepository) sendAbnormalNotification(ctx context.Context, id int
 		logger.LegacyPrintf("repository.account", "[AbnormalNotify] skip account without valid recipient: id=%d", id)
 		return
 	}
+	resetTime := "—"
+	if resetAt != nil {
+		resetTime = resetAt.Format(time.RFC3339)
+	}
 	if err := r.abnormalNotificationSender.Send(ctx, service.NotificationEmailSendInput{
 		Event:          service.NotificationEmailEventAccountAbnormalNotice,
 		RecipientEmail: recipient,
@@ -1434,8 +1442,9 @@ func (r *accountRepository) sendAbnormalNotification(ctx context.Context, id int
 			"account_id":     strconv.FormatInt(account.ID, 10),
 			"account_name":   account.Name,
 			"platform":       account.Platform,
-			"account_status": service.StatusError,
+			"account_status": status,
 			"error_message":  strings.TrimSpace(errorMsg),
+			"reset_time":     resetTime,
 		},
 	}); err != nil {
 		logger.LegacyPrintf("repository.account", "[AbnormalNotify] send failed: id=%d err=%v", id, err)
@@ -1487,6 +1496,7 @@ func (r *accountRepository) SetGrokCredentialErrorIfMatch(
 		return false, err
 	}
 	r.syncSchedulerAccountSnapshotDetached(ctx, id)
+	r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusError, errorMsg, nil)
 	return true, nil
 }
 
@@ -1547,6 +1557,7 @@ func (r *accountRepository) SetGrokOAuthErrorIfCredentialsUnchanged(
 		return false, nil
 	}
 	r.syncSchedulerAccountSnapshotDetached(ctx, id)
+	r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusError, errorMsg, nil)
 	return true, nil
 }
 
@@ -1669,6 +1680,7 @@ func (r *accountRepository) SetGrokOAuthRefreshErrorIfCredentialsUnchanged(
 		return false, nil
 	}
 	r.syncSchedulerAccountSnapshotDetached(ctx, id)
+	r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusError, errorMsg, nil)
 	return true, nil
 }
 
@@ -1690,7 +1702,7 @@ func (r *accountRepository) SetGrokOAuthRefreshTempUnschedulableIfCredentialsUnc
 	if err != nil {
 		return false, err
 	}
-	result, err := r.sql.ExecContext(ctx, `
+	const updateSQL = `
 		WITH updated AS (
 		UPDATE accounts AS a
 		SET temp_unschedulable_until = $1,
@@ -1704,11 +1716,14 @@ func (r *accountRepository) SetGrokOAuthRefreshTempUnschedulableIfCredentialsUnc
 			AND a.credentials = $7::jsonb
 			AND a.proxy_id IS NOT DISTINCT FROM $8
 			AND (a.temp_unschedulable_until IS NULL OR a.temp_unschedulable_until < $1)
+	`
+	const outboxSQL = `
 		RETURNING a.id
 		)
 		INSERT INTO scheduler_outbox (event_type, account_id, group_id, payload)
 		SELECT $9, updated.id, NULL, NULL FROM updated
-	`,
+	`
+	args := []any{
 		until,
 		reason,
 		id,
@@ -1718,18 +1733,33 @@ func (r *accountRepository) SetGrokOAuthRefreshTempUnschedulableIfCredentialsUnc
 		string(expectedJSON),
 		expectedProxyID,
 		service.SchedulerOutboxEventAccountChanged,
-	)
+	}
+	result, err := r.sql.ExecContext(ctx, updateSQL+` AND (a.temp_unschedulable_until IS NULL OR a.temp_unschedulable_until <= clock_timestamp())`+outboxSQL, args...)
 	if err != nil {
 		return false, err
 	}
-	rowsAffected, err := result.RowsAffected()
+	entered, err := result.RowsAffected()
 	if err != nil {
 		return false, err
+	}
+	rowsAffected := entered
+	if rowsAffected == 0 {
+		result, err = r.sql.ExecContext(ctx, updateSQL+outboxSQL, args...)
+		if err != nil {
+			return false, err
+		}
+		rowsAffected, err = result.RowsAffected()
+		if err != nil {
+			return false, err
+		}
 	}
 	if rowsAffected == 0 {
 		return false, nil
 	}
 	r.syncSchedulerAccountSnapshotDetached(ctx, id)
+	if entered > 0 {
+		r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusTempUnschedulable, reason, &until)
+	}
 	return true, nil
 }
 
@@ -2245,18 +2275,31 @@ func (r *accountRepository) ListModelAvailabilityCandidates(
 
 func (r *accountRepository) SetRateLimited(ctx context.Context, id int64, resetAt time.Time) error {
 	now := time.Now()
-	_, err := r.client.Account.Update().
-		Where(dbaccount.IDEQ(id)).
-		SetRateLimitedAt(now).
-		SetRateLimitResetAt(resetAt).
-		Save(ctx)
+	update := func(entering bool) (int, error) {
+		builder := r.client.Account.Update().Where(dbaccount.IDEQ(id)).
+			SetRateLimitedAt(now).SetRateLimitResetAt(resetAt)
+		if entering {
+			builder.Where(dbaccount.Or(dbaccount.RateLimitResetAtIsNil(), dbaccount.RateLimitResetAtLTE(now)))
+		}
+		return builder.Save(ctx)
+	}
+	// Claim the transition atomically so concurrent 429s send only one notice.
+	entered, err := update(true)
 	if err != nil {
 		return err
+	}
+	if entered == 0 {
+		if _, err := update(false); err != nil {
+			return err
+		}
 	}
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue rate limit failed: account=%d err=%v", id, err)
 	}
 	r.syncSchedulerAccountSnapshot(ctx, id)
+	if entered > 0 {
+		r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusRateLimited, "账号触发限流，请等待请求窗口或用量额度恢复。", &resetAt)
+	}
 	return nil
 }
 
@@ -2265,19 +2308,25 @@ func (r *accountRepository) SetRateLimited(ctx context.Context, id int64, resetA
 // later reset boundary observed by another request or instance.
 func (r *accountRepository) SetRateLimitedIfLater(ctx context.Context, id int64, resetAt time.Time) error {
 	now := time.Now()
-	updated, err := r.client.Account.Update().
-		Where(
-			dbaccount.IDEQ(id),
-			dbaccount.Or(
-				dbaccount.RateLimitResetAtIsNil(),
-				dbaccount.RateLimitResetAtLT(resetAt),
-			),
-		).
-		SetRateLimitedAt(now).
-		SetRateLimitResetAt(resetAt).
-		Save(ctx)
+	update := func(entering bool) (int, error) {
+		builder := r.client.Account.Update().
+			Where(dbaccount.IDEQ(id), dbaccount.Or(dbaccount.RateLimitResetAtIsNil(), dbaccount.RateLimitResetAtLT(resetAt))).
+			SetRateLimitedAt(now).SetRateLimitResetAt(resetAt)
+		if entering {
+			builder.Where(dbaccount.Or(dbaccount.RateLimitResetAtIsNil(), dbaccount.RateLimitResetAtLTE(now)))
+		}
+		return builder.Save(ctx)
+	}
+	entered, err := update(true)
 	if err != nil {
 		return err
+	}
+	updated := entered
+	if updated == 0 {
+		updated, err = update(false)
+		if err != nil {
+			return err
+		}
 	}
 	if updated == 0 {
 		// This instance may not have observed the later value written elsewhere.
@@ -2289,6 +2338,9 @@ func (r *accountRepository) SetRateLimitedIfLater(ctx context.Context, id int64,
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue extended rate limit failed: account=%d err=%v", id, err)
 	}
 	r.syncSchedulerAccountSnapshot(ctx, id)
+	if entered > 0 {
+		r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusRateLimited, "账号触发限流，请等待请求窗口或用量额度恢复。", &resetAt)
+	}
 	return nil
 }
 
@@ -2373,6 +2425,9 @@ func (r *accountRepository) SetRateLimitedIfUnchanged(
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue rate limit failed: account=%d err=%v", id, err)
 	}
 	r.syncSchedulerAccountSnapshot(ctx, id)
+	if expectedResetAt == nil || !expectedResetAt.After(now) {
+		r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusRateLimited, "账号触发限流，请等待请求窗口或用量额度恢复。", &newResetAt)
+	}
 	return true, nil
 }
 
@@ -2396,9 +2451,7 @@ func (r *accountRepository) SetModelRateLimit(ctx context.Context, id int64, sco
 	}
 
 	client := clientFromContext(ctx, r.client)
-	result, err := client.ExecContext(
-		ctx,
-		`UPDATE accounts SET 
+	const updateSQL = `UPDATE accounts SET
 			extra = jsonb_set(
 				jsonb_set(COALESCE(extra, '{}'::jsonb), '{model_rate_limits}'::text[], COALESCE(extra->'model_rate_limits', '{}'::jsonb), true),
 				ARRAY['model_rate_limits', $1]::text[],
@@ -2406,18 +2459,30 @@ func (r *accountRepository) SetModelRateLimit(ctx context.Context, id int64, sco
 				true
 			),
 			updated_at = NOW()
-		WHERE id = $3 AND deleted_at IS NULL`,
-		scope,
-		raw,
-		id,
-	)
+		WHERE id = $3 AND deleted_at IS NULL`
+	// Model reset timestamps are written above as UTC RFC3339 strings. Comparing
+	// that canonical form also treats missing/empty values as a new transition.
+	result, err := client.ExecContext(ctx, updateSQL+`
+		AND COALESCE(extra->'model_rate_limits'->$1::text->>'rate_limit_reset_at', '') <= $4`,
+		scope, raw, id, now.Format(time.RFC3339))
 	if err != nil {
 		return err
 	}
 
-	affected, err := result.RowsAffected()
+	entered, err := result.RowsAffected()
 	if err != nil {
 		return err
+	}
+	affected := entered
+	if affected == 0 {
+		result, err = client.ExecContext(ctx, updateSQL, scope, raw, id)
+		if err != nil {
+			return err
+		}
+		affected, err = result.RowsAffected()
+		if err != nil {
+			return err
+		}
 	}
 	if affected == 0 {
 		return service.ErrAccountNotFound
@@ -2426,26 +2491,46 @@ func (r *accountRepository) SetModelRateLimit(ctx context.Context, id int64, sco
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue model rate limit failed: account=%d err=%v", id, err)
 	}
 	r.syncSchedulerAccountSnapshot(ctx, id)
+	if entered > 0 {
+		detail := "模型/配额范围 " + scope + " 触发限流。"
+		if payload["reason"] != "" {
+			detail += " " + payload["reason"]
+		}
+		r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusRateLimited, detail, &resetAt)
+	}
 	return nil
 }
 
 func (r *accountRepository) SetOverloaded(ctx context.Context, id int64, until time.Time) error {
-	_, err := r.client.Account.Update().
-		Where(dbaccount.IDEQ(id)).
-		SetOverloadUntil(until).
-		Save(ctx)
+	now := time.Now()
+	update := func(entering bool) (int, error) {
+		builder := r.client.Account.Update().Where(dbaccount.IDEQ(id)).SetOverloadUntil(until)
+		if entering {
+			builder.Where(dbaccount.Or(dbaccount.OverloadUntilIsNil(), dbaccount.OverloadUntilLTE(now)))
+		}
+		return builder.Save(ctx)
+	}
+	entered, err := update(true)
 	if err != nil {
 		return err
+	}
+	if entered == 0 {
+		if _, err := update(false); err != nil {
+			return err
+		}
 	}
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue overload failed: account=%d err=%v", id, err)
 	}
 	r.syncSchedulerAccountSnapshot(ctx, id)
+	if entered > 0 {
+		r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusOverloaded, "上游服务过载，账号已进入冷却期。", &until)
+	}
 	return nil
 }
 
 func (r *accountRepository) SetTempUnschedulable(ctx context.Context, id int64, until time.Time, reason string) error {
-	result, err := r.sql.ExecContext(ctx, `
+	const updateSQL = `
 		UPDATE accounts
 		SET temp_unschedulable_until = $1,
 			temp_unschedulable_reason = $2,
@@ -2453,13 +2538,25 @@ func (r *accountRepository) SetTempUnschedulable(ctx context.Context, id int64, 
 		WHERE id = $3
 			AND deleted_at IS NULL
 			AND (temp_unschedulable_until IS NULL OR temp_unschedulable_until < $1)
-	`, until, reason, id)
+	`
+	result, err := r.sql.ExecContext(ctx, updateSQL+` AND (temp_unschedulable_until IS NULL OR temp_unschedulable_until <= $4)`, until, reason, id, time.Now())
 	if err != nil {
 		return err
 	}
-	affected, err := result.RowsAffected()
+	entered, err := result.RowsAffected()
 	if err != nil {
 		return err
+	}
+	affected := entered
+	if affected == 0 {
+		result, err = r.sql.ExecContext(ctx, updateSQL, until, reason, id)
+		if err != nil {
+			return err
+		}
+		affected, err = result.RowsAffected()
+		if err != nil {
+			return err
+		}
 	}
 	if affected <= 0 {
 		return nil
@@ -2468,6 +2565,9 @@ func (r *accountRepository) SetTempUnschedulable(ctx context.Context, id int64, 
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue temp unschedulable failed: account=%d err=%v", id, err)
 	}
 	r.syncSchedulerAccountSnapshot(ctx, id)
+	if entered > 0 {
+		r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusTempUnschedulable, reason, &until)
+	}
 	return nil
 }
 
@@ -2513,6 +2613,7 @@ func (r *accountRepository) SetGrokCredentialTempUnschedulableIfMatch(
 		return false, err
 	}
 	r.syncSchedulerAccountSnapshotDetached(ctx, id)
+	r.sendAbnormalNotification(ctx, id, service.AccountNotifyStatusTempUnschedulable, reason, &until)
 	return true, nil
 }
 

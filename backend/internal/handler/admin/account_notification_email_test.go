@@ -44,7 +44,7 @@ func TestGetAccountAbnormalNotificationUsesSavedSettings(t *testing.T) {
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts/42/abnormal-notification", nil))
 
 	require.Equal(t, http.StatusOK, recorder.Code)
-	require.Equal(t, map[string]any{"enabled": true, "email": "alerts@example.com"}, responseData(t, recorder))
+	require.Equal(t, map[string]any{"enabled": true, "email": "alerts@example.com", "statuses": []any{"error"}}, responseData(t, recorder))
 }
 
 func TestGetAccountAbnormalNotificationDefaultsToParentEmail(t *testing.T) {
@@ -59,7 +59,7 @@ func TestGetAccountAbnormalNotificationDefaultsToParentEmail(t *testing.T) {
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts/42/abnormal-notification", nil))
 
 	require.Equal(t, http.StatusOK, recorder.Code)
-	require.Equal(t, map[string]any{"enabled": false, "email": "owner@example.com"}, responseData(t, recorder))
+	require.Equal(t, map[string]any{"enabled": false, "email": "owner@example.com", "statuses": []any{"error"}}, responseData(t, recorder))
 }
 
 func TestUpdateAccountAbnormalNotificationPersistsSettings(t *testing.T) {
@@ -73,9 +73,47 @@ func TestUpdateAccountAbnormalNotificationPersistsSettings(t *testing.T) {
 	require.Equal(t, http.StatusOK, recorder.Code)
 	require.Equal(t, int64(42), adminSvc.updatedAccountExtraID)
 	require.Equal(t, map[string]any{
-		service.AccountExtraAbnormalNotifyEnabled: true,
-		service.AccountExtraAbnormalNotifyEmail:   "alerts@example.com",
+		service.AccountExtraAbnormalNotifyEnabled:  true,
+		service.AccountExtraAbnormalNotifyEmail:    "alerts@example.com",
+		service.AccountExtraAbnormalNotifyStatuses: []string{"error"},
 	}, adminSvc.updatedAccountExtra)
+}
+
+func TestUpdateAccountAbnormalNotificationSelectedStatuses(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want []string
+		code int
+	}{
+		{"selected", `{"enabled":true,"email":"alerts@example.com","statuses":["rate_limited","overloaded","rate_limited"]}`, []string{"rate_limited", "overloaded"}, http.StatusOK},
+		{"legacy request preserves selection", `{"enabled":true,"email":"alerts@example.com"}`, []string{"temp_unschedulable"}, http.StatusOK},
+		{"empty enabled selection", `{"enabled":true,"email":"alerts@example.com","statuses":[]}`, nil, http.StatusBadRequest},
+		{"unknown status", `{"enabled":true,"email":"alerts@example.com","statuses":["active"]}`, nil, http.StatusBadRequest},
+		{"disabled empty selection", `{"enabled":false,"email":"","statuses":[]}`, []string{}, http.StatusOK},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adminSvc := newStubAdminService()
+			adminSvc.accounts = []service.Account{{ID: 42, Extra: map[string]any{
+				service.AccountExtraAbnormalNotifyStatuses: []any{"temp_unschedulable"},
+			}}}
+			router := setupAccountAbnormalNotificationRouter(adminSvc)
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodPut, "/api/v1/admin/accounts/42/abnormal-notification", strings.NewReader(tt.body)))
+			require.Equal(t, tt.code, recorder.Code, recorder.Body.String())
+			if tt.code == http.StatusOK {
+				require.Equal(t, tt.want, adminSvc.updatedAccountExtra[service.AccountExtraAbnormalNotifyStatuses])
+				var response struct {
+					Data service.AccountAbnormalNotificationSettings `json:"data"`
+				}
+				require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+				require.Equal(t, tt.want, response.Data.Statuses)
+			} else {
+				require.Zero(t, adminSvc.updatedAccountExtraID)
+			}
+		})
+	}
 }
 
 func TestUpdateAccountAbnormalNotificationRequiresValidEmailWhenEnabled(t *testing.T) {

@@ -21,7 +21,7 @@ func TestAccountRepository_SetTempUnschedulable_NoRowsAffectedDoesNotWriteOutbox
 
 	err := repo.SetTempUnschedulable(context.Background(), 42, until, "retry")
 	require.NoError(t, err)
-	require.Len(t, exec.execQueries, 1)
+	require.Len(t, exec.execQueries, 2)
 	require.Contains(t, exec.execQueries[0], "UPDATE accounts")
 	require.NotContains(t, strings.Join(exec.execQueries, "\n"), "scheduler_outbox")
 }
@@ -225,7 +225,7 @@ func TestAccountRepository_SetGrokOAuthRefreshTempUnschedulableIfCredentialsUnch
 
 	require.NoError(t, err)
 	require.False(t, applied)
-	require.Len(t, exec.execQueries, 1)
+	require.Len(t, exec.execQueries, 2)
 	normalized := normalizeSQLWhitespace(exec.execQueries[0])
 	require.Contains(t, normalized, "credentials = $7::jsonb")
 	require.Contains(t, normalized, "proxy_id IS NOT DISTINCT FROM $8")
