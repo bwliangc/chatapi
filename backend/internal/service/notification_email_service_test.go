@@ -3,8 +3,11 @@ package service
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"errors"
 	"io"
+	"mime"
+	"mime/multipart"
 	"mime/quotedprintable"
 	"net"
 	"net/mail"
@@ -639,9 +642,49 @@ func (s *notificationEmailTestSMTPServer) lastMessage() string {
 
 func (s *notificationEmailTestSMTPServer) lastMessageBody(t *testing.T) string {
 	t.Helper()
+	body, _ := s.lastMessageContent(t)
+	return body
+}
+
+func (s *notificationEmailTestSMTPServer) lastMessageContent(t *testing.T) (string, []EmailAttachment) {
+	t.Helper()
 
 	message, err := mail.ReadMessage(strings.NewReader(s.lastMessage()))
 	require.NoError(t, err)
+	mediaType, params, err := mime.ParseMediaType(message.Header.Get("Content-Type"))
+	require.NoError(t, err)
+	if mediaType == "multipart/mixed" {
+		reader := multipart.NewReader(message.Body, params["boundary"])
+		var body string
+		var attachments []EmailAttachment
+		for {
+			part, err := reader.NextPart()
+			if err == io.EOF {
+				break
+			}
+			require.NoError(t, err)
+			partReader := io.Reader(part)
+			if strings.EqualFold(part.Header.Get("Content-Transfer-Encoding"), "base64") {
+				partReader = base64.NewDecoder(base64.StdEncoding, part)
+			}
+			data, err := io.ReadAll(partReader)
+			require.NoError(t, err)
+			if disposition := part.Header.Get("Content-Disposition"); disposition != "" {
+				kind, params, err := mime.ParseMediaType(disposition)
+				require.NoError(t, err)
+				require.Equal(t, "attachment", kind)
+				attachments = append(attachments, EmailAttachment{
+					Filename:    params["filename"],
+					ContentType: part.Header.Get("Content-Type"),
+					Data:        data,
+				})
+			} else {
+				require.Contains(t, part.Header.Get("Content-Type"), "text/html")
+				body = string(data)
+			}
+		}
+		return body, attachments
+	}
 
 	bodyReader := io.Reader(message.Body)
 	if strings.EqualFold(message.Header.Get("Content-Transfer-Encoding"), "quoted-printable") {
@@ -649,7 +692,7 @@ func (s *notificationEmailTestSMTPServer) lastMessageBody(t *testing.T) string {
 	}
 	body, err := io.ReadAll(bodyReader)
 	require.NoError(t, err)
-	return string(body)
+	return string(body), nil
 }
 
 func (s *notificationEmailTestSMTPServer) close() {

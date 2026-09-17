@@ -116,9 +116,16 @@ func defaultContentModerationString(value string, fallback string) string {
 	return strings.TrimSpace(value)
 }
 
+func contentModerationEmailUserIDDisplay(log *ContentModerationLog) string {
+	if userID := contentModerationEmailUserID(log); userID > 0 {
+		return fmt.Sprint(userID)
+	}
+	return "-"
+}
+
 // buildCyberPolicyNoticeEmailBody 是 cyber_policy 通知邮件的内置兜底正文，
 // 当 notification email 模板渲染失败时使用（与 sendViolationEmail 的兜底同理）。
-func buildCyberPolicyNoticeEmailBody(siteName string, log *ContentModerationLog) string {
+func buildCyberPolicyNoticeEmailBody(siteName string, log *ContentModerationLog, attachmentName string) string {
 	if log == nil {
 		return ""
 	}
@@ -135,10 +142,14 @@ func buildCyberPolicyNoticeEmailBody(siteName string, log *ContentModerationLog)
       <h1 style="margin:20px 0 28px;font-size:30px;line-height:1.25;">请求被网络安全策略拦截</h1>
       <p style="font-size:17px;line-height:1.9;margin:0 0 24px;">尊敬的用户 <strong>%s</strong>，您的请求被上游网络安全策略（cyber policy）拦截。</p>
       <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:12px;padding:22px 28px;margin:28px 0;">
-        <table style="width:100%%;border-collapse:collapse;font-size:16px;">
+        <table style="width:100%%;border-collapse:collapse;font-size:16px;table-layout:fixed;">
+          <tr><td style="width:128px;padding:12px 0;color:#888;border-bottom:1px solid #fee2e2;">用户 ID</td><td style="padding:12px 0;border-bottom:1px solid #fee2e2;">%s</td></tr>
+          <tr><td style="padding:12px 0;color:#888;border-bottom:1px solid #fee2e2;">用户邮箱</td><td style="padding:12px 0;border-bottom:1px solid #fee2e2;overflow-wrap:anywhere;word-break:break-word;">%s</td></tr>
           <tr><td style="padding:12px 0;color:#888;border-bottom:1px solid #fee2e2;">触发时间</td><td style="padding:12px 0;border-bottom:1px solid #fee2e2;">%s</td></tr>
           <tr><td style="padding:12px 0;color:#888;border-bottom:1px solid #fee2e2;">模型</td><td style="padding:12px 0;border-bottom:1px solid #fee2e2;">%s</td></tr>
-          <tr><td style="padding:12px 0;color:#888;">上游说明</td><td style="padding:12px 0;">%s</td></tr>
+          <tr><td style="padding:12px 0;color:#888;border-bottom:1px solid #fee2e2;">所属分组</td><td style="padding:12px 0;border-bottom:1px solid #fee2e2;overflow-wrap:anywhere;word-break:break-word;">%s</td></tr>
+          <tr><td style="padding:12px 0;color:#888;vertical-align:top;">上游说明</td><td style="padding:12px 0;overflow-wrap:anywhere;word-break:break-all;white-space:pre-wrap;">%s</td></tr>
+          <tr><td style="padding:12px 0;color:#888;vertical-align:top;">请求内容附件</td><td style="padding:12px 0;overflow-wrap:anywhere;word-break:break-word;">%s</td></tr>
         </table>
       </div>
       <p style="font-size:15px;line-height:1.8;color:#666;">如认为系误判，可调整请求措辞后重试，或申请获得授权的安全访问权限。</p>
@@ -147,9 +158,13 @@ func buildCyberPolicyNoticeEmailBody(siteName string, log *ContentModerationLog)
   </div>
 </body></html>`,
 		html.EscapeString(userName),
+		html.EscapeString(contentModerationEmailUserIDDisplay(log)),
+		html.EscapeString(defaultContentModerationString(log.UserEmail, "-")),
 		html.EscapeString(log.CreatedAt.Format("2006-01-02 15:04:05")),
 		html.EscapeString(defaultContentModerationString(log.Model, "-")),
+		html.EscapeString(defaultContentModerationString(log.GroupName, "-")),
 		html.EscapeString(defaultContentModerationString(log.Error, "-")),
+		html.EscapeString(defaultContentModerationString(attachmentName, "-")),
 		html.EscapeString(siteName),
 	)
 }

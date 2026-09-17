@@ -175,20 +175,20 @@ func (s *EmailService) GetSMTPConfig(ctx context.Context) (*SMTPConfig, error) {
 }
 
 // SendEmail 发送邮件（使用数据库中保存的配置）
-func (s *EmailService) SendEmail(ctx context.Context, to, subject, body string) error {
+func (s *EmailService) SendEmail(ctx context.Context, to, subject, body string, attachments ...EmailAttachment) error {
 	config, err := s.GetSMTPConfig(ctx)
 	if err != nil {
 		return err
 	}
-	return s.SendEmailWithConfig(config, to, subject, body)
+	return s.SendEmailWithConfig(config, to, subject, body, attachments...)
 }
 
 const smtpDialTimeout = 10 * time.Second
 const smtpIOTimeout = 20 * time.Second
 
 // SendEmailWithConfig 使用指定配置发送邮件
-func (s *EmailService) SendEmailWithConfig(config *SMTPConfig, to, subject, body string) error {
-	message, err := buildSMTPMessage(config, to, subject, body)
+func (s *EmailService) SendEmailWithConfig(config *SMTPConfig, to, subject, body string, attachments ...EmailAttachment) error {
+	message, err := buildSMTPMessage(config, to, subject, body, attachments...)
 	if err != nil {
 		return err
 	}

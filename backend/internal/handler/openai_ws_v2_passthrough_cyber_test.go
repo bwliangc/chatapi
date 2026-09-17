@@ -180,6 +180,7 @@ func TestOpenAIResponsesWebSocketV2PassthroughCyberMarkIsConsumedAfterTurn(t *te
 		return len(logs) == 1 && logs[0].Action == service.ContentModerationActionCyberPolicy &&
 			strings.Contains(logs[0].Error, "upstream_usage=in:11,out:3")
 	}, 3*time.Second, 10*time.Millisecond, "handler AfterTurn must call recordCyberPolicyIfMarked and write the risk-control event")
+	require.Equal(t, "test", harness.moderationRepo.logSnapshot()[0].InputExcerpt)
 
 	keyCtx, _ := gin.CreateTestContext(httptest.NewRecorder())
 	keyCtx.Request = httptest.NewRequest(http.MethodPost, "/openai/v1/responses", strings.NewReader(requestPayload))

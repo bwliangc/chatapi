@@ -3057,6 +3057,7 @@ type CyberPolicyRecordInput struct {
 	GroupName       string
 	Endpoint        string
 	Model           string
+	RequestBody     []byte
 	UpstreamMessage string
 	UpstreamBody    string
 	UpstreamStatus  int
@@ -3116,6 +3117,7 @@ func (s *ContentModerationService) RecordCyberPolicyEvent(ctx context.Context, i
 		Flagged:         true,
 		HighestCategory: "cyber_policy",
 		HighestScore:    1.0,
+		InputExcerpt:    extractCyberPolicyInputExcerpt(in.RequestBody),
 		Error:           trimRunes(redactContentModerationSecrets(errBody), maxModerationExcerptRunes*4),
 		CreatedAt:       time.Now(),
 	}
@@ -3133,7 +3135,7 @@ func (s *ContentModerationService) RecordCyberPolicyEvent(ctx context.Context, i
 	}
 	emailSent := false
 	if s.emailService != nil && strings.TrimSpace(log.UserEmail) != "" {
-		if err := s.sendCyberPolicyEmail(ctx, log); err != nil {
+		if err := s.sendCyberPolicyEmail(ctx, log, in.RequestBody); err != nil {
 			slog.Warn("content_moderation.cyber_email_failed", "user_id", in.UserID, "error", err)
 		} else {
 			emailSent = true
@@ -3153,14 +3155,29 @@ func (s *ContentModerationService) RecordCyberPolicyEvent(ctx context.Context, i
 	}
 }
 
-func (s *ContentModerationService) sendCyberPolicyEmail(ctx context.Context, log *ContentModerationLog) error {
+const cyberPolicyRequestAttachmentName = "cyber-policy-request.txt"
+
+func (s *ContentModerationService) sendCyberPolicyEmail(ctx context.Context, log *ContentModerationLog, requestBody []byte) error {
 	siteName := s.siteName(ctx)
+	attachmentName := "-"
+	var attachments []EmailAttachment
+	if len(requestBody) > 0 {
+		attachmentName = cyberPolicyRequestAttachmentName
+		attachments = []EmailAttachment{{
+			Filename:    attachmentName,
+			ContentType: "text/plain; charset=UTF-8",
+			Data:        requestBody,
+		}}
+	}
 	if s.emailService.notificationEmailService != nil {
 		variables := map[string]string{
-			"triggered_at":     log.CreatedAt.UTC().Format(time.RFC3339),
-			"model":            defaultContentModerationString(log.Model, "-"),
-			"group_name":       defaultContentModerationString(log.GroupName, "-"),
-			"upstream_message": defaultContentModerationString(log.Error, "-"),
+			"user_id":            contentModerationEmailUserIDDisplay(log),
+			"user_email":         defaultContentModerationString(log.UserEmail, "-"),
+			"triggered_at":       log.CreatedAt.UTC().Format(time.RFC3339),
+			"model":              defaultContentModerationString(log.Model, "-"),
+			"group_name":         defaultContentModerationString(log.GroupName, "-"),
+			"upstream_message":   defaultContentModerationString(log.Error, "-"),
+			"request_attachment": attachmentName,
 		}
 		err := s.emailService.notificationEmailService.Send(ctx, NotificationEmailSendInput{
 			Event:          NotificationEmailEventCyberPolicyNotice,
@@ -3170,6 +3187,7 @@ func (s *ContentModerationService) sendCyberPolicyEmail(ctx context.Context, log
 			SourceType:     "content_moderation",
 			SourceID:       contentModerationEmailSourceID(log),
 			Variables:      variables,
+			Attachments:    attachments,
 		})
 		if err == nil {
 			return nil
@@ -3180,5 +3198,5 @@ func (s *ContentModerationService) sendCyberPolicyEmail(ctx context.Context, log
 		slog.Warn("template cyber policy email failed; falling back", "err", err.Error())
 	}
 	subject := fmt.Sprintf("[%s] 网络安全策略拦截 / Cyber Policy Notice", sanitizeEmailHeader(siteName))
-	return s.emailService.SendEmail(ctx, log.UserEmail, subject, buildCyberPolicyNoticeEmailBody(siteName, log))
+	return s.emailService.SendEmail(ctx, log.UserEmail, subject, buildCyberPolicyNoticeEmailBody(siteName, log, attachmentName), attachments...)
 }

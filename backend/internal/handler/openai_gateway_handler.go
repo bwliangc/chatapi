@@ -4168,6 +4168,11 @@ func (h *OpenAIGatewayHandler) recordCyberPolicyIfMarked(c *gin.Context, apiKey 
 		}
 	}
 	cmSvc := h.contentModerationService
+	var requestBody []byte
+	if cmSvc != nil {
+		// Snapshot this turn before the async notification outlives the request.
+		requestBody = append([]byte(nil), cyberBlockBody...)
+	}
 	gwSvc := h.gatewayService
 	opsSvc := h.opsService
 	apiKeySvc := h.apiKeyService
@@ -4232,6 +4237,7 @@ func (h *OpenAIGatewayHandler) recordCyberPolicyIfMarked(c *gin.Context, apiKey 
 				GroupName:       groupName,
 				Endpoint:        inboundEndpoint,
 				Model:           model,
+				RequestBody:     requestBody,
 				UpstreamMessage: mark.Message,
 				UpstreamBody:    mark.Body,
 				UpstreamStatus:  mark.UpstreamStatus,

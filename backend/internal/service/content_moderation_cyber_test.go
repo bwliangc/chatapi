@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"mime"
 	"strings"
 	"sync"
 	"testing"
@@ -155,6 +157,96 @@ func TestRecordCyberPolicyEvent_WritesLogWhenEnabled(t *testing.T) {
 	// Error field should also contain the upstream body JSON
 	require.True(t, strings.Contains(log.Error, "cyber_policy") || strings.Contains(log.Error, "flagged"),
 		"Error should mention flagged or cyber_policy")
+}
+
+func TestRecordCyberPolicyEvent_EmailIncludesUserAndRequestAttachment(t *testing.T) {
+	for _, mode := range []string{"zh", "en", "fallback", "invalid_template", "custom", "legacy_custom", "missing_content"} {
+		t.Run(mode, func(t *testing.T) {
+			ctx := context.Background()
+			settings := newNotificationEmailMemorySettingRepo()
+			smtpServer := startNotificationEmailTestSMTPServer(t)
+			require.NoError(t, settings.SetMultiple(ctx, smtpServer.settings()))
+			require.NoError(t, settings.Set(ctx, SettingKeyRiskControlEnabled, "true"))
+			emailSvc := NewEmailService(settings, nil)
+			notificationSvc := NewNotificationEmailService(settings, emailSvc)
+			if mode != "fallback" {
+				emailSvc.SetNotificationEmailService(notificationSvc)
+			}
+			locale := "zh"
+			if mode == "en" {
+				locale = "en"
+			}
+			const userID int64 = 913
+			const userEmail = "blocked+owner@example.com"
+			notificationSvc.RememberRecipientLocale(ctx, userID, userEmail, locale)
+			if mode == "invalid_template" {
+				require.NoError(t, settings.Set(ctx, notificationEmailTemplateKey(NotificationEmailEventCyberPolicyNotice, locale), "{invalid"))
+			}
+			if mode == "custom" {
+				_, err := notificationSvc.UpdateTemplate(ctx, NotificationEmailEventCyberPolicyNotice, locale,
+					"Cyber notice", "<p>{{user_id}} {{user_email}}</p><p>{{request_attachment}}</p>")
+				require.NoError(t, err)
+			}
+			if mode == "legacy_custom" {
+				_, err := notificationSvc.UpdateTemplate(ctx, NotificationEmailEventCyberPolicyNotice, locale,
+					"Cyber notice", "<p>{{user_id}} {{user_email}}</p>")
+				require.NoError(t, err)
+			}
+
+			inputText := "检查下面的内容：\n<script>alert(1)</script>\napi_key=sk-1234567890abcdefghijklmnop\n" + strings.Repeat("上下文", 2000) + " 请求末尾"
+			body, err := json.MarshalIndent(map[string]any{
+				"instructions": "完整系统指令",
+				"input": []map[string]string{
+					{"role": "user", "content": inputText},
+					{"type": "function_call_output", "output": "完整工具返回 https://example.com/?token=abcdef123456"},
+				},
+			}, "", "  ")
+			require.NoError(t, err)
+			if mode == "missing_content" {
+				body = nil
+			}
+			repo := &contentModerationTestRepo{}
+			svc := NewContentModerationService(settings, repo, nil, nil, nil, nil, nil, emailSvc)
+			svc.RecordCyberPolicyEvent(ctx, CyberPolicyRecordInput{
+				RequestID:       "req-cyber-email",
+				UserID:          userID,
+				UserEmail:       userEmail,
+				GroupName:       "test-group",
+				Model:           "gpt-5",
+				RequestBody:     body,
+				UpstreamMessage: "blocked by upstream policy",
+			})
+
+			logs := repo.snapshotLogs()
+			require.Len(t, logs, 1)
+			require.Equal(t, int64(1), smtpServer.messageCount())
+			emailBody, attachments := smtpServer.lastMessageContent(t)
+			require.Contains(t, emailBody, ">913")
+			require.Contains(t, emailBody, userEmail)
+			require.NotContains(t, emailBody, "user@example.com")
+			require.NotContains(t, emailBody, "sk-1234567890abcdefghijklmnop")
+			require.NotContains(t, emailBody, "<script>")
+			require.NotContains(t, emailBody, "{{request_attachment}}")
+			if mode == "missing_content" {
+				require.Empty(t, logs[0].InputExcerpt)
+				require.Empty(t, attachments)
+				require.NotContains(t, emailBody, cyberPolicyRequestAttachmentName)
+				require.Contains(t, emailBody, ">-</td>")
+			} else {
+				require.Len(t, attachments, 1)
+				require.Equal(t, cyberPolicyRequestAttachmentName, attachments[0].Filename)
+				require.Equal(t, body, attachments[0].Data, "the attachment must preserve the entire original request without redaction or truncation")
+				mediaType, params, err := mime.ParseMediaType(attachments[0].ContentType)
+				require.NoError(t, err)
+				require.Equal(t, "text/plain", mediaType)
+				require.Equal(t, "UTF-8", params["charset"])
+				if mode != "legacy_custom" {
+					require.Contains(t, emailBody, cyberPolicyRequestAttachmentName)
+				}
+				require.NotContains(t, emailBody, "请求末尾")
+			}
+		})
+	}
 }
 
 func TestRecordCyberPolicyEvent_RespectsContentModerationScope(t *testing.T) {

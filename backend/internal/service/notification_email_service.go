@@ -130,6 +130,7 @@ type NotificationEmailSendInput struct {
 	ReminderKey      string
 	Variables        map[string]string
 	RawHTMLVariables map[string]string
+	Attachments      []EmailAttachment
 }
 
 type NotificationEmailUnsubscribeResult struct {
@@ -424,7 +425,7 @@ func (s *NotificationEmailService) Send(ctx context.Context, input NotificationE
 	if s.emailService == nil {
 		return notificationEmailConfigErr(errors.New("email service is not configured"))
 	}
-	if err := s.emailService.SendEmail(ctx, recipient, rendered.Subject, rendered.HTML); err != nil {
+	if err := s.emailService.SendEmail(ctx, recipient, rendered.Subject, rendered.HTML, input.Attachments...); err != nil {
 		return notificationEmailDeliveryErr(err)
 	}
 	if deliveryKey != "" {
@@ -905,6 +906,9 @@ func notificationEmailSampleVariables(locale string) map[string]string {
 			"site_name":           defaultSiteName,
 			"recipient_name":      "张三",
 			"recipient_email":     "user@example.com",
+			"user_id":             "42",
+			"user_email":          "user@example.com",
+			"request_attachment":  cyberPolicyRequestAttachmentName,
 			"verification_code":   "123456",
 			"expires_in_minutes":  "15",
 			"reset_url":           "https://example.com/reset-password?token=preview",
@@ -955,6 +959,9 @@ func notificationEmailSampleVariables(locale string) map[string]string {
 		"site_name":           defaultSiteName,
 		"recipient_name":      "Alex",
 		"recipient_email":     "user@example.com",
+		"user_id":             "42",
+		"user_email":          "user@example.com",
+		"request_attachment":  cyberPolicyRequestAttachmentName,
 		"verification_code":   "123456",
 		"expires_in_minutes":  "15",
 		"reset_url":           "https://example.com/reset-password?token=preview",
@@ -1164,7 +1171,7 @@ var notificationEmailEventDefinitions = map[string]NotificationEmailEventInfo{
 		Category:    "risk_control",
 		Optional:    false,
 		Placeholders: append(append([]string{}, notificationEmailCommonPlaceholders...),
-			"triggered_at", "model", "group_name", "upstream_message"),
+			"user_id", "user_email", "triggered_at", "model", "group_name", "upstream_message", "request_attachment"),
 	},
 	NotificationEmailEventOpsAlert: {
 		Event:       NotificationEmailEventOpsAlert,
@@ -1500,10 +1507,13 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 <p>Hello {{recipient_name}},</p>
 <p>Your request was blocked by the upstream provider's cyber-security policy.</p>
 <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+  <tr><td style="width:128px;vertical-align:top;">User ID</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{user_id}}</td></tr>
+  <tr><td style="width:128px;vertical-align:top;">User email</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{user_email}}</td></tr>
   <tr><td style="width:128px;vertical-align:top;">Triggered at</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{triggered_at}}</td></tr>
   <tr><td style="width:128px;vertical-align:top;">Model</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{model}}</td></tr>
   <tr><td style="width:128px;vertical-align:top;">Group</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{group_name}}</td></tr>
   <tr><td style="width:128px;vertical-align:top;">Upstream message</td><td style="overflow-wrap:anywhere;word-break:break-all;white-space:pre-wrap;">{{upstream_message}}</td></tr>
+  <tr><td style="width:128px;vertical-align:top;">Request content attachment</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{request_attachment}}</td></tr>
 </table>
 <p>If you believe this is a mistake, try rephrasing your request, or apply for authorized security access.</p>`),
 		},
@@ -1513,10 +1523,13 @@ var notificationEmailOfficialTemplates = map[string]map[string]notificationEmail
 <p>{{recipient_name}}，您好：</p>
 <p>您的请求被上游服务商的网络安全策略（cyber policy）拦截。</p>
 <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+  <tr><td style="width:128px;vertical-align:top;">用户 ID</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{user_id}}</td></tr>
+  <tr><td style="width:128px;vertical-align:top;">用户邮箱</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{user_email}}</td></tr>
   <tr><td style="width:128px;vertical-align:top;">触发时间</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{triggered_at}}</td></tr>
   <tr><td style="width:128px;vertical-align:top;">模型</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{model}}</td></tr>
   <tr><td style="width:128px;vertical-align:top;">所属分组</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{group_name}}</td></tr>
   <tr><td style="width:128px;vertical-align:top;">上游说明</td><td style="overflow-wrap:anywhere;word-break:break-all;white-space:pre-wrap;">{{upstream_message}}</td></tr>
+  <tr><td style="width:128px;vertical-align:top;">请求内容附件</td><td style="overflow-wrap:anywhere;word-break:break-word;">{{request_attachment}}</td></tr>
 </table>
 <p>如认为系误判，可调整请求措辞后重试，或申请获得授权的安全访问权限。</p>`),
 		},

@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,38 @@ func TestRecordCyberPolicyIfMarked_NoMark(t *testing.T) {
 	// Flag must NOT be set when there was no mark.
 	require.False(t, c.GetBool(cyberPolicyRecordedKey),
 		"cyberPolicyRecordedKey must remain false when no cyber mark is present")
+}
+
+func TestRecordCyberPolicyIfMarked_CapturesRequestContent(t *testing.T) {
+	c := newTestGinContext()
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
+	c.Writer.Header().Set("X-Request-Id", "req-cyber-content")
+	service.MarkOpsCyberPolicy(c, service.CyberPolicyMark{
+		Message:        "blocked by upstream policy",
+		UpstreamStatus: http.StatusForbidden,
+	})
+	repo := &contentModerationHandlerTestRepo{}
+	settings := &contentModerationHandlerSettingRepo{values: map[string]string{
+		service.SettingKeyRiskControlEnabled: "true",
+	}}
+	h := &OpenAIGatewayHandler{
+		contentModerationService: service.NewContentModerationService(settings, repo, nil, nil, nil, nil, nil, nil),
+	}
+	apiKey := &service.APIKey{
+		ID:   17,
+		Name: "test-key",
+		User: &service.User{ID: 913, Email: "blocked@example.com"},
+	}
+	body := []byte(`{"input":[{"role":"user","content":"需要检查的请求 api_key=sk-1234567890abcdefghijklmnop"}]}`)
+	h.recordCyberPolicyIfMarked(c, apiKey, nil, nil, "gpt-5", true, body, service.ChannelUsageFields{}, "")
+	// The asynchronous notification must own its snapshot even if the caller reuses the buffer.
+	clear(body)
+	require.Eventually(t, func() bool { return len(repo.logSnapshot()) == 1 }, time.Second, time.Millisecond)
+	log := repo.logSnapshot()[0]
+	require.Equal(t, "req-cyber-content", log.RequestID)
+	require.Equal(t, apiKey.User.ID, *log.UserID)
+	require.Equal(t, apiKey.User.Email, log.UserEmail)
+	require.Equal(t, "需要检查的请求 api_key=[已脱敏]", log.InputExcerpt)
 }
 
 // TestRecordCyberPolicyIfMarked_WithMark verifies that:
