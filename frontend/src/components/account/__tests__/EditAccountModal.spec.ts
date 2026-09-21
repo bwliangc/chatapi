@@ -324,6 +324,54 @@ function mountModal(account = buildAccount(), renderGroupSelector = false) {
 }
 
 describe('EditAccountModal', () => {
+  it('defaults tickets off and persists opt-in and opt-out without losing account extras', async () => {
+    const account = buildAccount()
+    account.platform = 'openai'
+    account.type = 'oauth'
+    account.extra = { auto_reset_enabled: true, unrelated: 'keep' }
+    updateAccountMock.mockReset().mockResolvedValue(account)
+    checkMixedChannelRiskMock.mockReset().mockResolvedValue({ has_risk: false })
+    const wrapper = mountModal(account)
+    const field = wrapper.findComponent({ name: 'CodexTicketPolicyField' })
+    expect(field.props('enabled')).toBe(false)
+    expect(field.find('select').exists()).toBe(false)
+    await field.get('input[type="checkbox"]').setValue(true)
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra).toMatchObject({
+      codex_ticket_harvest_enabled: true, auto_reset_enabled: true, unrelated: 'keep'
+    })
+    await wrapper.setProps({ account: { ...account, extra: { ...account.extra, codex_ticket_harvest_enabled: true } } })
+    await field.get('input[type="checkbox"]').setValue(false)
+    updateAccountMock.mockClear()
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra).toMatchObject({
+      codex_ticket_harvest_enabled: false, auto_reset_enabled: true, unrelated: 'keep'
+    })
+    wrapper.unmount()
+  })
+
+  it('saves explicit ticket exceptions and clears them when restoring inheritance', async () => {
+    const account = buildAccount()
+    account.platform = 'openai'
+    account.type = 'oauth'
+    account.extra = { codex_ticket_harvest_enabled: true, codex_allow_without_ticket: false, unrelated: 'keep' }
+    updateAccountMock.mockReset().mockResolvedValue(account)
+    checkMixedChannelRiskMock.mockReset().mockResolvedValue({ has_risk: false })
+    const wrapper = mountModal(account)
+    const field = wrapper.findComponent({ name: 'CodexTicketPolicyField' })
+    expect(field.exists()).toBe(true)
+    expect(field.props('modelValue')).toBe('deny')
+    await field.get('select').setValue('allow')
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra).toMatchObject({ codex_allow_without_ticket: true, unrelated: 'keep' })
+    updateAccountMock.mockClear()
+    await field.get('select').setValue('inherit')
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra).not.toHaveProperty('codex_allow_without_ticket')
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra?.unrelated).toBe('keep')
+    wrapper.unmount()
+  })
+
   beforeEach(() => {
     authIsSimpleMode.value = true
   })

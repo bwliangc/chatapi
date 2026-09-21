@@ -67,6 +67,12 @@
         <p class="input-hint">{{ t('admin.accounts.notesHint') }}</p>
       </div>
 
+      <CodexTicketPolicyField
+        v-if="show && form.platform === 'openai' && accountCategory === 'oauth-based'"
+        v-model="codexTicketPolicy"
+        v-model:enabled="codexTicketEnabled"
+      />
+
       <!-- Platform Selection - Segmented Control Style -->
       <div>
         <label class="input-label">{{ t('admin.accounts.platform') }}</label>
@@ -3937,6 +3943,8 @@
 </template>
 
 <script setup lang="ts">
+import CodexTicketPolicyField from './CodexTicketPolicyField.vue'
+
 import { ref, reactive, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -4777,6 +4785,9 @@ const tempUnschedPresets = computed(() => [
   }
 ])
 
+const codexTicketEnabled = ref(false)
+const codexTicketPolicy = ref<'inherit' | 'allow' | 'deny'>('inherit')
+
 const form = reactive({
   name: '',
   notes: '',
@@ -5380,6 +5391,8 @@ const submitCreateAccount = async (payload: CreateAccountRequest) => {
 
 // Methods
 const resetForm = () => {
+  codexTicketEnabled.value = false
+  codexTicketPolicy.value = 'inherit'
   step.value = 1
   form.name = ''
   form.notes = ''
@@ -5510,6 +5523,15 @@ const buildOpenAIExtra = (base?: Record<string, unknown>): Record<string, unknow
   }
 
   const extra: Record<string, unknown> = { ...(base || {}) }
+  if (accountCategory.value === 'oauth-based') {
+    extra.codex_ticket_harvest_enabled = codexTicketEnabled.value
+  }
+  if (accountCategory.value === 'oauth-based' && codexTicketPolicy.value !== 'inherit') {
+    extra.codex_allow_without_ticket = codexTicketPolicy.value === 'allow'
+  } else {
+    delete extra.codex_allow_without_ticket
+  }
+
   if (accountCategory.value === 'oauth-based') {
     extra.openai_oauth_responses_websockets_v2_mode = openaiOAuthResponsesWebSocketV2Mode.value
     extra.openai_oauth_responses_websockets_v2_enabled = isOpenAIWSModeEnabled(openaiOAuthResponsesWebSocketV2Mode.value)
