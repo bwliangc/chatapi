@@ -304,14 +304,14 @@
                 </p>
               </div>
 
-              <div class="flex flex-wrap items-center gap-3 md:justify-end">
+              <!-- <div class="flex flex-wrap items-center gap-3 md:justify-end">
                 <div class="flex items-baseline gap-2 text-xs text-slate-500 dark:text-slate-400">
                   <span>{{ t('home.pricingTable.uniformMultiplier') }}</span>
                   <strong class="font-mono text-sm text-cyan-700 dark:text-cyan-200">
                     {{ formatMultiplier(uniformMultiplier) }}
                   </strong>
                 </div>
-              </div>
+              </div> -->
             </div>
 
             <div data-pricing-layout="desktop" class="hidden overflow-x-auto lg:block">
@@ -619,9 +619,9 @@ const activityRewardValue = computed(() => {
   return t('home.activity.values.configuredReward', { topN: leaderboardTopN.value })
 })
 
-function formatMultiplier(rate: number): string {
-  return `${Number(rate || 0).toFixed(2).replace(/\.00$/, '').replace(/0$/, '')}x`
-}
+// function formatMultiplier(rate: number): string {
+//   return `${Number(rate || 0).toFixed(2).replace(/\.00$/, '').replace(/0$/, '')}x`
+// }
 
 function formatActivityNumber(value: number): string {
   return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
