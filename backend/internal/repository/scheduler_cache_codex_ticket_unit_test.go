@@ -25,6 +25,7 @@ func TestSchedulerCachePreservesCodexTicketScopeAndPersistedTicket(t *testing.T)
 			"codex_ticket_harvest_models":  map[string]any{"gpt-5.6-sol": false},
 			"codex_turn_ticket:gpt-6-astra": map[string]any{
 				"state": "gAAAAA" + strings.Repeat("B", 326), "length": 332,
+				"cookie":     "ticket_cookie=account41",
 				"expires_at": time.Now().Add(time.Hour).UTC().Format(time.RFC3339),
 			},
 			"unrelated": "drop",
@@ -43,6 +44,7 @@ func TestSchedulerCachePreservesCodexTicketScopeAndPersistedTicket(t *testing.T)
 	require.Equal(t, "team", snapshot[0].Credentials["plan_type"])
 	ticket := snapshot[0].Extra["codex_turn_ticket:gpt-6-astra"].(map[string]any)
 	require.Len(t, ticket["state"], 332)
+	require.Equal(t, "ticket_cookie=account41", ticket["cookie"])
 	require.NotContains(t, snapshot[0].Extra, "unrelated")
 
 	// The existing bucket immediately observes account opt-out, even with a ticket.

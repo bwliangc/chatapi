@@ -320,7 +320,12 @@ gateway:
   openai_codex_ticket:
     enabled: false
     target_length: 292
-    ttl_seconds: 3600
+    # 票据有效期（秒），最小 60；后台设置可热更新覆盖，默认 200。
+    ttl_seconds: 200
+    # 成功采集后 30～60 秒再次采集；refresh_before_seconds 仅兼容旧配置，不参与调度。
+    # 过期仍可沿用旧票据，超过复用窗口后按无票处理；0 表示不限制。
+    reuse_expired: true
+    reuse_expired_max_seconds: 600
     harvest_probe_interval_seconds: 6
     harvest_attempt_timeout_seconds: 25
     harvest_concurrency: 4

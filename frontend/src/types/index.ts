@@ -1224,6 +1224,7 @@ export interface Account {
     remaining_seconds: number
     blocked: boolean
     expires_at?: string
+    reusing_expired?: boolean
   }>
   // Extra fields including Codex usage, OpenAI compact capability, and model-level rate limits.
   extra?: (CodexUsageSnapshot & OpenAICompactState & {

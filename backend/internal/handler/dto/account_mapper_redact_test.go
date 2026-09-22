@@ -103,6 +103,7 @@ func TestAccountFromServiceShallow_RedactsCodexTurnTicketState(t *testing.T) {
 			"codex_harvest_proxy_url": "http://user:legacy-proxy-secret@proxy.example.com:8080",
 			"codex_turn_ticket:gpt-6-astra": map[string]any{
 				"state":       blob,
+				"cookie":      "ticket_cookie=private-ticket-cookie",
 				"length":      292,
 				"model":       "gpt-6-astra",
 				"captured_at": time.Now().Add(-time.Minute),
@@ -116,6 +117,7 @@ func TestAccountFromServiceShallow_RedactsCodexTurnTicketState(t *testing.T) {
 	raw, err := json.Marshal(got)
 	require.NoError(t, err)
 	require.NotContains(t, string(raw), blob)
+	require.NotContains(t, string(raw), "private-ticket-cookie")
 	require.NotContains(t, string(raw), "legacy-proxy-secret")
 	require.NotContains(t, got.Extra, "codex_harvest_proxy_url")
 	require.Contains(t, src.Extra, "codex_harvest_proxy_url")

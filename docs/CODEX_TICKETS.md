@@ -1,8 +1,10 @@
 # 按账号启用 Codex 292 / 332 票据
 
-本功能从 [MACOS-DO/sub4api v1.1.1](https://github.com/MACOS-DO/sub4api/tree/d297b9dff) 移植，保留账号、模型独立票据、代理池、手动采集和历史记录，并改为显式账号 opt-in。
+本功能同步至 [MACOS-DO/sub4api v1.1.2](https://github.com/MACOS-DO/sub4api/tree/39c73465e138c8fa91ada5b6f9b0a874408dad7d)，保留账号、模型独立票据、代理池、手动采集和历史记录，并使用显式账号 opt-in。
 
 来源提交：`863bf7ec5`、`c6d31d726` 中的票据策略部分、`5f45fe203`、`cf8a81dee`、`6486bc9db`。不包含其品牌、发布流程或账号测试响应诊断改动。
+
+v1.1.2 增量来源：`9c9231f6a`（TTL、过期复用、Cookie）、`f72cc4691`（过期复用时长上限）、`fe87fb192`（成功后 30～60 秒再次采集）。本地额外拒绝缺失到期时间的票据，即使开启无限期复用也不可使用。
 
 ## 只开启一个账号
 
@@ -12,7 +14,7 @@
 4. 为该账号选择无票策略：跟随全局、允许无票或禁止无票。禁止无票时，只会跳过该账号的受控模型；其余账号继续原有调度。
 5. 在账号列表的「292 打票」列打开对应模型的详情，可以查看状态、手动重新打票、关闭该模型的票据功能和查看历史。
 
-关闭账号开关或某个模型开关，会同时停止对应范围的自动采集、票据注入和无票限制。已有票据可以保留到过期，但不会再被主动注入。已发出的请求不会被撤销；WebSocket 票据在新建上游连接时注入。
+关闭账号开关或某个模型开关，会同时停止对应范围的自动采集、票据及其 Cookie 注入和无票限制。已有票据可保留，但不会再被主动注入。已发出的请求不会被撤销；WebSocket 票据和 Cookie 在新建上游连接时注入。
 
 | 总开关 | 账号开关 | 模型开关 | 行为 |
 | --- | --- | --- | --- |
@@ -26,8 +28,10 @@
 - 按 `(account_id, model)` 缓存票据，持久化到 `accounts.extra` 的 `codex_turn_ticket:<model>` 字段，不跨账号或模型共享。
 - 总开关：`openai_codex_ticket_enabled`；账号开关：`extra.codex_ticket_harvest_enabled === true`；模型开关：`extra.codex_ticket_harvest_models[model]`；账号无票策略：`extra.codex_allow_without_ticket`。
 - 默认模型为 `gpt-6-astra`、`gpt-5.6-sol`，可在 `gateway.openai_codex_ticket.models` 配置。列表按后端返回的模型展示。
-- 默认有效期 3600 秒。接受带 `gAAAAA` 前缀且长度符合套餐规则的 HTTP 200 / 429 响应票据。普通规则为 292，`team` 和 `selfservebusinessprolite` 使用 332。
-- 采集成功后 5～8 分钟再尝试；失败且仍持有效票据时隔 20～40 秒重试，无有效票据时隔 10 秒重试。`harvest_probe_interval_seconds` 为扫描周期，不是每个账号的固定请求间隔。
+- 默认有效期 200 秒，后台 `openai_codex_ticket_ttl_seconds` 可热更新，范围 60～86400 秒。设置应用于之后采集的票据；已有票据保留原到期时间。接受带 `gAAAAA` 前缀且长度符合套餐规则的 HTTP 200 / 429 响应票据。普通规则为 292，`team` 和 `selfservebusinessprolite` 使用 332。
+- 过期复用默认开启（`openai_codex_ticket_reuse_expired`），默认最多复用 600 秒（`openai_codex_ticket_reuse_expired_max_seconds`，范围 0～86400，0 为不限制）。窗口从原到期时间开始计算，达到上限或关闭复用后按无票策略处理；界面标记“已过期沿用”。策略热更新也作用于已有票据。
+- 成功采集时保存响应 `Set-Cookie` 的名称和值，随该账号、模型的票据一起持久化及注入，不在管理 API、导出或历史记录中暴露原始 Cookie。无 Cookie 的旧票据仍兼容。
+- 采集成功后 30～60 秒再尝试；失败且仍持可用票据（含允许复用的过期票据）时隔 30～40 秒重试，无可用票据时隔 30 秒重试。`harvest_probe_interval_seconds` 为扫描周期，不是每个账号的固定请求间隔；`refresh_before_seconds` 仅兼容旧配置，不再参与调度。
 - 自动采集并发默认 4，可用 `gateway.openai_codex_ticket.harvest_concurrency` 调整。单次上游探测超时默认 25 秒。
 - 自动采集在账号限流暂停期间停止，在已有重置时间前 30 分钟恢复。手动采集可绕过自动暂停，但必须满足总开关、账号/模型开关和代理可用条件。探测不修改账号的限流状态。
 - 票据更新同步到完整账号缓存和调度候选缓存；账号/模型开关也保留在候选缓存，支持进程重启和跨实例读取。账号、模型级 PostgreSQL advisory lock 防止同时重复采集。
@@ -36,6 +40,8 @@
 ## 数据库与回退
 
 启动时自动执行 `239_codex_ticket_attempts.sql`，创建票据请求流水分区表。成功记录长期保留，未命中及失败记录保留最近 30 天。迁移不修改既有账号的开关。
+
+从本地 v1.1.1 票据实现升级无需新增数据库迁移。如果 YAML / 环境变量显式设置了 `ttl_seconds: 3600`，该值仍生效；可在后台调整为 200 秒。未配置时采用新版默认值。原来未启用的账号、模型不会自动开启。
 
 需要停用时，关闭总开关即可恢复原有转发方式；也可以只关闭单个账号。无需删除历史表或修改其他账号。
 

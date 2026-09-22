@@ -2,6 +2,7 @@ export default {
     accounts: {
       codexTicket: {
         column: '292 tickets', title: 'Ticket details', current: 'Current ticket', valid: 'Valid', missing: 'No valid ticket', inactive: 'Off',
+        reusedExpired: 'Expired (reused)', reusedExpiredHint: 'Ticket expired at {time}; reusing the previous ticket',
         autoPaused: 'Automatic attempts paused until', lastSuccess: 'Last success', retry: 'Try again', retrying: 'Trying…',
         accountHint: 'Off by default. Enable harvesting, ticket injection and the missing-ticket policy for this account only.',
         accountOff: 'Tickets are disabled for this account. Requests keep their original forwarding behavior.',
@@ -739,6 +740,7 @@ export default {
         codexTurnTicketDesc: 'Ticket status for the configured models. Requests are paused without a valid ticket only when fail-closed is enabled.',
         codexTurnTicketMissing: 'No valid ticket; requests remain allowed',
         codexTurnTicketReady: '{time} left',
+        codexTurnTicketReusedExpired: 'Ticket expired; reusing the previous ticket',
         codexTurnTicketPaused: 'No valid ticket; this model is paused',
         codexImageTool: 'Codex image bridge policy',
         codexImageToolDesc:

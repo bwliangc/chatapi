@@ -115,6 +115,7 @@ func TestCodexTicketScopeHTTPAndWSBuilders(t *testing.T) {
 				}
 				svc.storeOpenAICodexTicket(context.Background(), account, &openAICodexTicket{
 					Model: "gpt-6-astra", State: fakeCodexTicketState(292), Length: 292,
+					Cookie:     "ticket_cookie=account41",
 					CapturedAt: time.Now(), ExpiresAt: time.Now().Add(time.Hour),
 				})
 				h, err = build()
@@ -124,6 +125,11 @@ func TestCodexTicketScopeHTTPAndWSBuilders(t *testing.T) {
 					want = fakeCodexTicketState(292)
 				}
 				require.Equal(t, want, h.Get(openAICodexTurnStateHeader))
+				if enabled {
+					require.Equal(t, "ticket_cookie=account41", h.Get("Cookie"))
+				} else {
+					require.Empty(t, h.Get("Cookie"))
+				}
 			})
 		}
 	}
