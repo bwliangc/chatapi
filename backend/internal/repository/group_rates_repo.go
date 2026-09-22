@@ -43,3 +43,40 @@ func (r *usageLogRepository) GetGroupRateUsage(ctx context.Context, ids []int64,
 	}
 	return out, rows.Err()
 }
+
+func (r *usageLogRepository) GetGroupRateHistory(ctx context.Context, ids []int64, at time.Time) ([]service.GroupRateHistoryPoint, error) {
+	if len(ids) == 0 {
+		return []service.GroupRateHistoryPoint{}, nil
+	}
+	start := at.Add(-24 * time.Hour)
+	rows, err := r.sql.QueryContext(ctx, `WITH baseline AS (
+		SELECT DISTINCT ON (group_id) group_id, recorded_at, rate_multiplier
+		FROM group_dynamic_rate_history
+		WHERE group_id = ANY($1) AND recorded_at < $2
+		ORDER BY group_id, recorded_at DESC
+	), visible AS (
+		SELECT group_id, recorded_at, rate_multiplier
+		FROM group_dynamic_rate_history
+		WHERE group_id = ANY($1) AND recorded_at >= $2 AND recorded_at <= $3
+	)
+	SELECT group_id, recorded_at, rate_multiplier FROM baseline
+	UNION ALL
+	SELECT group_id, recorded_at, rate_multiplier FROM visible
+	ORDER BY group_id, recorded_at`, pq.Array(ids), start, at)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]service.GroupRateHistoryPoint, 0)
+	for rows.Next() {
+		var point service.GroupRateHistoryPoint
+		if err := rows.Scan(&point.GroupID, &point.At, &point.RateMultiplier); err != nil {
+			return nil, err
+		}
+		if point.At.Before(start) {
+			point.At = start
+		}
+		out = append(out, point)
+	}
+	return out, rows.Err()
+}

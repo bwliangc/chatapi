@@ -46,6 +46,11 @@ func (r *dashboardAggregationRepository) SyncGroupDynamicRates(ctx context.Conte
 	if len(groups) == 0 {
 		return nil
 	}
+	// The dashboard only exposes 24 hours. Keep an extra day so its first point
+	// can use the last sample immediately before the visible window.
+	if _, err := r.sql.ExecContext(ctx, `DELETE FROM group_dynamic_rate_history WHERE recorded_at < $1`, at.Add(-48*time.Hour)); err != nil {
+		return fmt.Errorf("prune dynamic rate history: %w", err)
+	}
 	// Never treat history removed by retention (or a fresh installation with
 	// no usage at all) as a full week of idle traffic.
 	retainedRows, err := r.sql.QueryContext(ctx, `SELECT MIN(created_at) FROM usage_logs`)
@@ -99,8 +104,13 @@ func (r *dashboardAggregationRepository) SyncGroupDynamicRates(ctx context.Conte
 			AND updated_at = $4 AND dynamic_rate = $5::jsonb AND rate_multiplier = $6
 			AND (dynamic_rate_updated_at IS NULL OR dynamic_rate_updated_at < $3)
 			RETURNING id
-		) INSERT INTO scheduler_outbox (event_type, group_id)
-		SELECT $7, id FROM published`, g.id, rate, at, g.updated, string(g.raw), g.rate, service.SchedulerOutboxEventGroupChanged)
+			), recorded AS (
+				INSERT INTO group_dynamic_rate_history (group_id, recorded_at, rate_multiplier)
+				SELECT id, $3, $2 FROM published
+				ON CONFLICT (group_id, recorded_at) DO UPDATE SET rate_multiplier = EXCLUDED.rate_multiplier
+				RETURNING group_id
+			) INSERT INTO scheduler_outbox (event_type, group_id)
+			SELECT $7, group_id FROM recorded`, g.id, rate, at, g.updated, string(g.raw), g.rate, service.SchedulerOutboxEventGroupChanged)
 		if err != nil {
 			return fmt.Errorf("publish group %d dynamic rate: %w", g.id, err)
 		}

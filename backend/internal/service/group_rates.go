@@ -40,6 +40,7 @@ type GroupRateUsageBucket struct {
 
 type GroupRateUsageRepository interface {
 	GetGroupRateUsage(context.Context, []int64, time.Time) ([]GroupRateUsageBucket, error)
+	GetGroupRateHistory(context.Context, []int64, time.Time) ([]GroupRateHistoryPoint, error)
 }
 
 type GroupRateTrendPoint struct {
@@ -48,20 +49,27 @@ type GroupRateTrendPoint struct {
 	Requests int64     `json:"requests"`
 }
 
+type GroupRateHistoryPoint struct {
+	GroupID        int64     `json:"-"`
+	At             time.Time `json:"at"`
+	RateMultiplier float64   `json:"rate_multiplier"`
+}
+
 type GroupRateBoardItem struct {
-	ID                  int64                 `json:"id"`
-	Name                string                `json:"name"`
-	Platform            string                `json:"platform"`
-	SubscriptionType    string                `json:"subscription_type"`
-	RateMultiplier      float64               `json:"rate_multiplier"`
-	PeakMultiplier      float64               `json:"peak_multiplier"`
-	EffectiveMultiplier float64               `json:"effective_multiplier"`
-	UserRateMultiplier  *float64              `json:"user_rate_multiplier,omitempty"`
-	DynamicRate         GroupDynamicRate      `json:"dynamic_rate"`
-	RateUpdatedAt       *time.Time            `json:"rate_updated_at,omitempty"`
-	LastHour            GroupRateUsage        `json:"last_hour"`
-	Last24Hours         GroupRateUsage        `json:"last_24_hours"`
-	Trend               []GroupRateTrendPoint `json:"trend"`
+	ID                  int64                   `json:"id"`
+	Name                string                  `json:"name"`
+	Platform            string                  `json:"platform"`
+	SubscriptionType    string                  `json:"subscription_type"`
+	RateMultiplier      float64                 `json:"rate_multiplier"`
+	PeakMultiplier      float64                 `json:"peak_multiplier"`
+	EffectiveMultiplier float64                 `json:"effective_multiplier"`
+	UserRateMultiplier  *float64                `json:"user_rate_multiplier,omitempty"`
+	DynamicRate         GroupDynamicRate        `json:"dynamic_rate"`
+	RateUpdatedAt       *time.Time              `json:"rate_updated_at,omitempty"`
+	LastHour            GroupRateUsage          `json:"last_hour"`
+	Last24Hours         GroupRateUsage          `json:"last_24_hours"`
+	Trend               []GroupRateTrendPoint   `json:"trend"`
+	RateTrend           []GroupRateHistoryPoint `json:"rate_trend"`
 }
 
 type GroupRateBoard struct {
@@ -89,8 +97,9 @@ func NewGroupRatesService(groups GroupRatesGroupProvider, usage GroupRateUsageRe
 }
 
 type groupRateUsageSnapshot struct {
-	at      time.Time
-	buckets []GroupRateUsageBucket
+	at          time.Time
+	buckets     []GroupRateUsageBucket
+	rateHistory []GroupRateHistoryPoint
 }
 
 func (s *GroupRatesService) Get(ctx context.Context, userID int64) (*GroupRateBoard, error) {
@@ -136,7 +145,11 @@ func (s *GroupRatesService) Get(ctx context.Context, userID int64) (*GroupRateBo
 		if err != nil {
 			return nil, err
 		}
-		snapshot := groupRateUsageSnapshot{at: at, buckets: buckets}
+		rateHistory, err := s.usage.GetGroupRateHistory(ctx, ids, at)
+		if err != nil {
+			return nil, err
+		}
+		snapshot := groupRateUsageSnapshot{at: at, buckets: buckets, rateHistory: rateHistory}
 		s.cache.SetDefault(key, snapshot)
 		return snapshot, nil
 	})
@@ -149,15 +162,23 @@ func (s *GroupRatesService) Get(ctx context.Context, userID int64) (*GroupRateBo
 	for _, bucket := range snapshot.buckets {
 		byGroup[bucket.GroupID] = append(byGroup[bucket.GroupID], bucket)
 	}
+	ratesByGroup := make(map[int64][]GroupRateHistoryPoint)
+	for _, point := range snapshot.rateHistory {
+		ratesByGroup[point.GroupID] = append(ratesByGroup[point.GroupID], point)
+	}
 	start := snapshot.at.Add(-24 * time.Hour).Truncate(time.Hour)
 	end := snapshot.at.Truncate(time.Hour)
 	for _, g := range visible {
 		peak := g.PeakMultiplierAt(now)
+		rateTrend := ratesByGroup[g.ID]
+		if rateTrend == nil {
+			rateTrend = make([]GroupRateHistoryPoint, 0)
+		}
 		item := GroupRateBoardItem{
 			ID: g.ID, Name: g.Name, Platform: g.Platform, SubscriptionType: g.SubscriptionType,
 			RateMultiplier: g.RateMultiplier, PeakMultiplier: peak, EffectiveMultiplier: g.RateMultiplier * peak,
 			DynamicRate: g.DynamicRate, RateUpdatedAt: g.DynamicRateUpdatedAt,
-			Trend: make([]GroupRateTrendPoint, 0, 25),
+			Trend: make([]GroupRateTrendPoint, 0, 25), RateTrend: rateTrend,
 		}
 		if override, ok := userRates[g.ID]; ok {
 			item.UserRateMultiplier = &override

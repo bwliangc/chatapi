@@ -64,6 +64,13 @@ func TestGroupDynamicRatePublication(t *testing.T) {
 	require.Equal(t, 1.25, saved.RateMultiplier)
 	require.NotNil(t, saved.DynamicRateUpdatedAt)
 	require.True(t, at.Equal(*saved.DynamicRateUpdatedAt))
+	var recordedRate float64
+	rateRows, err := tx.QueryContext(ctx, `SELECT rate_multiplier FROM group_dynamic_rate_history WHERE group_id = $1 AND recorded_at = $2`, group.ID, at)
+	require.NoError(t, err)
+	require.True(t, rateRows.Next())
+	require.NoError(t, rateRows.Scan(&recordedRate))
+	require.NoError(t, rateRows.Close())
+	require.Equal(t, 1.25, recordedRate)
 	countRows := func(query string, args ...any) int {
 		rows, err := tx.QueryContext(ctx, query, args...)
 		require.NoError(t, err)
@@ -81,11 +88,13 @@ func TestGroupDynamicRatePublication(t *testing.T) {
 	saved, err = groupRepo.GetByID(ctx, group.ID)
 	require.NoError(t, err)
 	require.Equal(t, 1.25, saved.RateMultiplier)
+	require.Equal(t, 1, countRows(`SELECT COUNT(*) FROM group_dynamic_rate_history WHERE group_id = $1`, group.ID))
 	// No recent traffic lowers the published base rate on the next interval.
 	require.NoError(t, repo.SyncGroupDynamicRates(ctx, at.Add(2*time.Hour)))
 	saved, err = groupRepo.GetByID(ctx, group.ID)
 	require.NoError(t, err)
 	require.Less(t, saved.RateMultiplier, 1.25)
+	require.Equal(t, 2, countRows(`SELECT COUNT(*) FROM group_dynamic_rate_history WHERE group_id = $1`, group.ID))
 	saved.DynamicRate = service.GroupDynamicRate{}
 	require.NoError(t, groupRepo.Update(ctx, saved))
 	rate := saved.RateMultiplier

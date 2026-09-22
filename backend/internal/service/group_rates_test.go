@@ -25,10 +25,16 @@ func (p *rateBoardGroupsStub) GetUserGroupRates(_ context.Context, userID int64)
 }
 
 type rateBoardUsageStub struct {
-	ids   []int64
-	rows  []GroupRateUsageBucket
-	err   error
-	calls int
+	ids         []int64
+	rows        []GroupRateUsageBucket
+	rateHistory []GroupRateHistoryPoint
+	err         error
+	calls       int
+}
+
+func (r *rateBoardUsageStub) GetGroupRateHistory(_ context.Context, ids []int64, _ time.Time) ([]GroupRateHistoryPoint, error) {
+	r.ids = append([]int64(nil), ids...)
+	return r.rateHistory, r.err
 }
 
 func (r *rateBoardUsageStub) GetGroupRateUsage(_ context.Context, ids []int64, _ time.Time) ([]GroupRateUsageBucket, error) {
@@ -49,7 +55,7 @@ func TestGroupRatesBoardPermissionsCacheAndPersonalRates(t *testing.T) {
 		{GroupID: 1, At: at.Truncate(time.Hour), Usage: GroupRateUsage{Requests: 3, TotalTokens: 100}, LastHour: GroupRateUsage{Requests: 2, TotalTokens: 90}},
 		{GroupID: 2, At: at.Truncate(time.Hour), Usage: GroupRateUsage{Requests: 10, TotalTokens: 999}},
 		{GroupID: 999, At: at.Truncate(time.Hour), Usage: GroupRateUsage{Requests: 10, TotalTokens: 9999}},
-	}}
+	}, rateHistory: []GroupRateHistoryPoint{{GroupID: 1, At: at.Add(-time.Hour), RateMultiplier: 1.1}}}
 	svc := NewGroupRatesService(provider, usage)
 	svc.now = func() time.Time { return at }
 	ctx := context.Background()
@@ -59,6 +65,8 @@ func TestGroupRatesBoardPermissionsCacheAndPersonalRates(t *testing.T) {
 	require.Zero(t, first.Groups[0].EffectiveMultiplier, "a zero-price override is not absent")
 	require.Equal(t, int64(100), first.Groups[0].Last24Hours.TotalTokens)
 	require.Equal(t, int64(90), first.Groups[0].LastHour.TotalTokens)
+	require.Equal(t, 1.1, first.Groups[0].RateTrend[0].RateMultiplier)
+	require.Empty(t, first.Groups[1].RateTrend)
 	require.Len(t, first.Groups[0].Trend, 25)
 	require.Equal(t, int64(0), first.Groups[0].Trend[0].Tokens, "idle hours are explicitly represented")
 	require.Equal(t, []int64{1, 2}, usage.ids)

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { platformLabel } from '@/utils/platformColors'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import GroupRateTrendChart from '@/components/charts/GroupRateTrendChart.vue'
+import GroupRateHistoryChart from '@/components/charts/GroupRateHistoryChart.vue'
 import { getGroupRateBoard, type GroupRateBoard, type GroupRateBoardItem, type GroupRateTrendPoint, type GroupRateUsage } from '@/api/groupRates'
 
 const { t, locale } = useI18n()
@@ -224,6 +225,20 @@ onBeforeUnmount(() => {
                 </div>
               </dl>
             </div>
+          </section>
+
+          <section class="card p-4 sm:p-6">
+            <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 class="font-semibold text-gray-950 dark:text-white">{{ t('groupRates.rateTrendTitle') }}</h2>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('groupRates.rateTrendHint') }}</p>
+              </div>
+              <select v-model="selectedGroup" class="input max-w-full sm:max-w-60" :aria-label="t('groupRates.trendGroup')">
+                <option value="all">{{ t('groupRates.allVisibleGroups') }}</option>
+                <option v-for="group in groups" :key="group.id" :value="String(group.id)">{{ group.name }}</option>
+              </select>
+            </div>
+            <GroupRateHistoryChart :groups="chartGroups" />
           </section>
         </template>
         <footer class="space-y-1 text-xs leading-5 text-gray-500 dark:text-gray-400">

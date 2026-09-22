@@ -21,6 +21,7 @@ const fixture: GroupRateBoard = {
     dynamic_rate: { enabled: id === 1, min: .5, max: 2 },
     last_hour: usage, last_24_hours: usage,
     trend: [{ at: '2026-09-22T08:00:00Z', tokens: 100, requests: 2 }],
+    rate_trend: [{ at: '2026-09-22T08:00:00Z', rate_multiplier: id }],
   })),
 }
 const mountView = () => shallowMount(GroupRatesView, { global: { stubs: { AppLayout: { template: '<div><slot /></div>' } } } })
@@ -39,9 +40,11 @@ describe('GroupRatesView', () => {
     expect(wrapper.findAll('[data-group-id]')).toHaveLength(2)
     expect(wrapper.find('[data-group-id="1"]').text()).toContain('groupRates.customRate')
     expect(wrapper.findComponent({ name: 'GroupRateTrendChart' }).props('points')[0].tokens).toBe(200)
+    expect(wrapper.findComponent({ name: 'GroupRateHistoryChart' }).props('groups')).toHaveLength(2)
     await wrapper.get('input[type="search"]').setValue('Group 2')
     expect(wrapper.findAll('[data-group-id]')).toHaveLength(1)
     expect(wrapper.findComponent({ name: 'GroupRateTrendChart' }).props('points')[0].tokens).toBe(100)
+    expect(wrapper.findComponent({ name: 'GroupRateHistoryChart' }).props('groups')).toHaveLength(1)
     await wrapper.get('input[type="search"]').setValue('missing')
     expect(wrapper.text()).toContain('groupRates.noMatch')
   })

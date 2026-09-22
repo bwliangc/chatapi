@@ -16,6 +16,11 @@ export interface GroupRateTrendPoint {
   requests: number
 }
 
+export interface GroupRateHistoryPoint {
+  at: string
+  rate_multiplier: number
+}
+
 export interface GroupRateBoardItem {
   id: number
   name: string
@@ -30,6 +35,7 @@ export interface GroupRateBoardItem {
   last_hour: GroupRateUsage
   last_24_hours: GroupRateUsage
   trend: GroupRateTrendPoint[]
+  rate_trend: GroupRateHistoryPoint[]
 }
 
 export interface GroupRateBoard {

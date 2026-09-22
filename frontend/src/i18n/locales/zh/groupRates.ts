@@ -1,6 +1,6 @@
 export default {
   groupRates: {
-    "title": "分组倍率看板",
+    "title": "倍率看板",
     "description": "查看你可用分组的当前倍率与整体用量，选择合适的时段使用。",
     "live": "倍率与用量",
     "autoRefresh": "30 秒自动刷新",
@@ -17,6 +17,9 @@ export default {
     "dayRequests": "近 24 小时请求",
     "trendTitle": "近 24 小时用量趋势",
     "trendHint": "按小时汇总；首尾时段可能不足一小时。",
+    "rateTrendTitle": "近 24 小时倍率变化",
+    "rateTrendHint": "展示动态任务每 5 分钟发布的分组基础倍率。",
+    "noRateHistory": "暂无倍率历史数据",
     "trendGroup": "选择趋势分组",
     "allVisibleGroups": "当前筛选的全部分组",
     "requests": "请求数",
