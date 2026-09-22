@@ -141,6 +141,7 @@ docs/*
 !docs/BATCH_IMAGE_MVP.md
 !docs/COMPOSITE_GROUPS.md
 !docs/CODEX_TICKETS.md
+!docs/GROUP_DYNAMIC_RATE.md
 !docs/PLUGIN_DEVELOPMENT.md
 !docs/channel-monitor-v2-safe-defaults.md
 !docs/legal/

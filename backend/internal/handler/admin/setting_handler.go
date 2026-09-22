@@ -387,6 +387,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		GrokDefaultBaseURLMode:         settings.GrokDefaultBaseURLMode,
 
 		AvailableChannelsEnabled: settings.AvailableChannelsEnabled,
+		GroupRatesMenuEnabled:    settings.GroupRatesMenuEnabled,
 		SubscriptionEnabled:      settings.SubscriptionEnabled,
 
 		OnlinePlaygroundEnabled: settings.OnlinePlaygroundEnabled,

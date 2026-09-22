@@ -93,6 +93,12 @@ func (s *DashboardAggregationService) Start() {
 	if s == nil || s.repo == nil || s.timingWheel == nil {
 		return
 	}
+	// Dynamic pricing is a billing task and remains active even when dashboard
+	// aggregation is disabled. The repository additionally guards each publish.
+	if _, ok := s.repo.(GroupDynamicRateRepository); ok {
+		go s.runScheduledGroupDynamicRates()
+		s.timingWheel.ScheduleRecurring("groups:dynamic-rate", 5*time.Minute, s.runScheduledGroupDynamicRates)
+	}
 	if !s.cfg.Enabled {
 		logger.LegacyPrintf("service.dashboard_aggregation", "[DashboardAggregation] 聚合作业已禁用")
 		return

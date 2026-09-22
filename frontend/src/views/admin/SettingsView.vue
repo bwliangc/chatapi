@@ -7253,6 +7253,17 @@
 
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('admin.settings.features.groupRates.title') }}</h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('admin.settings.features.groupRates.description') }}</p>
+          </div>
+          <div class="flex items-center justify-between gap-4 p-6">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.settings.features.groupRates.enabled') }}</label>
+            <Toggle v-model="form.group_rates_menu_enabled" />
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
               {{ t('admin.settings.features.onlinePlayground.title') }}
             </h2>
@@ -10156,6 +10167,7 @@ const form = reactive<SettingsForm>({
   channel_monitor_hide_user_ranking: false,
   // Available Channels feature switch
   available_channels_enabled: false,
+  group_rates_menu_enabled: false,
   // Online Playground feature switch
   online_playground_enabled: false,
   // Subscription Management feature switch (default enabled; opt-out)
@@ -11873,6 +11885,7 @@ async function saveSettings() {
       channel_monitor_hide_user_ranking: Boolean(form.channel_monitor_hide_user_ranking),
       // Available Channels feature switch
       available_channels_enabled: form.available_channels_enabled,
+      group_rates_menu_enabled: form.group_rates_menu_enabled,
       // Online Playground feature switch
       online_playground_enabled: form.online_playground_enabled,
       // Subscription Management feature switch

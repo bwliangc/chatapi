@@ -99,6 +99,11 @@ export const FeatureFlags = {
     mode: 'opt-out',
     label: 'Channel Monitor',
   }),
+  groupRatesMenu: defineFlag({
+    key: 'group_rates_menu_enabled',
+    mode: 'opt-in',
+    label: 'Group Rates Menu',
+  }),
   availableChannels: defineFlag({
     key: 'available_channels_enabled',
     mode: 'opt-in',

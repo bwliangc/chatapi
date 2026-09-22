@@ -38,6 +38,11 @@ export default {
           hideUserRankingHint:
             '开启后，用户端渠道监控 V2 不再显示「用户排行」页，用户 API 也不返回排行数据。管理员仍可查看。',
         },
+        groupRates: {
+          title: '分组倍率看板',
+          description: '控制普通用户和管理员个人菜单中的看板入口，默认关闭。看板仅限登录用户访问，并按分组授权及有效订阅展示。隐藏菜单不影响已授权用户通过链接访问。',
+          enabled: '显示分组倍率看板菜单',
+        },
         availableChannels: {
           title: '可用渠道',
           description: '向已登录用户展示他们能访问的渠道、模型和定价聚合视图。默认关闭。',

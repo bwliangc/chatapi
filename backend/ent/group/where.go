@@ -85,6 +85,11 @@ func RateMultiplier(v float64) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldRateMultiplier, v))
 }
 
+// DynamicRateUpdatedAt applies equality check predicate on the "dynamic_rate_updated_at" field. It's identical to DynamicRateUpdatedAtEQ.
+func DynamicRateUpdatedAt(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldDynamicRateUpdatedAt, v))
+}
+
 // PeakRateEnabled applies equality check predicate on the "peak_rate_enabled" field. It's identical to PeakRateEnabledEQ.
 func PeakRateEnabled(v bool) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldPeakRateEnabled, v))
@@ -653,6 +658,66 @@ func RateMultiplierLT(v float64) predicate.Group {
 // RateMultiplierLTE applies the LTE predicate on the "rate_multiplier" field.
 func RateMultiplierLTE(v float64) predicate.Group {
 	return predicate.Group(sql.FieldLTE(FieldRateMultiplier, v))
+}
+
+// DynamicRateIsNil applies the IsNil predicate on the "dynamic_rate" field.
+func DynamicRateIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldDynamicRate))
+}
+
+// DynamicRateNotNil applies the NotNil predicate on the "dynamic_rate" field.
+func DynamicRateNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldDynamicRate))
+}
+
+// DynamicRateUpdatedAtEQ applies the EQ predicate on the "dynamic_rate_updated_at" field.
+func DynamicRateUpdatedAtEQ(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldDynamicRateUpdatedAt, v))
+}
+
+// DynamicRateUpdatedAtNEQ applies the NEQ predicate on the "dynamic_rate_updated_at" field.
+func DynamicRateUpdatedAtNEQ(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldDynamicRateUpdatedAt, v))
+}
+
+// DynamicRateUpdatedAtIn applies the In predicate on the "dynamic_rate_updated_at" field.
+func DynamicRateUpdatedAtIn(vs ...time.Time) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldDynamicRateUpdatedAt, vs...))
+}
+
+// DynamicRateUpdatedAtNotIn applies the NotIn predicate on the "dynamic_rate_updated_at" field.
+func DynamicRateUpdatedAtNotIn(vs ...time.Time) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldDynamicRateUpdatedAt, vs...))
+}
+
+// DynamicRateUpdatedAtGT applies the GT predicate on the "dynamic_rate_updated_at" field.
+func DynamicRateUpdatedAtGT(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldDynamicRateUpdatedAt, v))
+}
+
+// DynamicRateUpdatedAtGTE applies the GTE predicate on the "dynamic_rate_updated_at" field.
+func DynamicRateUpdatedAtGTE(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldDynamicRateUpdatedAt, v))
+}
+
+// DynamicRateUpdatedAtLT applies the LT predicate on the "dynamic_rate_updated_at" field.
+func DynamicRateUpdatedAtLT(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldDynamicRateUpdatedAt, v))
+}
+
+// DynamicRateUpdatedAtLTE applies the LTE predicate on the "dynamic_rate_updated_at" field.
+func DynamicRateUpdatedAtLTE(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldDynamicRateUpdatedAt, v))
+}
+
+// DynamicRateUpdatedAtIsNil applies the IsNil predicate on the "dynamic_rate_updated_at" field.
+func DynamicRateUpdatedAtIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldDynamicRateUpdatedAt))
+}
+
+// DynamicRateUpdatedAtNotNil applies the NotNil predicate on the "dynamic_rate_updated_at" field.
+func DynamicRateUpdatedAtNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldDynamicRateUpdatedAt))
 }
 
 // PeakRateEnabledEQ applies the EQ predicate on the "peak_rate_enabled" field.

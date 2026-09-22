@@ -1019,6 +1019,15 @@ export default {
       groupCreatedSuccess: 'Group created successfully',
       groupUpdatedSuccess: 'Group updated successfully',
       groupDeletedSuccess: 'Group deleted successfully',
+      dynamicRate: {
+        title: 'Adjust multiplier with group usage',
+        badge: 'Dynamic',
+        min: 'Minimum base multiplier',
+        max: 'Maximum base multiplier',
+        hint: 'Compares the last hour of input, output and cache tokens across the group against 7 days of hourly history. Adjusts gradually every 5 minutes: lower demand lowers the rate; higher demand raises it.',
+        rules: 'Requires 24 complete hours of history; otherwise keeps the current rate within the range. User overrides take priority and peak multipliers still apply. Independent image/video and explicit tool pricing keep their existing rules. Disabling keeps the current rate, which can then be edited.',
+        rangeError: 'Rates must satisfy 0 ≤ minimum ≤ maximum ≤ 999999.9999.',
+      },
       rateMultiplierHint: 'Cost multiplier for this group (e.g., 1.5 = 150% of base cost, 0 = no billing)',
       exclusiveHint: 'Exclusive group, manually assign to specific users',
       exclusiveTooltip: {

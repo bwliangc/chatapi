@@ -452,6 +452,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 
 	// Available channels feature switch
 	updates[SettingKeyAvailableChannelsEnabled] = strconv.FormatBool(settings.AvailableChannelsEnabled)
+	updates[SettingKeyGroupRatesMenuEnabled] = strconv.FormatBool(settings.GroupRatesMenuEnabled)
 
 	// Custom user-facing feature switches
 	updates[SettingKeyOnlinePlaygroundEnabled] = strconv.FormatBool(settings.OnlinePlaygroundEnabled)

@@ -49,9 +49,12 @@ func (r *userGroupRateResolver) Resolve(ctx context.Context, userID, groupID int
 	key := fmt.Sprintf("%d:%d", userID, groupID)
 	if r.cache != nil {
 		if cached, ok := r.cache.Get(key); ok {
-			if multiplier, castOK := cached.(float64); castOK {
+			if multiplier, castOK := cached.(*float64); castOK {
 				userGroupRateCacheHitTotal.Add(1)
-				return multiplier
+				if multiplier == nil {
+					return groupDefaultMultiplier
+				}
+				return *multiplier
 			}
 		}
 	}
@@ -63,7 +66,7 @@ func (r *userGroupRateResolver) Resolve(ctx context.Context, userID, groupID int
 	value, err, shared := r.sf.Do(key, func() (any, error) {
 		if r.cache != nil {
 			if cached, ok := r.cache.Get(key); ok {
-				if multiplier, castOK := cached.(float64); castOK {
+				if multiplier, castOK := cached.(*float64); castOK {
 					userGroupRateCacheHitTotal.Add(1)
 					return multiplier, nil
 				}
@@ -76,14 +79,10 @@ func (r *userGroupRateResolver) Resolve(ctx context.Context, userID, groupID int
 			return nil, repoErr
 		}
 
-		multiplier := groupDefaultMultiplier
-		if userRate != nil {
-			multiplier = *userRate
-		}
 		if r.cache != nil {
-			r.cache.Set(key, multiplier, r.cacheTTL)
+			r.cache.Set(key, userRate, r.cacheTTL)
 		}
-		return multiplier, nil
+		return userRate, nil
 	})
 	if shared {
 		userGroupRateCacheSFSharedTotal.Add(1)
@@ -94,10 +93,13 @@ func (r *userGroupRateResolver) Resolve(ctx context.Context, userID, groupID int
 		return groupDefaultMultiplier
 	}
 
-	multiplier, ok := value.(float64)
+	multiplier, ok := value.(*float64)
 	if !ok {
 		userGroupRateCacheFallbackTotal.Add(1)
 		return groupDefaultMultiplier
 	}
-	return multiplier
+	if multiplier == nil {
+		return groupDefaultMultiplier
+	}
+	return *multiplier
 }

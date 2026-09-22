@@ -68,6 +68,7 @@ type Handlers struct {
 	AvailableChannel *AvailableChannelHandler
 	Leaderboard      *LeaderboardHandler
 	ModelPlaza       *ModelPlazaHandler
+	GroupRates       *GroupRatesHandler
 	AsyncImage       *AsyncImageHandler
 	BatchImage       *BatchImageHandler
 }

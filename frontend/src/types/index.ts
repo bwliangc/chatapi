@@ -290,6 +290,7 @@ export interface PublicSettings {
   /** When true, user monitor hides the user ranking tab and /users payload. */
   channel_monitor_hide_user_ranking?: boolean
   available_channels_enabled: boolean
+  group_rates_menu_enabled: boolean
   online_playground_enabled: boolean
   leaderboard_ranking_visible_enabled: boolean
   leaderboard_reward_pool_rate?: number
@@ -652,7 +653,15 @@ export interface Group {
   updated_at: string
 }
 
+export interface GroupDynamicRate {
+  enabled: boolean
+  min: number
+  max: number
+}
+
 export interface AdminGroup extends Group {
+  dynamic_rate?: GroupDynamicRate
+  dynamic_rate_updated_at?: string
   force_openai_fast: boolean
   free_openai_fast: boolean
   model_pricing: import('@/api/admin/channels').ChannelModelPricing[]
@@ -817,6 +826,7 @@ export interface UpdateApiKeyRequest {
 }
 
 export interface CreateGroupRequest {
+  dynamic_rate?: GroupDynamicRate
   name: string
   description?: string | null
   platform?: GroupPlatform
@@ -882,6 +892,7 @@ export interface CreateGroupRequest {
 }
 
 export interface UpdateGroupRequest {
+  dynamic_rate?: GroupDynamicRate
   name?: string
   description?: string | null
   platform?: GroupPlatform

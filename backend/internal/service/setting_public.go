@@ -235,6 +235,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyChannelMonitorShowQuota,
 		SettingKeyChannelMonitorHideUserRanking,
 		SettingKeyAvailableChannelsEnabled,
+		SettingKeyGroupRatesMenuEnabled,
 		SettingKeyOnlinePlaygroundEnabled,
 		SettingKeySubscriptionManagementEnabled,
 		SettingKeyLeaderboardRankingVisibleEnabled,
@@ -381,6 +382,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ChannelMonitorHideUserRanking:        isTrueSettingValue(settings[SettingKeyChannelMonitorHideUserRanking]),
 
 		AvailableChannelsEnabled: settings[SettingKeyAvailableChannelsEnabled] == "true",
+		GroupRatesMenuEnabled:    settings[SettingKeyGroupRatesMenuEnabled] == "true",
 
 		OnlinePlaygroundEnabled: settings[SettingKeyOnlinePlaygroundEnabled] == "true",
 
@@ -657,6 +659,7 @@ type PublicSettingsInjectionPayload struct {
 	// monitors; fail-closed (absent/false = hidden). Admin UI always shows it.
 	ChannelMonitorShowQuota          bool    `json:"channel_monitor_show_quota"`
 	AvailableChannelsEnabled         bool    `json:"available_channels_enabled"`
+	GroupRatesMenuEnabled            bool    `json:"group_rates_menu_enabled"`
 	OnlinePlaygroundEnabled          bool    `json:"online_playground_enabled"`
 	SubscriptionManagementEnabled    bool    `json:"subscription_management_enabled"`
 	LeaderboardRankingVisibleEnabled bool    `json:"leaderboard_ranking_visible_enabled"`
@@ -746,6 +749,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ChannelMonitorShowQuota:              settings.ChannelMonitorShowQuota,
 		ChannelMonitorHideUserRanking:        settings.ChannelMonitorHideUserRanking,
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
+		GroupRatesMenuEnabled:                settings.GroupRatesMenuEnabled,
 		OnlinePlaygroundEnabled:              settings.OnlinePlaygroundEnabled,
 		SubscriptionManagementEnabled:        settings.SubscriptionManagementEnabled,
 		LeaderboardRankingVisibleEnabled:     settings.LeaderboardRankingVisibleEnabled,

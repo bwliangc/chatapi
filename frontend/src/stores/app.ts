@@ -406,6 +406,7 @@ export const useAppStore = defineStore('app', () => {
         channel_monitor_enabled: true,
         channel_monitor_default_interval_seconds: 60,
         available_channels_enabled: false,
+        group_rates_menu_enabled: false,
         online_playground_enabled: false,
         leaderboard_ranking_visible_enabled: false,
         subscription_enabled: true,

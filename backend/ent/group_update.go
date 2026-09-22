@@ -118,6 +118,46 @@ func (_u *GroupUpdate) AddRateMultiplier(v float64) *GroupUpdate {
 	return _u
 }
 
+// SetDynamicRate sets the "dynamic_rate" field.
+func (_u *GroupUpdate) SetDynamicRate(v domain.GroupDynamicRate) *GroupUpdate {
+	_u.mutation.SetDynamicRate(v)
+	return _u
+}
+
+// SetNillableDynamicRate sets the "dynamic_rate" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableDynamicRate(v *domain.GroupDynamicRate) *GroupUpdate {
+	if v != nil {
+		_u.SetDynamicRate(*v)
+	}
+	return _u
+}
+
+// ClearDynamicRate clears the value of the "dynamic_rate" field.
+func (_u *GroupUpdate) ClearDynamicRate() *GroupUpdate {
+	_u.mutation.ClearDynamicRate()
+	return _u
+}
+
+// SetDynamicRateUpdatedAt sets the "dynamic_rate_updated_at" field.
+func (_u *GroupUpdate) SetDynamicRateUpdatedAt(v time.Time) *GroupUpdate {
+	_u.mutation.SetDynamicRateUpdatedAt(v)
+	return _u
+}
+
+// SetNillableDynamicRateUpdatedAt sets the "dynamic_rate_updated_at" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableDynamicRateUpdatedAt(v *time.Time) *GroupUpdate {
+	if v != nil {
+		_u.SetDynamicRateUpdatedAt(*v)
+	}
+	return _u
+}
+
+// ClearDynamicRateUpdatedAt clears the value of the "dynamic_rate_updated_at" field.
+func (_u *GroupUpdate) ClearDynamicRateUpdatedAt() *GroupUpdate {
+	_u.mutation.ClearDynamicRateUpdatedAt()
+	return _u
+}
+
 // SetPeakRateEnabled sets the "peak_rate_enabled" field.
 func (_u *GroupUpdate) SetPeakRateEnabled(v bool) *GroupUpdate {
 	_u.mutation.SetPeakRateEnabled(v)
@@ -1587,6 +1627,18 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(group.FieldRateMultiplier, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.DynamicRate(); ok {
+		_spec.SetField(group.FieldDynamicRate, field.TypeJSON, value)
+	}
+	if _u.mutation.DynamicRateCleared() {
+		_spec.ClearField(group.FieldDynamicRate, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.DynamicRateUpdatedAt(); ok {
+		_spec.SetField(group.FieldDynamicRateUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.DynamicRateUpdatedAtCleared() {
+		_spec.ClearField(group.FieldDynamicRateUpdatedAt, field.TypeTime)
+	}
 	if value, ok := _u.mutation.PeakRateEnabled(); ok {
 		_spec.SetField(group.FieldPeakRateEnabled, field.TypeBool, value)
 	}
@@ -2309,6 +2361,46 @@ func (_u *GroupUpdateOne) SetNillableRateMultiplier(v *float64) *GroupUpdateOne 
 // AddRateMultiplier adds value to the "rate_multiplier" field.
 func (_u *GroupUpdateOne) AddRateMultiplier(v float64) *GroupUpdateOne {
 	_u.mutation.AddRateMultiplier(v)
+	return _u
+}
+
+// SetDynamicRate sets the "dynamic_rate" field.
+func (_u *GroupUpdateOne) SetDynamicRate(v domain.GroupDynamicRate) *GroupUpdateOne {
+	_u.mutation.SetDynamicRate(v)
+	return _u
+}
+
+// SetNillableDynamicRate sets the "dynamic_rate" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableDynamicRate(v *domain.GroupDynamicRate) *GroupUpdateOne {
+	if v != nil {
+		_u.SetDynamicRate(*v)
+	}
+	return _u
+}
+
+// ClearDynamicRate clears the value of the "dynamic_rate" field.
+func (_u *GroupUpdateOne) ClearDynamicRate() *GroupUpdateOne {
+	_u.mutation.ClearDynamicRate()
+	return _u
+}
+
+// SetDynamicRateUpdatedAt sets the "dynamic_rate_updated_at" field.
+func (_u *GroupUpdateOne) SetDynamicRateUpdatedAt(v time.Time) *GroupUpdateOne {
+	_u.mutation.SetDynamicRateUpdatedAt(v)
+	return _u
+}
+
+// SetNillableDynamicRateUpdatedAt sets the "dynamic_rate_updated_at" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableDynamicRateUpdatedAt(v *time.Time) *GroupUpdateOne {
+	if v != nil {
+		_u.SetDynamicRateUpdatedAt(*v)
+	}
+	return _u
+}
+
+// ClearDynamicRateUpdatedAt clears the value of the "dynamic_rate_updated_at" field.
+func (_u *GroupUpdateOne) ClearDynamicRateUpdatedAt() *GroupUpdateOne {
+	_u.mutation.ClearDynamicRateUpdatedAt()
 	return _u
 }
 
@@ -3810,6 +3902,18 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(group.FieldRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DynamicRate(); ok {
+		_spec.SetField(group.FieldDynamicRate, field.TypeJSON, value)
+	}
+	if _u.mutation.DynamicRateCleared() {
+		_spec.ClearField(group.FieldDynamicRate, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.DynamicRateUpdatedAt(); ok {
+		_spec.SetField(group.FieldDynamicRateUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.DynamicRateUpdatedAtCleared() {
+		_spec.ClearField(group.FieldDynamicRateUpdatedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.PeakRateEnabled(); ok {
 		_spec.SetField(group.FieldPeakRateEnabled, field.TypeBool, value)

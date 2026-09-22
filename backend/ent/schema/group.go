@@ -47,6 +47,8 @@ func (Group) Fields() []ent.Field {
 		field.Float("rate_multiplier").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
 			Default(1.0),
+		field.JSON("dynamic_rate", domain.GroupDynamicRate{}).Optional(),
+		field.Time("dynamic_rate_updated_at").Optional().Nillable(),
 		// 高峰时段倍率（added by migration 158）
 		field.Bool("peak_rate_enabled").
 			Default(false).

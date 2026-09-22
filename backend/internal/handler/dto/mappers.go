@@ -159,6 +159,8 @@ func GroupFromServiceAdmin(g *service.Group) *AdminGroup {
 		MCPXMLInject:                g.MCPXMLInject,
 		DefaultMappedModel:          g.DefaultMappedModel,
 		MessagesDispatchModelConfig: g.MessagesDispatchModelConfig,
+		DynamicRate:                 g.DynamicRate,
+		DynamicRateUpdatedAt:        g.DynamicRateUpdatedAt,
 		ModelAllowlist:              g.ModelAllowlist,
 		CodexModelsManifestConfig:   g.CodexModelsManifestConfig,
 		SupportedModelScopes:        g.SupportedModelScopes,

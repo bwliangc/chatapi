@@ -261,10 +261,11 @@
             </div>
           </template>
 
-          <template #cell-rate_multiplier="{ value }">
+          <template #cell-rate_multiplier="{ value, row }">
             <span class="text-sm text-gray-700 dark:text-gray-300"
               >{{ value }}x</span
             >
+            <span v-if="row.dynamic_rate?.enabled" class="ml-1 text-xs text-primary-600">{{ t("admin.groups.dynamicRate.badge") }}</span>
           </template>
 
           <template #cell-is_exclusive="{ value }">
@@ -625,6 +626,7 @@
             data-tour="group-form-multiplier"
           />
           <p class="input-hint">{{ t("admin.groups.rateMultiplierHint") }}</p>
+          <GroupDynamicRateEditor v-model="createForm.dynamic_rate" class="mt-3" />
         </div>
         <div>
           <label class="input-label">{{ t("admin.groups.form.rpmLimit") }}</label>
@@ -2256,6 +2258,7 @@
           }}</label>
           <input
             v-model.number="editForm.rate_multiplier"
+            :disabled="editForm.dynamic_rate.enabled"
             type="number"
             step="0.001"
             min="0"
@@ -2263,6 +2266,7 @@
             class="input"
             data-tour="group-form-multiplier"
           />
+          <GroupDynamicRateEditor v-model="editForm.dynamic_rate" class="mt-3" />
         </div>
         <div>
           <label class="input-label">{{ t("admin.groups.form.rpmLimit") }}</label>
@@ -4291,6 +4295,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
 import TablePageLayout from "@/components/layout/TablePageLayout.vue";
 import DataTable from "@/components/common/DataTable.vue";
 import Pagination from "@/components/common/Pagination.vue";
+import GroupDynamicRateEditor from "@/components/admin/group/GroupDynamicRateEditor.vue";
 import Toggle from "@/components/common/Toggle.vue";
 import BaseDialog from "@/components/common/BaseDialog.vue";
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
@@ -4932,6 +4937,7 @@ const createForm = reactive({
   name: "",
   description: "",
   platform: "anthropic" as GroupPlatform,
+  dynamic_rate: { enabled: false, min: 0.5, max: 2 },
   rate_multiplier: 1.0,
   is_exclusive: false,
   subscription_type: "standard" as SubscriptionType,
@@ -5296,6 +5302,7 @@ const editForm = reactive({
   name: "",
   description: "",
   platform: "anthropic" as GroupPlatform,
+  dynamic_rate: { enabled: false, min: 0.5, max: 2 },
   rate_multiplier: 1.0,
   is_exclusive: false,
   status: "active" as "active" | "inactive",
@@ -5759,6 +5766,7 @@ const closeCreateModal = () => {
   createForm.name = "";
   createForm.description = "";
   createForm.platform = "anthropic";
+  createForm.dynamic_rate = { enabled: false, min: 0.5, max: 2 };
   createForm.rate_multiplier = 1.0;
   createForm.is_exclusive = false;
   createForm.subscription_type = "standard";
@@ -6028,6 +6036,9 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.name = group.name;
   editForm.description = group.description || "";
   editForm.platform = group.platform;
+  editForm.dynamic_rate = group.dynamic_rate?.enabled
+    ? { ...group.dynamic_rate }
+    : { enabled: false, min: 0.5, max: 2 };
   editForm.rate_multiplier = group.rate_multiplier;
   editForm.is_exclusive = group.is_exclusive;
   editForm.status = group.status;
@@ -6227,6 +6238,14 @@ const handleUpdateGroup = async () => {
     // 转换 fallback_group_id: null -> 0 (后端使用 0 表示清除)
     const payload = {
       ...editForm,
+      // Disabling alone keeps the latest published rate, even if the worker
+      // adjusted it while this dialog was open. An explicit manual edit wins.
+      rate_multiplier:
+        editForm.dynamic_rate.enabled ||
+        (editingGroup.value.dynamic_rate?.enabled &&
+          editForm.rate_multiplier === editingGroup.value.rate_multiplier)
+          ? undefined
+          : editForm.rate_multiplier,
       force_openai_fast: normalizeGroupOpenAIFast(
         editForm.platform,
         editForm.force_openai_fast,

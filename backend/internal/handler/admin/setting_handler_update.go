@@ -346,6 +346,7 @@ type UpdateSettingsRequest struct {
 
 	// Available Channels feature switch (user-facing)
 	AvailableChannelsEnabled *bool `json:"available_channels_enabled"`
+	GroupRatesMenuEnabled    *bool `json:"group_rates_menu_enabled"`
 
 	// Online Playground feature switch (user-facing chat page)
 	OnlinePlaygroundEnabled *bool `json:"online_playground_enabled"`
@@ -2046,6 +2047,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.AvailableChannelsEnabled
 		}(),
+		GroupRatesMenuEnabled: func() bool {
+			if req.GroupRatesMenuEnabled != nil {
+				return *req.GroupRatesMenuEnabled
+			}
+			return previousSettings.GroupRatesMenuEnabled
+		}(),
 		OnlinePlaygroundEnabled: func() bool {
 			if req.OnlinePlaygroundEnabled != nil {
 				return *req.OnlinePlaygroundEnabled
@@ -2529,6 +2536,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		GrokDefaultBaseURLMode:         updatedSettings.GrokDefaultBaseURLMode,
 
 		AvailableChannelsEnabled: updatedSettings.AvailableChannelsEnabled,
+		GroupRatesMenuEnabled:    updatedSettings.GroupRatesMenuEnabled,
 		SubscriptionEnabled:      updatedSettings.SubscriptionEnabled,
 
 		OnlinePlaygroundEnabled: updatedSettings.OnlinePlaygroundEnabled,

@@ -588,6 +588,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.AvailableChannelsEnabled != after.AvailableChannelsEnabled {
 		changed = append(changed, "available_channels_enabled")
 	}
+	if before.GroupRatesMenuEnabled != after.GroupRatesMenuEnabled {
+		changed = append(changed, "group_rates_menu_enabled")
+	}
 	if before.OnlinePlaygroundEnabled != after.OnlinePlaygroundEnabled {
 		changed = append(changed, "online_playground_enabled")
 	}

@@ -38,6 +38,11 @@ export default {
           hideUserRankingHint:
             'When on, the user Channel Monitor V2 page hides the user ranking tab and the user API returns no ranking rows. Admins still see the ranking.',
         },
+        groupRates: {
+          title: 'Group rates dashboard',
+          description: 'Show the dashboard in user and admin personal navigation. Off by default. Access requires login and group authorization or an active subscription. Hiding the menu does not disable authorized direct-link access.',
+          enabled: 'Show group rates menu',
+        },
         availableChannels: {
           title: 'Available Channels',
           description: 'Show logged-in users an aggregate view of the channels, models and pricing they can access. Disabled by default.',

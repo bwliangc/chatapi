@@ -326,6 +326,7 @@ type SystemSettings struct {
 
 	// Available Channels feature switch (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+	GroupRatesMenuEnabled    bool `json:"group_rates_menu_enabled"`
 
 	// Online Playground feature switch (user-facing chat page; opt-in)
 	OnlinePlaygroundEnabled bool `json:"online_playground_enabled"`
@@ -457,6 +458,7 @@ type PublicSettings struct {
 	ChannelMonitorHideUserRanking        bool   `json:"channel_monitor_hide_user_ranking"`
 
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+	GroupRatesMenuEnabled    bool `json:"group_rates_menu_enabled"`
 
 	// Online Playground feature switch (user-facing chat page; opt-in)
 	OnlinePlaygroundEnabled bool `json:"online_playground_enabled"`

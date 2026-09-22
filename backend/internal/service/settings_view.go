@@ -222,6 +222,7 @@ type SystemSettings struct {
 
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+	GroupRatesMenuEnabled    bool `json:"group_rates_menu_enabled"`
 
 	// Online Playground feature (user-facing chat page; opt-in)
 	OnlinePlaygroundEnabled bool `json:"online_playground_enabled"`
@@ -420,6 +421,7 @@ type PublicSettings struct {
 
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+	GroupRatesMenuEnabled    bool `json:"group_rates_menu_enabled"`
 
 	// Online Playground feature (user-facing chat page; opt-in)
 	OnlinePlaygroundEnabled bool `json:"online_playground_enabled"`

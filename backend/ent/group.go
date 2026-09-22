@@ -32,6 +32,10 @@ type Group struct {
 	Description *string `json:"description,omitempty"`
 	// RateMultiplier holds the value of the "rate_multiplier" field.
 	RateMultiplier float64 `json:"rate_multiplier,omitempty"`
+	// DynamicRate holds the value of the "dynamic_rate" field.
+	DynamicRate domain.GroupDynamicRate `json:"dynamic_rate,omitempty"`
+	// DynamicRateUpdatedAt holds the value of the "dynamic_rate_updated_at" field.
+	DynamicRateUpdatedAt *time.Time `json:"dynamic_rate_updated_at,omitempty"`
 	// 是否启用高峰时段倍率
 	PeakRateEnabled bool `json:"peak_rate_enabled,omitempty"`
 	// 高峰开始时间 HH:MM（含），如 14:00；空表示未配置；不支持跨天
@@ -258,7 +262,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldVideoModelPrices, group.FieldModelPricing, group.FieldModelRouting, group.FieldSupportedModelScopes, group.FieldMessagesDispatchModelConfig, group.FieldModelAllowlist, group.FieldCodexModelsManifestConfig, group.FieldReasoningEffortMappings:
+		case group.FieldDynamicRate, group.FieldVideoModelPrices, group.FieldModelPricing, group.FieldModelRouting, group.FieldSupportedModelScopes, group.FieldMessagesDispatchModelConfig, group.FieldModelAllowlist, group.FieldCodexModelsManifestConfig, group.FieldReasoningEffortMappings:
 			values[i] = new([]byte)
 		case group.FieldPeakRateEnabled, group.FieldIsExclusive, group.FieldAllowImageGeneration, group.FieldAllowBatchImageGeneration, group.FieldImageRateIndependent, group.FieldVideoRateIndependent, group.FieldLongContextPricingEnabled, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldAllowLive, group.FieldForceOpenaiFast, group.FieldFreeOpenaiFast, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet, group.FieldProfitControlEnabled:
 			values[i] = new(sql.NullBool)
@@ -268,7 +272,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case group.FieldName, group.FieldDescription, group.FieldPeakStart, group.FieldPeakEnd, group.FieldStatus, group.FieldDuplicateOperationID, group.FieldPlatform, group.FieldSubscriptionType, group.FieldDefaultMappedModel, group.FieldMaxReasoningEffort, group.FieldMaxReasoningEffortOverLimit:
 			values[i] = new(sql.NullString)
-		case group.FieldCreatedAt, group.FieldUpdatedAt, group.FieldDeletedAt:
+		case group.FieldCreatedAt, group.FieldUpdatedAt, group.FieldDeletedAt, group.FieldDynamicRateUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -328,6 +332,21 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field rate_multiplier", values[i])
 			} else if value.Valid {
 				_m.RateMultiplier = value.Float64
+			}
+		case group.FieldDynamicRate:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field dynamic_rate", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.DynamicRate); err != nil {
+					return fmt.Errorf("unmarshal field dynamic_rate: %w", err)
+				}
+			}
+		case group.FieldDynamicRateUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field dynamic_rate_updated_at", values[i])
+			} else if value.Valid {
+				_m.DynamicRateUpdatedAt = new(time.Time)
+				*_m.DynamicRateUpdatedAt = value.Time
 			}
 		case group.FieldPeakRateEnabled:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -819,6 +838,14 @@ func (_m *Group) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("rate_multiplier=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RateMultiplier))
+	builder.WriteString(", ")
+	builder.WriteString("dynamic_rate=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DynamicRate))
+	builder.WriteString(", ")
+	if v := _m.DynamicRateUpdatedAt; v != nil {
+		builder.WriteString("dynamic_rate_updated_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("peak_rate_enabled=")
 	builder.WriteString(fmt.Sprintf("%v", _m.PeakRateEnabled))

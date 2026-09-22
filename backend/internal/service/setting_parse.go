@@ -210,6 +210,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 
 		// Available channels feature (default disabled; opt-in)
 		SettingKeyAvailableChannelsEnabled: "false",
+		SettingKeyGroupRatesMenuEnabled:    "false",
 
 		// Custom user-facing feature switches
 		SettingKeyOnlinePlaygroundEnabled:          "false",
@@ -862,6 +863,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// Available channels feature (default: disabled; strict true)
 	result.AvailableChannelsEnabled = settings[SettingKeyAvailableChannelsEnabled] == "true"
+	result.GroupRatesMenuEnabled = settings[SettingKeyGroupRatesMenuEnabled] == "true"
 
 	// Custom user-facing feature switches
 	result.OnlinePlaygroundEnabled = settings[SettingKeyOnlinePlaygroundEnabled] == "true"
