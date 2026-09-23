@@ -12,7 +12,7 @@
       </header>
 
       <div class="grid items-start gap-5 xl:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] xl:gap-6">
-        <section class="card min-w-0 overflow-hidden" aria-labelledby="detection-configuration">
+        <section class="card min-w-0" aria-labelledby="detection-configuration">
           <div class="flex items-center gap-2 border-b border-gray-100 px-5 py-4 dark:border-dark-700 sm:px-6">
             <Icon name="cog" size="sm" class="text-gray-400" aria-hidden="true" />
             <h3 id="detection-configuration" class="font-semibold text-gray-900 dark:text-gray-100">{{ t('admin.modelDetection.configuration') }}</h3>
@@ -24,30 +24,47 @@
                 <option value="openai">OpenAI</option><option value="anthropic">Anthropic</option>
               </select>
             </label>
-            <div class="space-y-2">
-              <label for="detection-search" class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.modelDetection.search') }}</label>
-              <div class="flex gap-2">
-                <input id="detection-search" v-model="search" class="input min-w-0 flex-1" :disabled="running" @keyup.enter="resetSearch">
-                <button class="btn btn-secondary shrink-0 px-3" :disabled="running || accountsLoading" :aria-label="t('common.search')" @click="resetSearch"><Icon name="search" size="sm" aria-hidden="true" /></button>
-              </div>
+            <div class="relative space-y-2">
+              <label for="detection-account" class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.modelDetection.account') }}</label>
+              <input
+                id="detection-account"
+                v-model="accountQuery"
+                class="input w-full"
+                role="combobox"
+                autocomplete="off"
+                aria-autocomplete="list"
+                aria-controls="detection-account-options"
+                :aria-expanded="accountDropdownOpen"
+                :aria-activedescendant="accountDropdownOpen && focusedAccount >= 0 ? `detection-account-${focusedAccount}` : undefined"
+                :placeholder="t('admin.modelDetection.selectAccount')"
+                :disabled="running"
+                @input="searchAccounts"
+                @focus="openAccountDropdown"
+                @click="!accountDropdownOpen && openAccountDropdown()"
+                @blur="accountDropdownOpen = false"
+                @keydown.down.prevent="moveAccountFocus(1)"
+                @keydown.up.prevent="moveAccountFocus(-1)"
+                @keydown.enter.prevent="selectFocusedAccount"
+                @keydown.esc.prevent="accountDropdownOpen = false"
+              >
+              <ul v-if="accountDropdownOpen" id="detection-account-options" role="listbox" :aria-label="t('admin.modelDetection.account')" :aria-busy="accountsLoading" class="absolute z-50 max-h-64 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg dark:border-dark-600 dark:bg-dark-800" @mousedown.prevent>
+                <li v-if="accountsLoading || accounts.length === 0" role="presentation" class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ t(accountsLoading ? 'common.loading' : 'admin.modelDetection.noAccounts') }}</li>
+                <li
+                  v-for="(account, index) in accounts"
+                  :id="`detection-account-${index}`"
+                  :key="account.id"
+                  role="option"
+                  :aria-selected="accountID === String(account.id)"
+                  class="cursor-pointer px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200"
+                  :class="focusedAccount === index ? 'bg-primary-50 dark:bg-primary-900/30' : 'hover:bg-gray-50 dark:hover:bg-dark-700'"
+                  @mouseenter="focusedAccount = index"
+                  @click="selectAccount(account)"
+                >
+                  <p class="break-all font-medium">{{ account.name }}</p>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">#{{ account.id }} · {{ account.type }}</p>
+                </li>
+              </ul>
             </div>
-            <div class="space-y-2">
-              <label class="block space-y-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                <span>{{ t('admin.modelDetection.account') }}</span>
-                <select v-model="accountID" class="input w-full" :disabled="running || accountsLoading" @change="loadModels">
-                  <option value="">{{ t('admin.modelDetection.selectAccount') }}</option>
-                  <option v-for="account in accounts" :key="account.id" :value="String(account.id)">{{ account.name }} · #{{ account.id }} · {{ account.type }}</option>
-                </select>
-              </label>
-              <div class="flex items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <span>{{ t('admin.modelDetection.page', { page, total }) }}</span>
-                <div class="flex gap-1">
-                  <button class="btn btn-secondary !rounded-lg !p-1.5" :disabled="running || accountsLoading || page <= 1" :aria-label="t('admin.modelDetection.previousPage')" @click="changePage(-1)"><Icon name="chevronLeft" size="sm" aria-hidden="true" /></button>
-                  <button class="btn btn-secondary !rounded-lg !p-1.5" :disabled="running || accountsLoading || page * 50 >= total" :aria-label="t('admin.modelDetection.nextPage')" @click="changePage(1)"><Icon name="chevronRight" size="sm" aria-hidden="true" /></button>
-                </div>
-              </div>
-            </div>
-            <p v-if="!accountsLoading && accounts.length === 0" class="text-sm text-gray-500">{{ t('admin.modelDetection.noAccounts') }}</p>
             <label class="block space-y-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               <span>{{ t('admin.modelDetection.model') }}</span>
               <select v-model="model" class="input w-full" :disabled="running || modelsLoading || !accountID">
@@ -141,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -150,8 +167,10 @@ import { detectAccountModel, getDetectionInfo, type DetectionInfo, type Detectio
 import type { AccountListItem, ClaudeModel } from '@/types'
 
 const { t } = useI18n()
-const platform = ref('openai'), search = ref(''), accountID = ref(''), model = ref('')
-const page = ref(1), total = ref(0)
+const platform = ref('openai'), accountQuery = ref(''), accountID = ref(''), model = ref('')
+const accountDropdownOpen = ref(false), focusedAccount = ref(-1)
+let accountSearchTimer: ReturnType<typeof setTimeout> | undefined
+let accountController: AbortController | undefined
 const accounts = ref<AccountListItem[]>([]), models = ref<ClaudeModel[]>([])
 const accountsLoading = ref(false), modelsLoading = ref(false), running = ref(false)
 const info = ref<DetectionInfo | null>(null), result = ref<DetectionResult | null>(null)
@@ -171,20 +190,63 @@ let controller: AbortController | undefined
 let accountRequest = 0, modelRequest = 0
 let disposed = false
 const errorText = (e: unknown) => e instanceof Error ? e.message : t('common.error')
-async function loadAccounts() {
-  const request = ++accountRequest
+function clearAccountSelection() {
+  accountID.value = ''; models.value = []; model.value = ''; modelsLoading.value = false; ++modelRequest
+}
+function cancelAccountSearch() {
+  clearTimeout(accountSearchTimer)
+  accountController?.abort()
+  ++accountRequest
+}
+async function loadAccounts(query = '') {
+  cancelAccountSearch()
+  const request = accountRequest
+  accountController = new AbortController()
   accountsLoading.value = true
-  accountID.value = ''; accounts.value = []; models.value = []; model.value = ''; modelsLoading.value = false; ++modelRequest
+  accounts.value = []; focusedAccount.value = -1
   try {
-    const data = await accountsAPI.list(page.value, 50, { platform: platform.value, status: 'active', search: search.value, lite: 'true' })
+    const data = await accountsAPI.list(1, 50, { platform: platform.value, status: 'active', search: query, lite: 'true' }, { signal: accountController.signal })
     if (disposed || request !== accountRequest) return
     accounts.value = data.items.filter(a => a.type === 'oauth' || a.type === 'apikey')
-    total.value = data.total
-  } catch (e) { if (request === accountRequest) error.value = errorText(e) }
+    focusedAccount.value = accounts.value.length ? 0 : -1
+  } catch (e) { if (!disposed && request === accountRequest) error.value = errorText(e) }
   finally { if (request === accountRequest) accountsLoading.value = false }
 }
-function resetSearch() { page.value = 1; error.value = ''; void loadAccounts() }
-function changePage(delta: number) { page.value += delta; void loadAccounts() }
+function resetSearch() {
+  clearAccountSelection()
+  accountQuery.value = ''; accountDropdownOpen.value = false; error.value = ''
+  void loadAccounts()
+}
+function searchAccounts() {
+  cancelAccountSearch()
+  clearAccountSelection()
+  accounts.value = []; focusedAccount.value = -1; accountsLoading.value = true
+  accountDropdownOpen.value = true; error.value = ''
+  accountSearchTimer = setTimeout(() => { void loadAccounts(accountQuery.value.trim()) }, 300)
+}
+function openAccountDropdown() {
+  accountDropdownOpen.value = true
+  void loadAccounts(accountID.value ? '' : accountQuery.value.trim())
+}
+function moveAccountFocus(delta: number) {
+  if (!accountDropdownOpen.value) { openAccountDropdown(); return }
+  if (!accounts.value.length) return
+  focusedAccount.value = (focusedAccount.value + delta + accounts.value.length) % accounts.value.length
+  void nextTick(() => document.getElementById(`detection-account-${focusedAccount.value}`)?.scrollIntoView?.({ block: 'nearest' }))
+}
+function selectFocusedAccount(event: KeyboardEvent) {
+  if (event.isComposing || !accountDropdownOpen.value) return
+  const account = accounts.value[focusedAccount.value]
+  if (account) selectAccount(account)
+}
+function selectAccount(account: AccountListItem) {
+  cancelAccountSearch()
+  accountsLoading.value = false
+  accountID.value = String(account.id)
+  accountQuery.value = `${account.name} · #${account.id}`
+  accountDropdownOpen.value = false
+  void loadModels()
+}
 async function loadModels() {
   const request = ++modelRequest
   model.value = ''; models.value = []; error.value = ''
@@ -213,7 +275,7 @@ function cancel() { controller?.abort() }
 onMounted(async () => {
   await Promise.all([loadAccounts(), getDetectionInfo().then(data => { info.value = data }).catch(e => { error.value = errorText(e) })])
 })
-onBeforeUnmount(() => { disposed = true; ++accountRequest; ++modelRequest; cancel() })
+onBeforeUnmount(() => { disposed = true; cancelAccountSearch(); ++modelRequest; cancel() })
 </script>
 
 <style scoped>
