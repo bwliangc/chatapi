@@ -479,6 +479,12 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.EnableClientDatelineNormalization != after.EnableClientDatelineNormalization {
 		changed = append(changed, "enable_client_dateline_normalization")
 	}
+	if before.EnableCodexTimezoneRewrite != after.EnableCodexTimezoneRewrite {
+		changed = append(changed, "enable_codex_timezone_rewrite")
+	}
+	if before.CodexTimezone != after.CodexTimezone {
+		changed = append(changed, "codex_timezone")
+	}
 	if before.AntigravityUserAgentVersion != after.AntigravityUserAgentVersion {
 		changed = append(changed, "antigravity_user_agent_version")
 	}

@@ -5700,6 +5700,49 @@
                 />
               </div>
 
+              <!-- Codex environment_context 时区重写 -->
+              <div class="flex items-center justify-between">
+                <div>
+                  <label
+                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {{
+                      t(
+                        "admin.settings.gatewayForwarding.codexTimezoneRewrite",
+                      )
+                    }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{
+                      t(
+                        "admin.settings.gatewayForwarding.codexTimezoneRewriteHint",
+                      )
+                    }}
+                  </p>
+                </div>
+                <Toggle v-model="form.enable_codex_timezone_rewrite" />
+              </div>
+
+              <div>
+                <label
+                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {{ t("admin.settings.gatewayForwarding.codexTimezone") }}
+                </label>
+                <Select
+                  v-model="form.codex_timezone"
+                  :options="codexTimezoneOptions"
+                  searchable
+                  class="w-full max-w-md"
+                  :placeholder="t('admin.settings.gatewayForwarding.codexTimezonePlaceholder')"
+                  :search-placeholder="t('admin.settings.gatewayForwarding.codexTimezoneSearchPlaceholder')"
+                  :aria-label="t('admin.settings.gatewayForwarding.codexTimezone')"
+                />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t("admin.settings.gatewayForwarding.codexTimezoneHint") }}
+                </p>
+              </div>
+
               <!-- Antigravity UA 版本 -->
               <div>
                 <label
@@ -10155,6 +10198,8 @@ const form = reactive<SettingsForm>({
   enable_anthropic_cache_ttl_1h_injection: false,
   rewrite_message_cache_control: false,
   enable_client_dateline_normalization: true,
+  enable_codex_timezone_rewrite: false,
+  codex_timezone: "",
   antigravity_user_agent_version: "",
   openai_codex_user_agent: "",
   openai_codex_client_version: "",
@@ -10220,6 +10265,56 @@ const form = reactive<SettingsForm>({
   leaderboard_reward_min_spend: 0,
   leaderboard_excluded_emails: "",
   leaderboard_ranking_visible_enabled: false,
+});
+
+const fallbackCodexTimezones = [
+  "UTC",
+  "Asia/Shanghai",
+  "Asia/Tokyo",
+  "Asia/Seoul",
+  "Asia/Singapore",
+  "Asia/Kolkata",
+  "Asia/Dubai",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "Europe/Moscow",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Sao_Paulo",
+  "Australia/Sydney",
+  "Pacific/Auckland",
+];
+
+const codexTimezoneValues = (() => {
+  const intlWithTimezones = Intl as typeof Intl & {
+    supportedValuesOf?: (key: string) => string[];
+  };
+  const values =
+    typeof intlWithTimezones.supportedValuesOf === "function"
+      ? intlWithTimezones.supportedValuesOf("timeZone")
+      : fallbackCodexTimezones;
+  return Array.from(new Set(["UTC", ...values])).sort((a, b) =>
+    a.localeCompare(b),
+  );
+})();
+
+const codexTimezoneOptions = computed<SelectOption[]>(() => {
+  const values = new Set(codexTimezoneValues);
+  const currentTimezone = form.codex_timezone.trim();
+  if (currentTimezone) values.add(currentTimezone);
+
+  return [
+    {
+      value: "",
+      label: t("admin.settings.gatewayForwarding.codexTimezoneServerOption"),
+    },
+    ...Array.from(values)
+      .sort((a, b) => a.localeCompare(b))
+      .map((timezone) => ({ value: timezone, label: timezone })),
+  ];
 });
 
 // 人机验证 UI 状态：单卡片「总开关 + 服务商单选」，落库仍是三个独立
@@ -11796,6 +11891,8 @@ async function saveSettings() {
       rewrite_message_cache_control: form.rewrite_message_cache_control,
       enable_client_dateline_normalization:
         form.enable_client_dateline_normalization,
+      enable_codex_timezone_rewrite: form.enable_codex_timezone_rewrite,
+      codex_timezone: form.codex_timezone?.trim() || "",
       antigravity_user_agent_version:
         form.antigravity_user_agent_version?.trim() || "",
       openai_codex_user_agent:

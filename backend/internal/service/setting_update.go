@@ -507,6 +507,14 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyEnableAnthropicCacheTTL1hInjection] = strconv.FormatBool(settings.EnableAnthropicCacheTTL1hInjection)
 	updates[SettingKeyRewriteMessageCacheControl] = strconv.FormatBool(settings.RewriteMessageCacheControl)
 	updates[SettingKeyEnableClientDatelineNormalization] = strconv.FormatBool(settings.EnableClientDatelineNormalization)
+	updates[SettingKeyEnableCodexTimezoneRewrite] = strconv.FormatBool(settings.EnableCodexTimezoneRewrite)
+	codexTimezone := strings.TrimSpace(settings.CodexTimezone)
+	if codexTimezone != "" {
+		if _, err := time.LoadLocation(codexTimezone); err != nil {
+			return nil, fmt.Errorf("%s must be a valid IANA timezone: %w", SettingKeyCodexTimezone, err)
+		}
+	}
+	updates[SettingKeyCodexTimezone] = codexTimezone
 	updates[SettingKeyAntigravityUserAgentVersion] = antigravity.NormalizeUserAgentVersion(settings.AntigravityUserAgentVersion)
 	updates[SettingKeyOpenAICodexUserAgent] = strings.TrimSpace(settings.OpenAICodexUserAgent)
 	updates[SettingKeyOpenAICodexClientVersion] = NormalizeCodexClientVersion(settings.OpenAICodexClientVersion)
@@ -760,6 +768,8 @@ func (s *SettingService) refreshCachedSettings(settings *SystemSettings) {
 		anthropicCacheTTL1hInjection:     settings.EnableAnthropicCacheTTL1hInjection,
 		rewriteMessageCacheControl:       settings.RewriteMessageCacheControl,
 		clientDatelineNormalization:      settings.EnableClientDatelineNormalization,
+		codexTimezoneRewrite:             settings.EnableCodexTimezoneRewrite,
+		codexTimezone:                    strings.TrimSpace(settings.CodexTimezone),
 		expiresAt:                        time.Now().Add(gatewayForwardingCacheTTL).UnixNano(),
 	})
 	s.antigravityUAVersionSF.Forget("antigravity_user_agent_version")

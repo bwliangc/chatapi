@@ -277,6 +277,11 @@ func (s *OpenAIGatewayService) forwardAsChatCompletions(
 			return nil, fmt.Errorf("marshal responses request: %w", err)
 		}
 	}
+	if rewrittenBody, rewriteErr := s.rewriteCodexTimezoneIfEnabled(ctx, account, responsesBody); rewriteErr != nil {
+		return nil, rewriteErr
+	} else {
+		responsesBody = rewrittenBody
+	}
 
 	logFields := []zap.Field{
 		zap.Int64("account_id", account.ID),

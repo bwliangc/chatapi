@@ -63,6 +63,8 @@ type cachedGatewayForwardingSettings struct {
 	anthropicCacheTTL1hInjection     bool
 	rewriteMessageCacheControl       bool
 	clientDatelineNormalization      bool
+	codexTimezoneRewrite             bool
+	codexTimezone                    string
 	expiresAt                        int64 // unix nano
 }
 
@@ -1146,6 +1148,8 @@ type gatewayForwardingSettingsResult struct {
 	openAITTFTMode                                                                        string
 	fp, mp, cch, claudeOAuthSystemPromptInjection, cacheTTL1h, rewriteMessageCacheControl bool
 	clientDatelineNormalization                                                           bool
+	codexTimezoneRewrite                                                                  bool
+	codexTimezone                                                                         string
 	claudeOAuthSystemPrompt, claudeOAuthSystemPromptBlocks                                string
 }
 
@@ -1163,6 +1167,8 @@ func (s *SettingService) getGatewayForwardingSettingsCached(ctx context.Context)
 				cacheTTL1h:                       cached.anthropicCacheTTL1hInjection,
 				rewriteMessageCacheControl:       cached.rewriteMessageCacheControl,
 				clientDatelineNormalization:      cached.clientDatelineNormalization,
+				codexTimezoneRewrite:             cached.codexTimezoneRewrite,
+				codexTimezone:                    cached.codexTimezone,
 			}
 		}
 	}
@@ -1180,6 +1186,8 @@ func (s *SettingService) getGatewayForwardingSettingsCached(ctx context.Context)
 					cacheTTL1h:                       cached.anthropicCacheTTL1hInjection,
 					rewriteMessageCacheControl:       cached.rewriteMessageCacheControl,
 					clientDatelineNormalization:      cached.clientDatelineNormalization,
+					codexTimezoneRewrite:             cached.codexTimezoneRewrite,
+					codexTimezone:                    cached.codexTimezone,
 				}, nil
 			}
 		}
@@ -1196,6 +1204,8 @@ func (s *SettingService) getGatewayForwardingSettingsCached(ctx context.Context)
 			SettingKeyEnableAnthropicCacheTTL1hInjection,
 			SettingKeyRewriteMessageCacheControl,
 			SettingKeyEnableClientDatelineNormalization,
+			SettingKeyEnableCodexTimezoneRewrite,
+			SettingKeyCodexTimezone,
 		})
 		if err != nil {
 			slog.Warn("failed to get gateway forwarding settings", "error", err)
@@ -1208,9 +1218,11 @@ func (s *SettingService) getGatewayForwardingSettingsCached(ctx context.Context)
 				anthropicCacheTTL1hInjection:     false,
 				rewriteMessageCacheControl:       s.defaultRewriteMessageCacheControl(),
 				clientDatelineNormalization:      true,
+				codexTimezoneRewrite:             false,
+				codexTimezone:                    "",
 				expiresAt:                        time.Now().Add(gatewayForwardingErrorTTL).UnixNano(),
 			})
-			return gatewayForwardingSettingsResult{openAITTFTMode: OpenAITTFTModeSemantic, fp: true, claudeOAuthSystemPromptInjection: true, rewriteMessageCacheControl: s.defaultRewriteMessageCacheControl(), clientDatelineNormalization: true}, nil
+			return gatewayForwardingSettingsResult{openAITTFTMode: OpenAITTFTModeSemantic, fp: true, claudeOAuthSystemPromptInjection: true, rewriteMessageCacheControl: s.defaultRewriteMessageCacheControl(), clientDatelineNormalization: true, codexTimezoneRewrite: false, codexTimezone: ""}, nil
 		}
 		ttftMode := normalizeOpenAITTFTMode(values[SettingKeyOpenAITTFTMode])
 		fp := true
@@ -1234,6 +1246,8 @@ func (s *SettingService) getGatewayForwardingSettingsCached(ctx context.Context)
 		if v, ok := values[SettingKeyEnableClientDatelineNormalization]; ok && v != "" {
 			clientDatelineNormalization = v == "true"
 		}
+		codexTimezoneRewrite := values[SettingKeyEnableCodexTimezoneRewrite] == "true"
+		codexTimezone := strings.TrimSpace(values[SettingKeyCodexTimezone])
 		gatewayForwardingCache.Store(&cachedGatewayForwardingSettings{
 			openAITTFTMode:                   ttftMode,
 			fingerprintUnification:           fp,
@@ -1245,6 +1259,8 @@ func (s *SettingService) getGatewayForwardingSettingsCached(ctx context.Context)
 			anthropicCacheTTL1hInjection:     cacheTTL1h,
 			rewriteMessageCacheControl:       rewriteMessageCacheControl,
 			clientDatelineNormalization:      clientDatelineNormalization,
+			codexTimezoneRewrite:             codexTimezoneRewrite,
+			codexTimezone:                    codexTimezone,
 			expiresAt:                        time.Now().Add(gatewayForwardingCacheTTL).UnixNano(),
 		})
 		return gatewayForwardingSettingsResult{
@@ -1258,12 +1274,14 @@ func (s *SettingService) getGatewayForwardingSettingsCached(ctx context.Context)
 			cacheTTL1h:                       cacheTTL1h,
 			rewriteMessageCacheControl:       rewriteMessageCacheControl,
 			clientDatelineNormalization:      clientDatelineNormalization,
+			codexTimezoneRewrite:             codexTimezoneRewrite,
+			codexTimezone:                    codexTimezone,
 		}, nil
 	})
 	if r, ok := val.(gatewayForwardingSettingsResult); ok {
 		return r
 	}
-	return gatewayForwardingSettingsResult{fp: true, claudeOAuthSystemPromptInjection: true, clientDatelineNormalization: true}
+	return gatewayForwardingSettingsResult{fp: true, claudeOAuthSystemPromptInjection: true, clientDatelineNormalization: true, codexTimezoneRewrite: false, codexTimezone: ""}
 }
 
 // GetOpenAITTFTMode 返回 Responses first_token_ms 的统计口径。
@@ -1293,6 +1311,18 @@ func (s *SettingService) IsRewriteMessageCacheControlEnabled(ctx context.Context
 // 的客户端 dateline 归一化。默认开启。
 func (s *SettingService) IsClientDatelineNormalizationEnabled(ctx context.Context) bool {
 	return s.getGatewayForwardingSettingsCached(ctx).clientDatelineNormalization
+}
+
+// IsCodexTimezoneRewriteEnabled reports whether Codex environment_context
+// timezone/date rewriting is enabled.
+func (s *SettingService) IsCodexTimezoneRewriteEnabled(ctx context.Context) bool {
+	return s.getGatewayForwardingSettingsCached(ctx).codexTimezoneRewrite
+}
+
+// GetCodexTimezone returns the configured Codex rewrite timezone. Empty means
+// the application timezone should be used.
+func (s *SettingService) GetCodexTimezone(ctx context.Context) string {
+	return s.getGatewayForwardingSettingsCached(ctx).codexTimezone
 }
 
 // GetClaudeOAuthSystemPromptInjectionSettings returns the Claude OAuth mimic

@@ -201,6 +201,11 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 	if err != nil {
 		return nil, fmt.Errorf("marshal responses request: %w", err)
 	}
+	if rewrittenBody, rewriteErr := s.rewriteCodexTimezoneIfEnabled(ctx, account, responsesBody); rewriteErr != nil {
+		return nil, rewriteErr
+	} else {
+		responsesBody = rewrittenBody
+	}
 
 	if account.UsesOpenAICodexProtocol() && account.Platform != PlatformGrok {
 		var reqBody map[string]any

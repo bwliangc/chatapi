@@ -751,6 +751,11 @@ func (s *OpenAIGatewayService) proxyResponsesWebSocketV2Passthrough(
 	} else if compatibilityChanged {
 		firstClientMessage = normalized
 	}
+	if rewritten, rewriteErr := s.rewriteCodexTimezoneIfEnabled(ctx, account, firstClientMessage); rewriteErr != nil {
+		return fmt.Errorf("rewrite first websocket Codex timezone: %w", rewriteErr)
+	} else {
+		firstClientMessage = rewritten
+	}
 	if account.IsOpenAIOAuthLike() {
 		aliasedBody, reverse, aliased, aliasErr := aliasOpenAIOAuthReservedToolNamesBody(firstClientMessage)
 		if aliasErr != nil {
@@ -1002,6 +1007,11 @@ func (s *OpenAIGatewayService) proxyResponsesWebSocketV2Passthrough(
 					return payload, nil, NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, "invalid websocket request payload", normalizeErr)
 				} else if compatibilityChanged {
 					payload = normalized
+				}
+				if rewritten, rewriteErr := s.rewriteCodexTimezoneIfEnabled(ctx, account, payload); rewriteErr != nil {
+					return payload, nil, NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, "invalid websocket timezone rewrite", rewriteErr)
+				} else {
+					payload = rewritten
 				}
 			}
 			if account.IsOpenAIOAuthLike() && (isResponseCreate || eventType == "session.update") {

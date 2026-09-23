@@ -89,6 +89,11 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 	if _, err := s.prepareCodexAccountIdentitySource(ctx, c, account); err != nil {
 		return err
 	}
+	if rewritten, rewriteErr := s.rewriteCodexTimezoneIfEnabled(ctx, account, firstClientMessage); rewriteErr != nil {
+		return rewriteErr
+	} else {
+		firstClientMessage = rewritten
+	}
 	if err := validateOpenAIWSBearerToken(account, token); err != nil {
 		return err
 	}
@@ -273,6 +278,11 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 			return openAIWSClientPayload{}, NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, "invalid websocket request payload", compatibilityErr)
 		} else if compatibilityChanged {
 			normalized = compatibilityBody
+		}
+		if rewritten, rewriteErr := s.rewriteCodexTimezoneIfEnabled(ctx, account, normalized); rewriteErr != nil {
+			return openAIWSClientPayload{}, NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, "invalid websocket timezone rewrite", rewriteErr)
+		} else {
+			normalized = rewritten
 		}
 		if account.IsOpenAIOAuthLike() {
 			aliasedBody, reverse, aliased, aliasErr := aliasOpenAIOAuthReservedToolNamesBody(normalized)
