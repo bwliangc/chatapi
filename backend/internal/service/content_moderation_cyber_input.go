@@ -17,26 +17,27 @@ func extractCyberPolicyInputExcerpt(body []byte) string {
 	if len(body) == 0 || !gjson.ValidBytes(body) {
 		return ""
 	}
+	collector := moderationTextCollector{filterReminders: true}
 	payload := gjson.ParseBytes(body)
 	var parts, images []string
 	input := payload.Get("input")
 	if input.IsArray() {
 		items := input.Array()
 		for i := len(items) - 1; i >= 0; i-- {
-			if isResponsesUserTextItem(items[i]) {
+			if collector.isResponsesUserTextItem(items[i]) {
 				input = items[i]
 				break
 			}
 		}
 	}
-	collectLastResponsesInput(input, &parts, &images)
+	collector.collectLastResponsesInput(input, &parts, &images)
 	if len(parts) == 0 {
 		messages := payload.Get("messages").Array()
 		for i := len(messages) - 1; i >= 0; i-- {
 			if !strings.EqualFold(strings.TrimSpace(messages[i].Get("role").String()), "user") {
 				continue
 			}
-			collectAnthropicUserContentValue(messages[i].Get("content"), &parts, &images)
+			collector.collectAnthropicUserContentValue(messages[i].Get("content"), &parts, &images)
 			if len(parts) > 0 {
 				break
 			}

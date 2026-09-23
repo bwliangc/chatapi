@@ -44,8 +44,8 @@ export function resolveCcSwitchImportConfig(
     app,
     endpoint:
       platform === 'antigravity'
-        ? `${baseUrl}/antigravity`
-        : platform === 'grok'
+        ? `${baseUrl.replace(/\/+$/, '')}/antigravity`
+        : platform === 'grok' || (platform === 'openai' && app === 'codex')
           ? withV1Endpoint(baseUrl)
           : baseUrl
   }

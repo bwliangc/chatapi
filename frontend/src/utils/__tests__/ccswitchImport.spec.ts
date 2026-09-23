@@ -47,9 +47,27 @@ describe('ccswitchImport utils', () => {
 
     expect(params.get('resource')).toBe('provider')
     expect(params.get('app')).toBe(app)
-    expect(params.get('endpoint')).toBe(baseInput.baseUrl)
+    expect(params.get('endpoint')).toBe(app === 'codex' ? `${baseInput.baseUrl}/v1` : baseInput.baseUrl)
     expect(params.get('model')).toBe(model)
     expect(atob(params.get('usageScript') || '')).toBe(baseInput.usageScript)
+  })
+
+  it.each([
+    'https://api.example.com',
+    'https://api.example.com/',
+    'https://api.example.com/v1',
+    'https://api.example.com/v1/'
+  ])('imports Codex with exactly one /v1 suffix for base URL %s', (baseUrl) => {
+    const params = paramsFromDeeplink(
+      buildCcSwitchImportDeeplink({
+        ...baseInput,
+        baseUrl,
+        platform: 'openai',
+        app: 'codex'
+      })
+    )
+
+    expect(params.get('endpoint')).toBe('https://api.example.com/v1')
   })
 
   it.each([
