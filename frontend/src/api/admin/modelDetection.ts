@@ -19,7 +19,7 @@ export interface DetectionResult {
   }
 }
 export type DetectionEvent =
-  | { type: 'progress'; attempt: number; accepted: number; message?: string }
+  | { type: 'progress'; attempt: number; accepted: number; in_flight?: number; message?: string }
   | { type: 'result'; data: DetectionResult }
   | { type: 'error'; message: string }
 

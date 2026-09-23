@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/modeltrace"
@@ -25,6 +26,7 @@ type ModelDetectionProgress struct {
 	Type     string `json:"type"`
 	Attempt  int    `json:"attempt"`
 	Accepted int    `json:"accepted"`
+	InFlight int    `json:"in_flight"`
 	Message  string `json:"message,omitempty"`
 }
 type ModelDetectionResult struct {
@@ -84,6 +86,9 @@ func (s *AccountTestService) DetectModel(ctx context.Context, accountID int64, m
 		return nil, errors.New("该账号已有检测任务正在运行")
 	}
 	defer s.modelDetectionActive.Delete(accountID)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	bank, err := s.CurrentModelDetectionBank(ctx)
 	if err != nil {
 		return nil, errors.New("指纹库不可用")
@@ -93,63 +98,117 @@ func (s *AccountTestService) DetectModel(ctx context.Context, accountID int64, m
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-	defer cancel()
-	result := &ModelDetectionResult{AccountID: accountID, Model: model, ActualModels: []string{}}
-	outputs := []modeltrace.Output{}
-	for _, challenge := range challenges {
+	var workers sync.WaitGroup
+	defer func() {
+		cancel()
+		workers.Wait() // Keep the account task lock until all requests/slots are released.
+	}()
+	account, err := s.accountRepo.GetByID(ctx, accountID)
+	if err != nil {
+		return nil, errors.New("读取账号失败")
+	}
+	if err := validateModelDetectionAccount(account, model); err != nil {
+		return nil, err
+	}
+	parallelism := 3
+	if account.Concurrency > 0 && account.Concurrency < parallelism {
+		parallelism = account.Concurrency
+	}
+	result := &ModelDetectionResult{AccountID: accountID, Model: model, MappedModel: account.GetMappedModel(model), ActualModels: []string{}}
+	type sample struct {
+		index        int
+		text, actual string
+		err          error
+	}
+	completed := make(chan sample, parallelism)
+	accepted := make(map[int]sample)
+	inFlight := 0
+	emit := func(message string) {
+		if progress != nil {
+			progress(ModelDetectionProgress{Type: "progress", Attempt: result.Attempts, Accepted: len(accepted), InFlight: inFlight, Message: message})
+		}
+	}
+	for len(accepted) < 3 {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 		if !s.ModelDetectionEnabled(ctx) {
 			return nil, errors.New("模型检测功能已关闭")
 		}
-		account, err := s.accountRepo.GetByID(ctx, accountID)
-		if err != nil {
-			return nil, errors.New("读取账号失败")
-		}
-		if err = validateModelDetectionAccount(account, model); err != nil {
-			return nil, err
-		}
-		mapped := account.GetMappedModel(model)
-		if result.MappedModel != "" && result.MappedModel != mapped {
-			return nil, errors.New("检测期间模型映射发生变化，请重新测试")
-		}
-		result.MappedModel = mapped
-		result.Attempts++
-		if progress != nil {
-			progress(ModelDetectionProgress{Type: "progress", Attempt: result.Attempts, Accepted: len(outputs)})
-		}
-		callCtx, stop := context.WithTimeout(ctx, 90*time.Second)
-		text, actual, err := func() (string, string, error) {
-			if concurrency != nil {
-				slot, e := concurrency.AcquireAccountSlot(callCtx, account.ID, account.Concurrency)
-				if e != nil || !slot.Acquired {
-					return "", "", errors.New("账号并发已满或暂不可用")
+		// Never launch more requests than the missing samples. A short response
+		// opens one replacement slot; valid responses cannot cause oversampling.
+		for inFlight < parallelism && len(accepted)+inFlight < 3 && result.Attempts < len(challenges) {
+			index := result.Attempts
+			result.Attempts++
+			inFlight++
+			emit("")
+			workers.Add(1)
+			go func() {
+				defer workers.Done()
+				text, actual, err := s.collectModelDetectionSample(ctx, accountID, model, result.MappedModel, challenges[index], concurrency)
+				select {
+				case completed <- sample{index: index, text: text, actual: actual, err: err}:
+				case <-ctx.Done():
 				}
-				defer slot.ReleaseFunc()
-			}
-			return s.probeModelIdentity(callCtx, account, model, challenge.Prompt)
-		}()
-		stop()
-		if err != nil {
-			return nil, fmt.Errorf("第 %d 次探测失败：%w", result.Attempts, err)
+			}()
 		}
-		if len(modeltrace.ParseNumbers(text)) < modeltrace.Minimum(challenge.Expected) {
-			if progress != nil {
-				progress(ModelDetectionProgress{Type: "progress", Attempt: result.Attempts, Accepted: len(outputs), Message: "有效数字不足，将重新采样"})
-			}
-			continue
-		}
-		outputs = append(outputs, modeltrace.Output{Text: text, Expected: challenge.Expected})
-		result.ActualModels = append(result.ActualModels, actual)
-		if progress != nil {
-			progress(ModelDetectionProgress{Type: "progress", Attempt: result.Attempts, Accepted: len(outputs)})
-		}
-		if len(outputs) == 3 {
+		if inFlight == 0 {
 			break
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case item := <-completed:
+			inFlight--
+			if item.err != nil {
+				return nil, fmt.Errorf("第 %d 次探测失败：%w", item.index+1, item.err)
+			}
+			if len(modeltrace.ParseNumbers(item.text)) < modeltrace.Minimum(challenges[item.index].Expected) {
+				emit("有效数字不足，将重新采样")
+				continue
+			}
+			accepted[item.index] = item
+			emit("")
+		}
+	}
+	// Preserve challenge order regardless of network completion order.
+	outputs := make([]modeltrace.Output, 0, len(accepted))
+	for index, challenge := range challenges {
+		if item, ok := accepted[index]; ok {
+			outputs = append(outputs, modeltrace.Output{Text: item.text, Expected: challenge.Expected})
+			result.ActualModels = append(result.ActualModels, item.actual)
 		}
 	}
 	result.Result, _ = bank.Analyze(outputs)
 	result.Verdict = modeltrace.Classify(bank, config, result.Result)
 	return result, nil
+}
+
+func (s *AccountTestService) collectModelDetectionSample(ctx context.Context, accountID int64, model, mapped string, challenge modeltrace.Challenge, concurrency *ConcurrencyService) (string, string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
+	defer cancel()
+	if err := ctx.Err(); err != nil {
+		return "", "", err
+	}
+	if !s.ModelDetectionEnabled(ctx) {
+		return "", "", errors.New("模型检测功能已关闭")
+	}
+	account, err := s.accountRepo.GetByID(ctx, accountID)
+	if err != nil {
+		return "", "", errors.New("读取账号失败")
+	}
+	if err := validateModelDetectionAccount(account, model); err != nil {
+		return "", "", err
+	}
+	if account.GetMappedModel(model) != mapped {
+		return "", "", errors.New("检测期间模型映射发生变化，请重新测试")
+	}
+	if concurrency != nil {
+		slot, err := concurrency.AcquireAccountSlot(ctx, account.ID, account.Concurrency)
+		if err != nil || !slot.Acquired {
+			return "", "", errors.New("账号并发已满或暂不可用")
+		}
+		defer slot.ReleaseFunc()
+	}
+	return s.probeModelIdentity(ctx, account, model, challenge.Prompt)
 }

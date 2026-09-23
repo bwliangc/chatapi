@@ -45,7 +45,7 @@
         </div>
         <div v-if="attempt > 0" class="space-y-2" role="status" aria-live="polite">
           <div class="h-2 overflow-hidden rounded bg-gray-100 dark:bg-dark-700"><div class="h-full bg-primary-500 transition-all" :style="{ width: `${accepted / 3 * 100}%` }" /></div>
-          <p class="text-sm text-gray-600 dark:text-gray-300">{{ t('admin.modelDetection.progress', { attempt, accepted }) }} {{ progressMessage }}</p>
+          <p class="text-sm text-gray-600 dark:text-gray-300">{{ t('admin.modelDetection.progress', { attempt, accepted, active }) }} {{ progressMessage }}</p>
         </div>
       </section>
       <p v-if="error" class="rounded-lg bg-red-50 p-4 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300" role="alert">{{ error }}</p>
@@ -86,7 +86,7 @@ const page = ref(1), total = ref(0)
 const accounts = ref<AccountListItem[]>([]), models = ref<ClaudeModel[]>([])
 const accountsLoading = ref(false), modelsLoading = ref(false), running = ref(false)
 const info = ref<DetectionInfo | null>(null), result = ref<DetectionResult | null>(null)
-const attempt = ref(0), accepted = ref(0), error = ref(''), progressMessage = ref('')
+const attempt = ref(0), accepted = ref(0), active = ref(0), error = ref(''), progressMessage = ref('')
 let controller: AbortController | undefined
 let accountRequest = 0, modelRequest = 0
 let disposed = false
@@ -119,15 +119,15 @@ async function loadModels() {
 }
 async function run() {
   if (running.value || !accountID.value || !model.value) return
-  running.value = true; error.value = ''; result.value = null; attempt.value = 0; accepted.value = 0; progressMessage.value = ''
+  running.value = true; error.value = ''; result.value = null; attempt.value = 0; accepted.value = 0; active.value = 0; progressMessage.value = ''
   controller = new AbortController()
   try {
     await detectAccountModel(Number(accountID.value), model.value, controller.signal, event => {
-      if (event.type === 'progress') { attempt.value = event.attempt; accepted.value = event.accepted; progressMessage.value = event.message || '' }
+      if (event.type === 'progress') { attempt.value = event.attempt; accepted.value = event.accepted; active.value = event.in_flight ?? 0; progressMessage.value = event.message || '' }
       if (event.type === 'result') result.value = event.data
     })
   } catch (e) { error.value = controller.signal.aborted ? t('admin.modelDetection.cancelled') : errorText(e) }
-  finally { running.value = false; controller = undefined }
+  finally { running.value = false; active.value = 0; controller = undefined }
 }
 function cancel() { controller?.abort() }
 onMounted(async () => {

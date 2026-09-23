@@ -1,7 +1,7 @@
 export default {
   "modelDetection": {
     "title": "模型一致性检测",
-    "description": "选择账号与模型，使用三轮独立回答对照 ModelTrace 参考指纹。",
+    "description": "选择账号与模型，并发采集三份独立回答，对照 ModelTrace 参考指纹。",
     "notice": "检测结果是候选库内的特征相似度，不是模型身份确证。未知模型也可能接近已收录模型，疑似不一致请人工复测。",
     "platform": "账号平台",
     "search": "搜索账号",
@@ -12,10 +12,10 @@ export default {
     "page": "第 {page} 页 · 共 {total} 个账号",
     "noAccounts": "本页没有可检测的 OAuth / API Key 账号，请切换平台或搜索条件。",
     "unlisted": "此模型名称未收录。可以查看相似候选，但不会判定模型是否一致；模型别名也按未收录处理。",
-    "cost": "测试会消耗所选账号额度。目标为 3 份有效回答，最多尝试 6 次；关闭页面会取消测试。暂不支持影子账号。",
+    "cost": "测试会消耗所选账号额度。最多同时采集 3 份回答，受账号并发上限约束；目标为 3 份有效回答，样本不足时补采，总计最多 6 次；关闭页面会取消测试。暂不支持影子账号。",
     "running": "检测中…",
     "start": "开始检测",
-    "progress": "已尝试 {attempt} 次 · 有效回答 {accepted}/3",
+    "progress": "已发起 {attempt} 次 · 进行中 {active} · 有效回答 {accepted}/3",
     "result": "检测结果",
     "requested": "请求模型",
     "mapped": "账号映射模型",

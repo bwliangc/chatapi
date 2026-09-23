@@ -1,7 +1,7 @@
 export default {
   "modelDetection": {
     "title": "Model Identity Detection",
-    "description": "Choose an account and model, then compare three independent responses with ModelTrace fingerprints.",
+    "description": "Choose an account and model, then collect three independent responses concurrently and compare them with ModelTrace fingerprints.",
     "notice": "Scores measure similarity within a closed candidate set, not proof of identity. Unknown models may resemble known candidates. Verify suspected mismatches manually.",
     "platform": "Platform",
     "search": "Search accounts",
@@ -12,10 +12,10 @@ export default {
     "page": "Page {page} · {total} accounts",
     "noAccounts": "No supported OAuth / API key accounts on this page. Change the platform or search.",
     "unlisted": "This model name is not in the reference bank. Candidate ranking remains available, but no identity verdict will be made. Aliases are also treated as unlisted.",
-    "cost": "Tests consume account quota. Three valid responses, at most six attempts. Closing the page cancels the test. Shadow accounts are not supported yet.",
+    "cost": "Tests consume account quota. Up to three requests run concurrently within the account limit. Collect three valid responses, replacing short samples up to six total attempts. Closing the page cancels the test. Shadow accounts are not supported yet.",
     "running": "Testing…",
     "start": "Start detection",
-    "progress": "{attempt} attempts · {accepted}/3 valid responses",
+    "progress": "{attempt} started · {active} active · {accepted}/3 valid responses",
     "result": "Detection result",
     "requested": "Requested model",
     "mapped": "Mapped model",

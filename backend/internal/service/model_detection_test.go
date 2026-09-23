@@ -172,15 +172,15 @@ func TestModelDetectionInsufficientSamplesBounded(t *testing.T) {
 	settings := &detectionSettingRepo{}
 	settings.enabled.Store(true)
 	a := &Account{ID: 42, Platform: PlatformOpenAI, Type: AccountTypeAPIKey, Status: StatusActive, Schedulable: true, Credentials: map[string]any{"api_key": "test", "base_url": "https://models.example"}}
-	calls := 0
+	var calls atomic.Int32
 	upstream := detectionHTTP{call: func(*http.Request, string, int64) (*http.Response, error) {
-		calls++
+		calls.Add(1)
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader("data: {\"type\":\"response.output_text.delta\",\"delta\":\"1,2\"}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n")), Header: http.Header{}}, nil
 	}}
 	svc := &AccountTestService{accountRepo: &detectionAccountRepo{account: a}, settingService: NewSettingService(settings, nil), httpUpstream: upstream, cfg: &config.Config{}}
 	result, err := svc.DetectModel(context.Background(), 42, "gpt-6-sol", nil, nil)
-	if err != nil || calls != 6 || result.Verdict.Status != "insufficient" {
-		t.Fatalf("calls %d result %+v error %v", calls, result, err)
+	if err != nil || calls.Load() != 6 || result.Verdict.Status != "insufficient" {
+		t.Fatalf("calls %d result %+v error %v", calls.Load(), result, err)
 	}
 }
 
