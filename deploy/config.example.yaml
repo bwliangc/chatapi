@@ -311,29 +311,6 @@ gateway:
   # Use this to avoid compact failures when newer models are not yet supported by the compact endpoint.
   # 当 compact 端点暂未支持更新模型时，可通过这里降级规避失败。
   openai_compact_model: "gpt-5.5"
-  # Codex tickets: master switch AND per-account opt-in are required.
-  # 总开关和账号开关均默认关闭；仅显式开启的账号/模型参与打票、注入和无票限制。
-  # 系统设置 → 网关 → Codex 设置可热更新总开关；账号编辑中单独启用。
-  # 打票使用「代理管理 → 292 打票代理池」，业务请求仍使用账号自己的代理。
-  # 默认长度 292；Team / Business Premium 使用 332。影子账号不参与。
-  # Env: GATEWAY_OPENAI_CODEX_TICKET_ENABLED=true
-  openai_codex_ticket:
-    enabled: false
-    target_length: 292
-    # 票据有效期（秒），最小 60；后台设置可热更新覆盖，默认 200。
-    ttl_seconds: 200
-    # 成功采集后 30～60 秒再次采集；refresh_before_seconds 仅兼容旧配置，不参与调度。
-    # 过期仍可沿用旧票据，超过复用窗口后按无票处理；0 表示不限制。
-    reuse_expired: true
-    reuse_expired_max_seconds: 600
-    harvest_probe_interval_seconds: 6
-    harvest_attempt_timeout_seconds: 25
-    harvest_concurrency: 4
-    # 仅对显式开启票据的账号生效，可在账号级选择允许无票。
-    fail_closed: true
-    models:
-      - gpt-6-astra
-      - gpt-5.6-sol
   # ChatGPT Frameless Live 单会话硬上限（秒）。
   live:
     max_session_duration_seconds: 3600

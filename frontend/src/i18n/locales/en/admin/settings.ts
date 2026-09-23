@@ -593,22 +593,6 @@ export default {
         openaiCodexVersionAutoSyncHint: 'Fetches the latest stable client version from the official repository every 6 hours, so you never need to upgrade this service just to keep the version current. When disabled, only the version above or the built-in default is used.',
         openaiCodexVersionSyncedValue: 'Currently synced: {version}',
         codexHardeningTitle: "Codex Settings",
-        codexTicketTTL: 'Ticket TTL (seconds)',
-        codexTicketTTLDesc: 'Lifetime of newly harvested tickets: 200 seconds by default, with a 60-second minimum. Another attempt starts 30–60 seconds after success. Existing tickets keep their expiry time.',
-        codexTicketReuseExpired: 'Reuse the last ticket after expiry',
-        codexTicketReuseExpiredDesc: 'When enabled, requests keep using the last ticket after it expires until a fresh one is harvested. Account ticket status is marked as expired but reused.',
-        codexTicketReuseExpiredMax: 'Max reuse time after expiry (seconds)',
-        codexTicketReuseExpiredMaxDesc: 'How long the last ticket may keep being reused after it expires. Defaults to 600 seconds; 0 means unlimited. Beyond that window requests are treated as having no ticket. Only applies when reusing expired tickets is enabled.',
-        codexTicketAllowWithoutTicket: 'Allow requests without tickets by default',
-        codexTicketAllowWithoutTicketDesc: 'Applies only to accounts with tickets enabled. When off, accounts without a valid ticket are skipped. Each account can override this default.',
-        codexTicketEnabled: "292 ticket harvest",
-        codexTicketEnabledDesc:
-          "After enabling this master switch, opt in each account in its editor. Other accounts keep their existing behavior. Configure the ticket proxy pool in Proxy Management.",
-        codexTicketHarvestProxy: "292 harvest proxy",
-        codexTicketHarvestProxyDesc:
-          "Used only for minting 292 tickets when the ticket feature is enabled. Changes apply to subsequent probes without a restart. Production traffic still uses each account's residential proxy. Paste a full HTTP or SOCKS5h proxy URL including username and password. The proxy provider must handle IP rotation. Leave blank when saving to keep the stored value.",
-        codexTicketHarvestProxyPlaceholder: "http://user:pass{'@'}proxy.example.com:1080",
-        codexTicketHarvestProxyConfigured: "Configured (password hidden). Paste a full new proxy URL to replace it.",
         codexClientRestrictionTitle: "Codex client restriction",
         codexHardeningDesc:
           "Only affects OpenAI OAuth accounts with 'Codex official clients only' enabled (global). Beyond User-Agent/Originator, harden the decision with a version range, an engine-fingerprint gate, and black/whitelists.",

@@ -586,22 +586,6 @@ export default {
         openaiCodexVersionAutoSyncHint: '每 6 小时从官方仓库获取最新稳定版客户端版本号，无需为了跟版本而升级本服务。关闭后仅使用上方手填版本或内置版本。',
         openaiCodexVersionSyncedValue: '当前同步到：{version}',
         codexHardeningTitle: 'Codex 设置',
-        codexTicketTTL: '票据过期时间（秒）',
-        codexTicketTTLDesc: '新采集票据的有效期，默认 200 秒，最小 60 秒。采集成功后 30～60 秒再次尝试，已有票据保留原到期时间。',
-        codexTicketReuseExpired: '过期仍沿用上次票据',
-        codexTicketReuseExpiredDesc: '开启后，票据过期但新票尚未打到时继续沿用上次票据；账号票据状态会标注为已过期沿用。',
-        codexTicketReuseExpiredMax: '过期后最长复用时长（秒）',
-        codexTicketReuseExpiredMaxDesc: '票据过期后最多继续沿用多久，默认 600 秒，0 表示不限制；超过后按无票处理。仅在「过期仍沿用上次票据」开启时生效。',
-        codexTicketAllowWithoutTicket: '默认允许无票请求',
-        codexTicketAllowWithoutTicketDesc: '仅适用于已启用票据的账号。关闭时无票账号会被跳过；账号可以单独覆盖此策略。',
-        codexTicketEnabled: '292 打票',
-        codexTicketEnabledDesc:
-          '总开关开启后，仍需在账号编辑中单独启用票据。未启用的账号保持原有行为。请在代理管理中配置打票代理池。',
-        codexTicketHarvestProxy: '292 打票代理',
-        codexTicketHarvestProxyDesc:
-          '仅在门票功能开启时用于打票，保存后后续探测会使用新代理，无需重启。日常业务仍走账号自己的住宅代理。填写完整代理 URL（http 或 socks5h，含用户名和密码）。代理服务商需自行负责出口 IP 轮换。留空并保存表示不改已保存的值。',
-        codexTicketHarvestProxyPlaceholder: "http://user:pass{'@'}proxy.example.com:1080",
-        codexTicketHarvestProxyConfigured: '已配置（密码已隐藏）。要更换请整段粘贴新的代理 URL。',
         codexClientRestrictionTitle: 'Codex 客户端限制',
         codexHardeningDesc:
           '仅对已开启「仅允许 Codex 官方客户端」的 OpenAI OAuth 账号生效（全局）。在 User-Agent/Originator 之外，用版本区间、引擎指纹门与黑/白名单巩固判定。',

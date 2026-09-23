@@ -243,28 +243,22 @@ type UpdateSettingsRequest struct {
 	BackendModeEnabled bool `json:"backend_mode_enabled"`
 
 	// Gateway forwarding behavior
-	OpenAITTFTMode                          *string `json:"openai_ttft_mode"`
-	EnableFingerprintUnification            *bool   `json:"enable_fingerprint_unification"`
-	EnableMetadataPassthrough               *bool   `json:"enable_metadata_passthrough"`
-	EnableCCHSigning                        *bool   `json:"enable_cch_signing"`
-	EnableClaudeOAuthSystemPromptInjection  *bool   `json:"enable_claude_oauth_system_prompt_injection"`
-	ClaudeOAuthSystemPrompt                 *string `json:"claude_oauth_system_prompt"`
-	ClaudeOAuthSystemPromptBlocks           *string `json:"claude_oauth_system_prompt_blocks"`
-	EnableAnthropicCacheTTL1hInjection      *bool   `json:"enable_anthropic_cache_ttl_1h_injection"`
-	RewriteMessageCacheControl              *bool   `json:"rewrite_message_cache_control"`
-	EnableClientDatelineNormalization       *bool   `json:"enable_client_dateline_normalization"`
-	EnableCodexTimezoneRewrite              *bool   `json:"enable_codex_timezone_rewrite"`
-	CodexTimezone                           *string `json:"codex_timezone"`
-	AntigravityUserAgentVersion             *string `json:"antigravity_user_agent_version"`
-	OpenAICodexUserAgent                    *string `json:"openai_codex_user_agent"`
-	OpenAICodexClientVersion                *string `json:"openai_codex_client_version"`
-	OpenAICodexVersionAutoSyncEnabled       *bool   `json:"openai_codex_version_auto_sync_enabled"`
-	OpenAICodexTicketEnabled                *bool   `json:"openai_codex_ticket_enabled"`
-	OpenAICodexTicketAllowWithoutTicket     *bool   `json:"openai_codex_ticket_allow_without_ticket"`
-	OpenAICodexTicketTTLSeconds             *int    `json:"openai_codex_ticket_ttl_seconds"`
-	OpenAICodexTicketReuseExpired           *bool   `json:"openai_codex_ticket_reuse_expired"`
-	OpenAICodexTicketReuseExpiredMaxSeconds *int    `json:"openai_codex_ticket_reuse_expired_max_seconds"`
-	OpenAICodexTicketHarvestProxyURL        string  `json:"openai_codex_ticket_harvest_proxy_url"`
+	OpenAITTFTMode                         *string `json:"openai_ttft_mode"`
+	EnableFingerprintUnification           *bool   `json:"enable_fingerprint_unification"`
+	EnableMetadataPassthrough              *bool   `json:"enable_metadata_passthrough"`
+	EnableCCHSigning                       *bool   `json:"enable_cch_signing"`
+	EnableClaudeOAuthSystemPromptInjection *bool   `json:"enable_claude_oauth_system_prompt_injection"`
+	ClaudeOAuthSystemPrompt                *string `json:"claude_oauth_system_prompt"`
+	ClaudeOAuthSystemPromptBlocks          *string `json:"claude_oauth_system_prompt_blocks"`
+	EnableAnthropicCacheTTL1hInjection     *bool   `json:"enable_anthropic_cache_ttl_1h_injection"`
+	RewriteMessageCacheControl             *bool   `json:"rewrite_message_cache_control"`
+	EnableClientDatelineNormalization      *bool   `json:"enable_client_dateline_normalization"`
+	EnableCodexTimezoneRewrite             *bool   `json:"enable_codex_timezone_rewrite"`
+	CodexTimezone                          *string `json:"codex_timezone"`
+	AntigravityUserAgentVersion            *string `json:"antigravity_user_agent_version"`
+	OpenAICodexUserAgent                   *string `json:"openai_codex_user_agent"`
+	OpenAICodexClientVersion               *string `json:"openai_codex_client_version"`
+	OpenAICodexVersionAutoSyncEnabled      *bool   `json:"openai_codex_version_auto_sync_enabled"`
 
 	// codex_cli_only 加固（global-only）
 	MinCodexVersion                      string `json:"min_codex_version"`
@@ -1873,43 +1867,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.OpenAICodexVersionAutoSyncEnabled
 		}(),
-		OpenAICodexTicketEnabled: func() bool {
-			if req.OpenAICodexTicketEnabled != nil {
-				return *req.OpenAICodexTicketEnabled
-			}
-			return previousSettings.OpenAICodexTicketEnabled
-		}(),
-		OpenAICodexTicketAllowWithoutTicket: func() bool {
-			if req.OpenAICodexTicketAllowWithoutTicket != nil {
-				return *req.OpenAICodexTicketAllowWithoutTicket
-			}
-			return previousSettings.OpenAICodexTicketAllowWithoutTicket
-		}(),
-		OpenAICodexTicketTTLSeconds: func() int {
-			if req.OpenAICodexTicketTTLSeconds != nil {
-				return *req.OpenAICodexTicketTTLSeconds
-			}
-			return previousSettings.OpenAICodexTicketTTLSeconds
-		}(),
-		OpenAICodexTicketReuseExpired: func() bool {
-			if req.OpenAICodexTicketReuseExpired != nil {
-				return *req.OpenAICodexTicketReuseExpired
-			}
-			return previousSettings.OpenAICodexTicketReuseExpired
-		}(),
-		OpenAICodexTicketReuseExpiredMaxSeconds: func() int {
-			if req.OpenAICodexTicketReuseExpiredMaxSeconds != nil {
-				return *req.OpenAICodexTicketReuseExpiredMaxSeconds
-			}
-			return previousSettings.OpenAICodexTicketReuseExpiredMaxSeconds
-		}(),
-		OpenAICodexTicketHarvestProxyURL: func() string {
-			next := strings.TrimSpace(req.OpenAICodexTicketHarvestProxyURL)
-			if service.IsMaskedProxyURL(next) {
-				return previousSettings.OpenAICodexTicketHarvestProxyURL
-			}
-			return next
-		}(),
 		MinCodexVersion:       strings.TrimSpace(req.MinCodexVersion),
 		MaxCodexVersion:       strings.TrimSpace(req.MaxCodexVersion),
 		CodexCLIOnlyBlacklist: strings.TrimSpace(req.CodexCLIOnlyBlacklist),
@@ -2490,13 +2447,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		OpenAICodexClientVersion:                               updatedSettings.OpenAICodexClientVersion,
 		OpenAICodexClientVersionSynced:                         updatedSettings.OpenAICodexClientVersionSynced,
 		OpenAICodexVersionAutoSyncEnabled:                      updatedSettings.OpenAICodexVersionAutoSyncEnabled,
-		OpenAICodexTicketEnabled:                               updatedSettings.OpenAICodexTicketEnabled,
-		OpenAICodexTicketAllowWithoutTicket:                    updatedSettings.OpenAICodexTicketAllowWithoutTicket,
-		OpenAICodexTicketTTLSeconds:                            updatedSettings.OpenAICodexTicketTTLSeconds,
-		OpenAICodexTicketReuseExpired:                          updatedSettings.OpenAICodexTicketReuseExpired,
-		OpenAICodexTicketReuseExpiredMaxSeconds:                updatedSettings.OpenAICodexTicketReuseExpiredMaxSeconds,
-		OpenAICodexTicketHarvestProxyURL:                       service.MaskProxyURL(updatedSettings.OpenAICodexTicketHarvestProxyURL),
-		OpenAICodexTicketHarvestProxyConfigured:                strings.TrimSpace(updatedSettings.OpenAICodexTicketHarvestProxyURL) != "",
 		MinCodexVersion:                                        updatedSettings.MinCodexVersion,
 		MaxCodexVersion:                                        updatedSettings.MaxCodexVersion,
 		CodexCLIOnlyBlacklist:                                  updatedSettings.CodexCLIOnlyBlacklist,

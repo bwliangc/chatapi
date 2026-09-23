@@ -4502,48 +4502,6 @@
               </h2>
             </div>
             <div class="p-6 space-y-4">
-                <div class="flex items-center justify-between gap-4">
-                  <div class="min-w-0">
-                    <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-                      {{ t("admin.settings.gatewayForwarding.codexTicketEnabled") }}
-                    </h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      {{ t("admin.settings.gatewayForwarding.codexTicketEnabledDesc") }}
-                    </p>
-                  </div>
-                  <Toggle
-                    id="codex-ticket-enabled"
-                    v-model="form.openai_codex_ticket_enabled"
-                  />
-                </div>
-                <div class="flex items-center justify-between gap-4">
-                  <div>
-                    <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('admin.settings.gatewayForwarding.codexTicketAllowWithoutTicket') }}</h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('admin.settings.gatewayForwarding.codexTicketAllowWithoutTicketDesc') }}</p>
-                  </div>
-                  <Toggle id="codex-ticket-allow-without-ticket" v-model="form.openai_codex_ticket_allow_without_ticket" />
-                </div>
-                <div class="flex items-center justify-between gap-4">
-                  <div class="min-w-0">
-                    <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('admin.settings.gatewayForwarding.codexTicketTTL') }}</h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('admin.settings.gatewayForwarding.codexTicketTTLDesc') }}</p>
-                  </div>
-                  <input id="codex-ticket-ttl" v-model.number="form.openai_codex_ticket_ttl_seconds" :aria-label="t('admin.settings.gatewayForwarding.codexTicketTTL')" type="number" min="60" max="86400" step="1" class="input w-32 text-sm" />
-                </div>
-                <div class="flex items-center justify-between gap-4">
-                  <div class="min-w-0">
-                    <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('admin.settings.gatewayForwarding.codexTicketReuseExpired') }}</h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('admin.settings.gatewayForwarding.codexTicketReuseExpiredDesc') }}</p>
-                  </div>
-                  <Toggle id="codex-ticket-reuse-expired" v-model="form.openai_codex_ticket_reuse_expired" />
-                </div>
-                <div class="flex items-center justify-between gap-4">
-                  <div class="min-w-0">
-                    <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('admin.settings.gatewayForwarding.codexTicketReuseExpiredMax') }}</h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('admin.settings.gatewayForwarding.codexTicketReuseExpiredMaxDesc') }}</p>
-                  </div>
-                  <input id="codex-ticket-reuse-window" v-model.number="form.openai_codex_ticket_reuse_expired_max_seconds" :aria-label="t('admin.settings.gatewayForwarding.codexTicketReuseExpiredMax')" type="number" min="0" max="86400" step="1" class="input w-32 text-sm" />
-                </div>
                 <div>
                   <h3 class="text-base font-semibold text-gray-900 dark:text-white">
                     {{ t("admin.settings.gatewayForwarding.codexClientRestrictionTitle") }}
@@ -10206,13 +10164,6 @@ const form = reactive<SettingsForm>({
   // 只读展示：自动同步任务写入的官方最新稳定版，不参与提交（提交载荷按字段显式构造）
   openai_codex_client_version_synced: "",
   openai_codex_version_auto_sync_enabled: true,
-  openai_codex_ticket_enabled: false,
-  openai_codex_ticket_allow_without_ticket: false,
-  openai_codex_ticket_ttl_seconds: 200,
-  openai_codex_ticket_reuse_expired: true,
-  openai_codex_ticket_reuse_expired_max_seconds: 600,
-  openai_codex_ticket_harvest_proxy_url: "",
-  openai_codex_ticket_harvest_proxy_configured: false,
   // codex_cli_only 加固
   min_codex_version: "",
   max_codex_version: "",
@@ -11901,25 +11852,6 @@ async function saveSettings() {
         form.openai_codex_client_version?.trim() || "",
       openai_codex_version_auto_sync_enabled:
         form.openai_codex_version_auto_sync_enabled,
-      openai_codex_ticket_enabled: form.openai_codex_ticket_enabled,
-      openai_codex_ticket_allow_without_ticket: form.openai_codex_ticket_allow_without_ticket,
-      openai_codex_ticket_ttl_seconds: Math.min(
-        86400,
-        Math.max(
-          60,
-          Math.round(Number(form.openai_codex_ticket_ttl_seconds) || 200),
-        ),
-      ),
-      openai_codex_ticket_reuse_expired: form.openai_codex_ticket_reuse_expired,
-      openai_codex_ticket_reuse_expired_max_seconds: (() => {
-        const raw: unknown = form.openai_codex_ticket_reuse_expired_max_seconds;
-        if (raw === "" || raw === null || raw === undefined) return 600;
-        const parsed = Math.round(Number(raw));
-        if (!Number.isFinite(parsed)) return 600;
-        return Math.min(86400, Math.max(0, parsed));
-      })(),
-      openai_codex_ticket_harvest_proxy_url:
-        form.openai_codex_ticket_harvest_proxy_url?.trim() || "",
       min_codex_version: form.min_codex_version?.trim() || "",
       max_codex_version: form.max_codex_version?.trim() || "",
       codex_cli_only_allow_app_server_clients:

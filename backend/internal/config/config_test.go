@@ -30,29 +30,6 @@ func TestLoadDefaultModelsListReadMaxBytes(t *testing.T) {
 	require.Equal(t, DefaultModelsListReadMaxBytes, cfg.Gateway.ModelsListReadMaxBytes)
 }
 
-func TestLoadCodexTicketDefaultsAndOverrides(t *testing.T) {
-	t.Run("defaults", func(t *testing.T) {
-		resetViperWithJWTSecret(t)
-		cfg, err := Load()
-		require.NoError(t, err)
-		require.False(t, cfg.Gateway.OpenAICodexTicket.Enabled)
-		require.Equal(t, 200, cfg.Gateway.OpenAICodexTicket.TTLSeconds)
-		require.True(t, cfg.Gateway.OpenAICodexTicket.ReuseExpired)
-		require.Equal(t, 600, cfg.Gateway.OpenAICodexTicket.ReuseExpiredMaxSeconds)
-	})
-	t.Run("explicit overrides", func(t *testing.T) {
-		resetViperWithJWTSecret(t)
-		t.Setenv("GATEWAY_OPENAI_CODEX_TICKET_TTL_SECONDS", "3600")
-		t.Setenv("GATEWAY_OPENAI_CODEX_TICKET_REUSE_EXPIRED", "false")
-		t.Setenv("GATEWAY_OPENAI_CODEX_TICKET_REUSE_EXPIRED_MAX_SECONDS", "0")
-		cfg, err := Load()
-		require.NoError(t, err)
-		require.Equal(t, 3600, cfg.Gateway.OpenAICodexTicket.TTLSeconds)
-		require.False(t, cfg.Gateway.OpenAICodexTicket.ReuseExpired)
-		require.Zero(t, cfg.Gateway.OpenAICodexTicket.ReuseExpiredMaxSeconds)
-	})
-}
-
 func TestLoadTimezonePrecedence(t *testing.T) {
 	tests := []struct {
 		name         string

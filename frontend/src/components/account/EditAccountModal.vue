@@ -2254,38 +2254,6 @@
         </div>
       </div>
 
-      <CodexTicketPolicyField
-        v-if="show && account?.platform === 'openai' && (account.type === 'oauth' || account.type === 'setup-token') && !account.parent_account_id"
-        v-model="codexTicketPolicy"
-        v-model:enabled="codexTicketEnabled"
-      />
-
-      <!-- Codex 292 门票状态（仅 OpenAI OAuth） -->
-      <div
-        v-if="account?.platform === 'openai' && (account?.type === 'oauth' || account?.type === 'setup-token') && codexTurnTickets.length"
-        class="border-t border-gray-200 pt-4 dark:border-dark-600"
-      >
-        <label class="input-label mb-0">{{ t('admin.accounts.openai.codexTurnTicket') }}</label>
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          {{ t('admin.accounts.openai.codexTurnTicketDesc') }}
-        </p>
-        <div class="mt-3 space-y-1.5">
-          <div v-for="ticket in codexTurnTickets" :key="ticket.model" class="flex items-center justify-between text-sm">
-            <span class="font-medium">{{ ticket.model }}</span>
-            <span v-if="ticket.ready && ticket.reusing_expired" class="text-amber-600 dark:text-amber-400">
-              {{ t('admin.accounts.openai.codexTurnTicketReusedExpired') }}
-            </span>
-            <span v-else-if="ticket.ready" class="text-emerald-600 dark:text-emerald-400">
-              {{ t('admin.accounts.openai.codexTurnTicketReady', { time: formatCodexTicketRemaining(ticket.remaining_seconds) }) }}
-            </span>
-            <span v-else-if="ticket.blocked" class="text-amber-600 dark:text-amber-400">
-              {{ t('admin.accounts.openai.codexTurnTicketPaused') }}
-            </span>
-            <span v-else class="text-gray-500">{{ t('admin.accounts.openai.codexTurnTicketMissing') }}</span>
-          </div>
-        </div>
-      </div>
-
       <!-- Codex 指纹收敛模式（仅 OpenAI OAuth） -->
       <div
         v-if="account?.platform === 'openai' && account?.type === 'oauth'"
@@ -3054,8 +3022,6 @@
 </template>
 
 <script setup lang="ts">
-import CodexTicketPolicyField from './CodexTicketPolicyField.vue'
-
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -3187,15 +3153,6 @@ const selectableGroups = computed(() => {
 // Spark 影子账号(parent_account_id 非空):代理恒继承母账号,不可独立编辑(外审 B/P1),
 // 故隐藏代理选择器。
 const isSparkShadow = computed(() => props.account?.parent_account_id != null)
-
-const codexTurnTickets = computed(() => props.account?.codex_turn_tickets ?? [])
-
-function formatCodexTicketRemaining(seconds: number) {
-  const total = Math.max(0, Math.floor(seconds || 0))
-  const m = Math.floor(total / 60)
-  const s = total % 60
-  return `${m}m${String(s).padStart(2, '0')}s`
-}
 
 const hideAccountLongContextBilling = computed(() => {
   return allSelectedGroupsEnableLongContextPricing(form.group_ids, props.groups)
@@ -3930,9 +3887,6 @@ const mixedChannelWarningMessageText = computed(() => {
   return mixedChannelWarningRawMessage.value
 })
 
-const codexTicketEnabled = ref(false)
-const codexTicketPolicy = ref<'inherit' | 'allow' | 'deny'>('inherit')
-
 const form = reactive({
   name: '',
   notes: '',
@@ -4042,8 +3996,6 @@ const syncFormFromAccount = (newAccount: Account | null) => {
   mixedChannelWarningDetails.value = null
   mixedChannelWarningRawMessage.value = ''
   mixedChannelWarningAction.value = null
-  codexTicketEnabled.value = newAccount.extra?.codex_ticket_harvest_enabled === true
-  codexTicketPolicy.value = newAccount.extra?.codex_allow_without_ticket === true ? 'allow' : newAccount.extra?.codex_allow_without_ticket === false ? 'deny' : 'inherit'
   form.name = newAccount.name
   form.notes = newAccount.notes || ''
   form.proxy_id = newAccount.proxy_id
@@ -5833,15 +5785,6 @@ const handleSubmit = async () => {
         delete newExtra.upstream_request_id_header
       }
       updatePayload.extra = newExtra
-    }
-
-    const previousTicketPolicy = props.account.extra?.codex_allow_without_ticket === true ? 'allow' : props.account.extra?.codex_allow_without_ticket === false ? 'deny' : 'inherit'
-    if ((codexTicketPolicy.value !== previousTicketPolicy || codexTicketEnabled.value !== (props.account.extra?.codex_ticket_harvest_enabled === true)) && props.account.platform === 'openai' && !props.account.parent_account_id && (props.account.type === 'oauth' || props.account.type === 'setup-token')) {
-      const extra = { ...((updatePayload.extra || props.account.extra || {}) as Record<string, unknown>) }
-      extra.codex_ticket_harvest_enabled = codexTicketEnabled.value
-      if (codexTicketPolicy.value === 'inherit') delete extra.codex_allow_without_ticket
-      else extra.codex_allow_without_ticket = codexTicketPolicy.value === 'allow'
-      updatePayload.extra = extra
     }
 
     const canContinue = await ensureAntigravityMixedChannelConfirmed(async () => {

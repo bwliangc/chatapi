@@ -67,7 +67,6 @@ const DataTableStub = defineComponent({
     <div>
       <div v-for="row in data" :key="row.id" :data-account-name="row.name">
         <slot name="cell-groups" :row="row" />
-        <div data-test="tickets"><slot name="cell-codex_ticket" :row="row" /></div>
         <slot name="cell-actions" :row="row" />
       </div>
     </div>
@@ -187,26 +186,6 @@ describe('admin AccountsView lite account list', () => {
       expect.objectContaining({ lite: '1' }),
       expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
-    wrapper.unmount()
-  })
-
-  it('marks reused expired tickets and keeps opted-out accounts inactive', async () => {
-    const ticket = { model: 'gpt-6-astra', ready: true, remaining_seconds: 0, reusing_expired: true, harvest_enabled: true, expires_at: '2026-09-22T01:00:00Z' }
-    listAccounts.mockResolvedValueOnce({
-      items: [
-        { ...listRow, name: 'enabled', extra: { codex_ticket_harvest_enabled: true }, codex_turn_tickets: [ticket] },
-        { ...listRow, id: 43, name: 'disabled', codex_turn_tickets: [ticket] }
-      ], total: 2, page: 1, page_size: 20, pages: 1
-    })
-    const wrapper = mountView()
-    await flushPromises()
-    const enabled = wrapper.get('[data-account-name="enabled"] [data-test="tickets"]')
-    expect(enabled.text()).toContain('admin.accounts.codexTicket.reusedExpired')
-    expect(enabled.find('.text-amber-600').exists()).toBe(true)
-    expect(enabled.get('[title]').attributes('title')).toBe('admin.accounts.codexTicket.reusedExpiredHint')
-    const disabled = wrapper.get('[data-account-name="disabled"] [data-test="tickets"]')
-    expect(disabled.text()).toContain('admin.accounts.codexTicket.inactive')
-    expect(disabled.find('.text-amber-600').exists()).toBe(false)
     wrapper.unmount()
   })
 
