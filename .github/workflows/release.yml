@@ -10,6 +10,11 @@ on:
         description: 'Tag to release (or a branch/ref for dry run)'
         required: true
         type: string
+      modeltrace_ref:
+        description: 'ModelTrace branch/tag/SHA to embed (default main)'
+        required: false
+        type: string
+        default: main
       simple_release:
         description: 'Simple release: only x86_64 GHCR image, skip other artifacts'
         required: false
@@ -80,6 +85,52 @@ jobs:
           path: backend/cmd/server/VERSION
           retention-days: 1
 
+  prepare-modeltrace:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+      - name: Detect ModelTrace support in selected source
+        id: supported
+        run: |
+          if [[ -f scripts/modeltrace/update.py && -f backend/internal/pkg/modeltrace/source.json ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v6
+        if: steps.supported.outputs.enabled == 'true'
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v6
+        if: steps.supported.outputs.enabled == 'true'
+        with:
+          node-version: '24'
+      - uses: actions/setup-go@v6
+        if: steps.supported.outputs.enabled == 'true'
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Fetch and validate one ModelTrace snapshot for all targets
+        if: steps.supported.outputs.enabled == 'true'
+        env:
+          MODELTRACE_REF: ${{ inputs.modeltrace_ref || vars.MODELTRACE_REF || 'main' }}
+        run: python3 scripts/modeltrace/update.py --build --apply --ref "$MODELTRACE_REF"
+      - name: Package snapshot (empty for older sources without ModelTrace)
+        run: |
+          mkdir -p "$RUNNER_TEMP/modeltrace-snapshot"
+          if [[ -f backend/internal/pkg/modeltrace/source.json ]]; then
+            cp -R backend/internal/pkg/modeltrace "$RUNNER_TEMP/modeltrace-snapshot/"
+            cp -R third_party/modeltrace "$RUNNER_TEMP/modeltrace-snapshot/provenance"
+          fi
+          tar -C "$RUNNER_TEMP/modeltrace-snapshot" -czf "$RUNNER_TEMP/modeltrace-snapshot.tar.gz" .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: modeltrace-snapshot
+          path: ${{ runner.temp }}/modeltrace-snapshot.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
   build-frontend:
     needs: prepare
     runs-on: ubuntu-latest
@@ -106,7 +157,7 @@ jobs:
           retention-days: 1
 
   build-binaries:
-    needs: [prepare, build-frontend]
+    needs: [prepare, build-frontend, prepare-modeltrace]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -136,6 +187,19 @@ jobs:
           go-version-file: backend/go.mod
           check-latest: false
           cache: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: modeltrace-snapshot
+          path: ${{ runner.temp }}/modeltrace-artifact/
+      - name: Restore the validated ModelTrace snapshot
+        run: |
+          mkdir -p "$RUNNER_TEMP/modeltrace-restore"
+          tar -xzf "$RUNNER_TEMP/modeltrace-artifact/modeltrace-snapshot.tar.gz" -C "$RUNNER_TEMP/modeltrace-restore"
+          if [[ -d "$RUNNER_TEMP/modeltrace-restore/modeltrace" ]]; then
+            cp -R "$RUNNER_TEMP/modeltrace-restore/modeltrace/." backend/internal/pkg/modeltrace/
+            cp -R "$RUNNER_TEMP/modeltrace-restore/provenance/." third_party/modeltrace/
+            cat backend/internal/pkg/modeltrace/source.json
+          fi
       - name: Verify Go version
         run: go version | grep -q 'go1.27.0'
       - name: Restore target-specific Go cache

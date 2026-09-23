@@ -87,6 +87,12 @@ export default {
           priceDescription: '价格说明（Markdown）',
           priceDescriptionHint: '展示在模型广场页面顶部，可用于说明计费规则、汇率、优惠活动等。',
         },
+        modelDetection: {
+          title: '模型一致性检测',
+          description: '使用 ModelTrace 数字指纹辅助核对账号提供的模型。',
+          enabled: '启用模型检测',
+          enabledHint: '开启管理员检测页面及接口；测试会消耗所选账号额度。',
+        },
         pluginManagement: {
           title: '插件管理',
           description: '控制管理员侧边栏是否显示插件管理入口。此开关不控制插件运行状态。',

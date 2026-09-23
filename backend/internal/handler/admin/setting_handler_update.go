@@ -366,6 +366,7 @@ type UpdateSettingsRequest struct {
 
 	// Plugin management menu visibility switch; plugin runtime is unaffected.
 	PluginManagementEnabled *bool `json:"plugin_management_enabled"`
+	ModelDetectionEnabled   *bool `json:"model_detection_enabled"`
 
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled *bool `json:"affiliate_enabled"`
@@ -2119,6 +2120,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.PluginManagementEnabled
 		}(),
+		ModelDetectionEnabled: func() bool {
+			if req.ModelDetectionEnabled != nil {
+				return *req.ModelDetectionEnabled
+			}
+			return previousSettings.ModelDetectionEnabled
+		}(),
 		AffiliateEnabled: func() bool {
 			if req.AffiliateEnabled != nil {
 				return *req.AffiliateEnabled
@@ -2566,6 +2573,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ModelPlazaRequireAuth:            updatedSettings.ModelPlazaRequireAuth,
 		ModelPlazaDescription:            updatedSettings.ModelPlazaDescription,
 		PluginManagementEnabled:          updatedSettings.PluginManagementEnabled,
+		ModelDetectionEnabled:            updatedSettings.ModelDetectionEnabled,
 
 		AffiliateEnabled: updatedSettings.AffiliateEnabled,
 

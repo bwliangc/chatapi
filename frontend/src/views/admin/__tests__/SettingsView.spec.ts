@@ -8,6 +8,10 @@ import zhCommon from "@/i18n/locales/zh/common";
 import zhSettings from "@/i18n/locales/zh/admin/settings";
 import SettingsView from "../SettingsView.vue";
 
+vi.mock("@/components/admin/ModelDetectionBankSettings.vue", () => ({
+  default: { template: '<div data-testid="model-detection-bank-settings" />' },
+}));
+
 const {
   getSettings,
   updateSettings,

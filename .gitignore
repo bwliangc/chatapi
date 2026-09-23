@@ -164,3 +164,7 @@ issues/
 /plugins/
 
 .pnpm-store/
+# ModelTrace upstream maintenance scripts are part of the integration.
+!/scripts/
+/scripts/*
+!/scripts/modeltrace/

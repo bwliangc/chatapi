@@ -57,6 +57,19 @@ class ReleaseMatrixTest(unittest.TestCase):
         self.assertNotIn({'goos': 'windows', 'goarch': 'arm64'}, full)
         self.assertEqual(release.targets(True), [{'goos': 'linux', 'goarch': 'amd64'}])
 
+    def test_all_binary_targets_wait_for_and_restore_one_modeltrace_snapshot(self):
+        jobs = yaml.safe_load((ROOT / '.github/workflows/release.yml').read_text())['jobs']
+        self.assertIn('prepare-modeltrace', jobs['build-binaries']['needs'])
+        prepare = jobs['prepare-modeltrace']['steps']
+        self.assertEqual(prepare[0]['with']['ref'], '${{ needs.prepare.outputs.sha }}')
+        self.assertEqual(sum('--build --apply' in step.get('run', '') for step in prepare), 1)
+        self.assertFalse(any(step.get('continue-on-error') for step in prepare))
+        steps = jobs['build-binaries']['steps']
+        restore = next(i for i, step in enumerate(steps) if step.get('name') == 'Restore the validated ModelTrace snapshot')
+        build = next(i for i, step in enumerate(steps) if 'goreleaser/goreleaser-action' in step.get('uses', ''))
+        self.assertLess(restore, build)
+        self.assertTrue(any(step.get('with', {}).get('name') == 'modeltrace-snapshot' for step in steps[:restore]))
+
     def test_leaf_keeps_packaging_and_selects_only_one_target(self):
         original = release.config()
         release.generate_config(argparse.Namespace(mode='build', simple=False, goos='darwin', goarch='arm64', output='leaf.yaml'))

@@ -129,6 +129,11 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Model Plaza',
   }),
+  modelDetection: defineFlag({
+    key: 'model_detection_enabled',
+    mode: 'opt-in',
+    label: 'Model Detection',
+  }),
   pluginManagement: defineFlag({
     key: 'plugin_management_enabled',
     mode: 'opt-in',

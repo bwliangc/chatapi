@@ -45,6 +45,11 @@ func RegisterAdminRoutes(
 
 		// 账号管理
 		registerAccountRoutes(admin, h, stepUpAuth)
+		admin.GET("/model-detection", h.Admin.Account.ModelDetectionInfo)
+		admin.GET("/model-detection/bank", h.Admin.Account.GetModelDetectionBank)
+		admin.POST("/model-detection/bank/check", h.Admin.Account.CheckModelDetectionBank)
+		admin.POST("/model-detection/bank/update", gin.HandlerFunc(stepUpAuth), h.Admin.Account.UpdateModelDetectionBank)
+		admin.POST("/model-detection/bank/rollback", gin.HandlerFunc(stepUpAuth), h.Admin.Account.RollbackModelDetectionBank)
 
 		// 公告管理
 		registerAnnouncementRoutes(admin, h)
@@ -402,6 +407,7 @@ func registerAccountRoutes(admin *gin.RouterGroup, h *handler.Handlers, stepUpAu
 		accounts.POST("/:id/opencode-go-usage/refresh", h.Admin.Account.RefreshOpenCodeGoUsage)
 		accounts.DELETE("/:id", h.Admin.Account.Delete)
 		accounts.POST("/:id/test", h.Admin.Account.Test)
+		accounts.POST("/:id/model-detection", h.Admin.Account.DetectAccountModel)
 		accounts.GET("/:id/abnormal-notification", h.Admin.Account.GetAbnormalNotification)
 		accounts.PUT("/:id/abnormal-notification", h.Admin.Account.UpdateAbnormalNotification)
 		accounts.GET("/:id/auto-reset", h.Admin.Account.GetAutoReset)

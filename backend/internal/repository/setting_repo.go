@@ -103,3 +103,16 @@ func (r *settingRepository) Delete(ctx context.Context, key string) error {
 	_, err := r.client.Setting.Delete().Where(setting.KeyEQ(key)).Exec(ctx)
 	return err
 }
+
+// CompareAndSwapValue updates a setting only when its previous value matches.
+// Initialize an absent key without replacing existing data; then the conditional
+// UPDATE provides one atomic winner even across multiple application instances.
+func (r *settingRepository) CompareAndSwapValue(ctx context.Context, key, expected, value string) (bool, error) {
+	if expected == "" {
+		if err := r.client.Setting.Create().SetKey(key).SetValue("").OnConflictColumns(setting.FieldKey).Ignore().Exec(ctx); err != nil {
+			return false, err
+		}
+	}
+	n, err := r.client.Setting.Update().Where(setting.KeyEQ(key), setting.ValueEQ(expected)).SetValue(value).SetUpdatedAt(time.Now()).Save(ctx)
+	return n == 1, err
+}

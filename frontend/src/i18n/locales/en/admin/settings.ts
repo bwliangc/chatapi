@@ -87,6 +87,12 @@ export default {
           priceDescription: 'Pricing notes (Markdown)',
           priceDescriptionHint: 'Rendered at the top of the plaza page. Use it for billing rules, exchange rates, promotions, etc.',
         },
+        modelDetection: {
+          title: 'Model identity detection',
+          description: 'Compare account model output against ModelTrace reference fingerprints.',
+          enabled: 'Enable model detection',
+          enabledHint: 'Enable the admin page and detection API. Tests consume the selected account quota.',
+        },
         pluginManagement: {
           title: 'Plugin Management',
           description: 'Controls whether the plugin management entry appears in the admin sidebar. This switch does not control plugin runtime state.',

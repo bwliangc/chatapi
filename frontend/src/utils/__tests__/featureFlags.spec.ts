@@ -63,3 +63,11 @@ describe('resolveFeatureFlag', () => {
     expect(isFeatureFlagEnabled(FeatureFlags.subscription)).toBe(false)
   })
 })
+
+describe('model detection feature', () => {
+  it('requires an explicit enabled setting for menu visibility', () => {
+    expect(resolveFeatureFlag(null, FeatureFlags.modelDetection)).toBe(false)
+    expect(resolveFeatureFlag({ model_detection_enabled: false }, FeatureFlags.modelDetection)).toBe(false)
+    expect(resolveFeatureFlag({ model_detection_enabled: true }, FeatureFlags.modelDetection)).toBe(true)
+  })
+})

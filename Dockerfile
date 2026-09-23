@@ -66,7 +66,7 @@ ENV GOPROXY=${GOPROXY}
 ENV GOSUMDB=${GOSUMDB}
 
 # Install build dependencies
-RUN apk add --no-cache git ca-certificates tzdata
+RUN apk add --no-cache git ca-certificates tzdata python3 nodejs
 
 WORKDIR /app/backend
 
@@ -79,6 +79,17 @@ RUN --mount=type=cache,id=sub2api-gomod,target=/go/pkg/mod \
 
 # Copy backend source first
 COPY backend/ ./
+COPY scripts/modeltrace/ /app/scripts/modeltrace/
+COPY third_party/modeltrace/ /app/third_party/modeltrace/
+
+ARG MODELTRACE_REF=main
+# Change this value (or disable the backend-builder cache) to refresh a moving ref.
+ARG MODELTRACE_REFRESH=0
+
+# Resolve upstream once, reject changed algorithms, and validate before embedding.
+# Git/Node/Python remain in the builder; they are not added to the runtime image.
+RUN echo "ModelTrace refresh: ${MODELTRACE_REFRESH}" && \
+    python3 /app/scripts/modeltrace/update.py --build --apply --ref "${MODELTRACE_REF}"
 
 # Copy frontend dist from previous stage (must be after backend copy to avoid being overwritten)
 COPY --from=frontend-builder /app/backend/internal/web/dist ./internal/web/dist

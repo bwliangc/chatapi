@@ -40,6 +40,8 @@ backend/vendor/
 
 # Test files
 *_test.go
+# ModelTrace build-time parity/validation must run against the downloaded bank.
+!backend/internal/pkg/modeltrace/*_test.go
 **/*.test.js
 coverage/
 .nyc_output/
