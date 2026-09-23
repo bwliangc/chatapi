@@ -1153,7 +1153,9 @@ useSwipeSelect(accountTableRef, {
   batchUpdate
 }, swipeVirtualContext)
 
+let autoRefreshGeneration = 0
 const resetAutoRefreshCache = () => {
+  autoRefreshGeneration += 1
   autoRefreshETag.value = null
   upstreamBillingRateETag.value = null
 }
@@ -1451,6 +1453,7 @@ const mergeAccountsIncrementally = (nextRows: Account[]) => {
 const refreshAccountsIncrementally = async () => {
   if (autoRefreshFetching.value) return
   syncAccountListDerivedParams()
+  const generation = autoRefreshGeneration
   autoRefreshFetching.value = true
   try {
     const result = await adminAPI.accounts.listWithEtag(
@@ -1470,6 +1473,8 @@ const refreshAccountsIncrementally = async () => {
       { etag: autoRefreshETag.value }
     )
 
+    // A previous sort/filter/page refresh must not overwrite the newer list.
+    if (generation !== autoRefreshGeneration) return
     if (result.etag) {
       autoRefreshETag.value = result.etag
     }

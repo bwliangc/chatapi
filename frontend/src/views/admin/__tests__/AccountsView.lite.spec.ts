@@ -237,6 +237,35 @@ describe('admin AccountsView lite account list', () => {
     wrapper.unmount()
   })
 
+  it('ignores an older auto-refresh response after changing status sort', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
+    localStorage.setItem('account-auto-refresh', JSON.stringify({ enabled: true, interval_seconds: 5 }))
+    let finishRefresh!: (value: unknown) => void
+    listWithEtag.mockImplementationOnce(() => new Promise(resolve => { finishRefresh = resolve }))
+    const wrapper = mountView()
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(6000)
+    expect(listWithEtag).toHaveBeenCalledOnce()
+
+    const sortedRows = [{ ...listRow, id: 7, name: 'normal' }, { ...listRow, name: 'limited' }]
+    listAccounts.mockResolvedValue({ items: sortedRows, total: 2, page: 1, page_size: 20, pages: 1 })
+    wrapper.getComponent(DataTableStub).vm.$emit('sort', 'status', 'asc')
+    await flushPromises()
+    expect(listAccounts).toHaveBeenLastCalledWith(1, 20,
+      expect.objectContaining({ sort_by: 'status', sort_order: 'asc' }), expect.any(Object))
+    const names = () => wrapper.findAll('[data-account-name]').map(row => row.attributes('data-account-name'))
+    expect(names()).toEqual(['normal', 'limited'])
+
+    finishRefresh({ notModified: false, etag: 'old-order', data: { items: [...sortedRows].reverse(), total: 2, pages: 1 } })
+    await flushPromises()
+    expect(names()).toEqual(['normal', 'limited'])
+    await vi.advanceTimersByTimeAsync(6000)
+    expect(listWithEtag).toHaveBeenLastCalledWith(1, 20,
+      expect.objectContaining({ sort_by: 'status' }), expect.objectContaining({ etag: null }))
+    wrapper.unmount()
+  })
+
   it('loads the full account by id before opening edit, test, and stats actions', async () => {
     const wrapper = mountView()
     await flushPromises()
