@@ -37,6 +37,14 @@ func RegisterAdminRoutes(
 		// 仪表盘
 		registerDashboardRoutes(admin, h)
 
+		// 幸运秒活动（配置和历史记录在开关关闭后仍可管理）
+		if h.LuckySecond != nil {
+			admin.GET("/lucky-second", h.LuckySecond.ListAdmin)
+			admin.POST("/lucky-second", h.LuckySecond.Create)
+			admin.POST("/lucky-second/:id/cancel", h.LuckySecond.Cancel)
+			admin.GET("/lucky-second/:id/slots", h.LuckySecond.SlotsAdmin)
+		}
+
 		// 用户管理
 		registerUserManagementRoutes(admin, h)
 

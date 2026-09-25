@@ -239,6 +239,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyOnlinePlaygroundEnabled,
 		SettingKeySubscriptionManagementEnabled,
 		SettingKeyLeaderboardRankingVisibleEnabled,
+		SettingKeyLuckySecondEnabled,
 		SettingKeyLeaderboardRewardPoolRate,
 		SettingKeyLeaderboardRewardTopN,
 		SettingKeySubscriptionEnabled,
@@ -389,6 +390,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 		SubscriptionManagementEnabled:    !isFalseSettingValue(settings[SettingKeySubscriptionManagementEnabled]),
 		LeaderboardRankingVisibleEnabled: settings[SettingKeyLeaderboardRankingVisibleEnabled] == "true",
+		LuckySecondEnabled:               settings[SettingKeyLuckySecondEnabled] == "true",
 		LeaderboardRewardPoolRate:        leaderboardRewardPoolRate,
 		LeaderboardRewardTopN:            leaderboardRewardTopN,
 		ModelPlazaEnabled:                settings[SettingKeyModelPlazaEnabled] == "true",
@@ -665,6 +667,7 @@ type PublicSettingsInjectionPayload struct {
 	OnlinePlaygroundEnabled          bool    `json:"online_playground_enabled"`
 	SubscriptionManagementEnabled    bool    `json:"subscription_management_enabled"`
 	LeaderboardRankingVisibleEnabled bool    `json:"leaderboard_ranking_visible_enabled"`
+	LuckySecondEnabled               bool    `json:"lucky_second_enabled"`
 	LeaderboardRewardPoolRate        float64 `json:"leaderboard_reward_pool_rate"`
 	LeaderboardRewardTopN            int     `json:"leaderboard_reward_top_n"`
 	ModelPlazaEnabled                bool    `json:"model_plaza_enabled"`
@@ -756,6 +759,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		OnlinePlaygroundEnabled:              settings.OnlinePlaygroundEnabled,
 		SubscriptionManagementEnabled:        settings.SubscriptionManagementEnabled,
 		LeaderboardRankingVisibleEnabled:     settings.LeaderboardRankingVisibleEnabled,
+		LuckySecondEnabled:                   settings.LuckySecondEnabled,
 		LeaderboardRewardPoolRate:            settings.LeaderboardRewardPoolRate,
 		LeaderboardRewardTopN:                settings.LeaderboardRewardTopN,
 		SubscriptionEnabled:                  settings.SubscriptionEnabled,

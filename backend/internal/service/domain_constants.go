@@ -602,6 +602,7 @@ const (
 	// grant without showing. When false the sidebar entry, route and /leaderboard endpoint
 	// are hidden. Defaults to false (opt-in feature).
 	SettingKeyLeaderboardRankingVisibleEnabled = "leaderboard_ranking_visible_enabled"
+	SettingKeyLuckySecondEnabled               = "lucky_second_enabled"
 	// SettingKeySubscriptionEnabled is a DB-backed soft switch for the user-facing
 	// subscription surface: sidebar entries, purchase-page subscription tab, header
 	// progress badge, usage billing-type filter and the /subscriptions route. When

@@ -119,6 +119,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 
 		SubscriptionManagementEnabled:    settings.SubscriptionManagementEnabled,
 		LeaderboardRankingVisibleEnabled: settings.LeaderboardRankingVisibleEnabled,
+		LuckySecondEnabled:               settings.LuckySecondEnabled,
 		LeaderboardRewardPoolRate:        settings.LeaderboardRewardPoolRate,
 		LeaderboardRewardTopN:            settings.LeaderboardRewardTopN,
 		ModelPlazaEnabled:                settings.ModelPlazaEnabled,

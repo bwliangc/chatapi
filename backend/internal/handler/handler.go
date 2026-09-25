@@ -67,6 +67,7 @@ type Handlers struct {
 	PaymentWebhook   *PaymentWebhookHandler
 	AvailableChannel *AvailableChannelHandler
 	Leaderboard      *LeaderboardHandler
+	LuckySecond      *LuckySecondHandler
 	ModelPlaza       *ModelPlazaHandler
 	GroupRates       *GroupRatesHandler
 	AsyncImage       *AsyncImageHandler

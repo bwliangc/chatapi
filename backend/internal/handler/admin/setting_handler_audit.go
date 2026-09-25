@@ -603,6 +603,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.LeaderboardRankingVisibleEnabled != after.LeaderboardRankingVisibleEnabled {
 		changed = append(changed, "leaderboard_ranking_visible_enabled")
 	}
+	if before.LuckySecondEnabled != after.LuckySecondEnabled {
+		changed = append(changed, "lucky_second_enabled")
+	}
 	if before.SubscriptionEnabled != after.SubscriptionEnabled {
 		changed = append(changed, "subscription_enabled")
 	}

@@ -72,6 +72,11 @@ func RegisterUserRoutes(
 			}
 		}
 
+		if h.LuckySecond != nil {
+			authenticated.GET("/lucky-second", h.LuckySecond.ListPublic)
+			authenticated.GET("/lucky-second/:id/awards", h.LuckySecond.SlotsPublic)
+		}
+
 		// API Key管理
 		keys := authenticated.Group("/keys")
 		{

@@ -178,6 +178,13 @@ func (s *SettingService) IsLeaderboardRankingVisibleEnabled(ctx context.Context)
 	}
 	return value == "true"
 }
+func (s *SettingService) IsLuckySecondEnabled(ctx context.Context) bool {
+	value, err := s.settingRepo.GetValue(ctx, SettingKeyLuckySecondEnabled)
+	if err != nil {
+		return false
+	}
+	return value == "true"
+}
 
 func (s *SettingService) IsLeaderboardRewardEmailNotifyEnabled(ctx context.Context) bool {
 	value, err := s.settingRepo.GetValue(ctx, SettingKeyLeaderboardRewardEmailNotifyEnabled)

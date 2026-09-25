@@ -356,6 +356,7 @@ type UpdateSettingsRequest struct {
 	SubscriptionManagementEnabled *bool `json:"subscription_management_enabled"`
 	// Leaderboard ranking page feature switch (user-facing spending board)
 	LeaderboardRankingVisibleEnabled *bool `json:"leaderboard_ranking_visible_enabled"`
+	LuckySecondEnabled               *bool `json:"lucky_second_enabled"`
 	// Subscription feature switch (user-facing subscription surface; see SettingKeySubscriptionEnabled)
 	SubscriptionEnabled *bool `json:"subscription_enabled"`
 
@@ -2090,6 +2091,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.LeaderboardRankingVisibleEnabled
 		}(),
+		LuckySecondEnabled: func() bool {
+			if req.LuckySecondEnabled != nil {
+				return *req.LuckySecondEnabled
+			}
+			return previousSettings.LuckySecondEnabled
+		}(),
 		SubscriptionEnabled: func() bool {
 			if req.SubscriptionEnabled != nil {
 				return *req.SubscriptionEnabled
@@ -2569,6 +2576,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 
 		SubscriptionManagementEnabled:    updatedSettings.SubscriptionManagementEnabled,
 		LeaderboardRankingVisibleEnabled: updatedSettings.LeaderboardRankingVisibleEnabled,
+		LuckySecondEnabled:               updatedSettings.LuckySecondEnabled,
 		ModelPlazaEnabled:                updatedSettings.ModelPlazaEnabled,
 		ModelPlazaRequireAuth:            updatedSettings.ModelPlazaRequireAuth,
 		ModelPlazaDescription:            updatedSettings.ModelPlazaDescription,

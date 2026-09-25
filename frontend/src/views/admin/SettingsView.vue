@@ -7245,6 +7245,14 @@
 
 	        <!-- Tab: Features (功能开关) -->
         <div v-show="activeTab === 'features'" class="space-y-6">
+        <div class="card p-6">
+          <div class="flex items-center justify-between gap-4">
+            <div><h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('luckySecond.title') }}</h2><p class="mt-1 text-sm text-gray-500">{{ t('luckySecond.switchHint') }}</p></div>
+            <Toggle v-model="form.lucky_second_enabled" :aria-label="t('luckySecond.enable')" />
+          </div>
+          <router-link to="/admin/lucky-second" class="mt-3 inline-block text-sm text-primary-600 hover:underline">{{ t('luckySecond.management') }} →</router-link>
+        </div>
+
 
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
@@ -10393,6 +10401,7 @@ const form = reactive<SettingsForm>({
   leaderboard_reward_min_spend: 0,
   leaderboard_excluded_emails: "",
   leaderboard_ranking_visible_enabled: false,
+  lucky_second_enabled: false,
 });
 
 const fallbackCodexTimezones = [
@@ -12202,6 +12211,7 @@ async function saveSettings() {
       ).trim(),
       leaderboard_ranking_visible_enabled:
         form.leaderboard_ranking_visible_enabled,
+      lucky_second_enabled: form.lucky_second_enabled,
     };
 
     // 仅当 openai_fast_policy_settings 已成功从后端加载时才回写，

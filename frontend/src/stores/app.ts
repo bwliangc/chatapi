@@ -409,6 +409,7 @@ export const useAppStore = defineStore('app', () => {
         group_rates_menu_enabled: false,
         online_playground_enabled: false,
         leaderboard_ranking_visible_enabled: false,
+        lucky_second_enabled: false,
         subscription_enabled: true,
         payment_balance_disabled: false,
         model_plaza_enabled: false,

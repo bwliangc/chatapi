@@ -73,6 +73,7 @@ func TestProvideCleanup_WithMinimalDependencies_NoPanic(t *testing.T) {
 		proxyExpirySvc,
 		subscriptionExpirySvc,
 		nil, // leaderboardReward
+		nil, // luckySecond
 		&service.UsageCleanupService{},
 		idempotencyCleanupSvc,
 		&service.BatchImageCleanupService{},

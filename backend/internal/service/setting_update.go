@@ -458,6 +458,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyOnlinePlaygroundEnabled] = strconv.FormatBool(settings.OnlinePlaygroundEnabled)
 	updates[SettingKeySubscriptionManagementEnabled] = strconv.FormatBool(settings.SubscriptionManagementEnabled)
 	updates[SettingKeyLeaderboardRankingVisibleEnabled] = strconv.FormatBool(settings.LeaderboardRankingVisibleEnabled)
+	updates[SettingKeyLuckySecondEnabled] = strconv.FormatBool(settings.LuckySecondEnabled)
 	// Subscription feature switch
 	updates[SettingKeySubscriptionEnabled] = strconv.FormatBool(settings.SubscriptionEnabled)
 

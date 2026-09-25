@@ -395,6 +395,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 
 		SubscriptionManagementEnabled:    settings.SubscriptionManagementEnabled,
 		LeaderboardRankingVisibleEnabled: settings.LeaderboardRankingVisibleEnabled,
+		LuckySecondEnabled:               settings.LuckySecondEnabled,
 		ModelPlazaEnabled:                settings.ModelPlazaEnabled,
 		ModelPlazaRequireAuth:            settings.ModelPlazaRequireAuth,
 		ModelPlazaDescription:            settings.ModelPlazaDescription,

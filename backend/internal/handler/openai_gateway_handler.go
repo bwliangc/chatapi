@@ -254,14 +254,16 @@ func usageRecordContext(parent context.Context, base context.Context) context.Co
 	if requestID, _ := parent.Value(ctxkey.RequestID).(string); strings.TrimSpace(requestID) != "" {
 		base = context.WithValue(base, ctxkey.RequestID, strings.TrimSpace(requestID))
 	}
-	return base
+	return service.CopyLuckySecondContext(parent, base)
 }
 
 func wrapUsageRecordTaskContext(parent context.Context, task service.UsageRecordTask) service.UsageRecordTask {
 	if task == nil {
 		return nil
 	}
+	service.RetainLuckySecond(parent)
 	return func(ctx context.Context) {
+		defer service.ReleaseLuckySecond(parent)
 		task(usageRecordContext(parent, ctx))
 	}
 }
@@ -3269,6 +3271,9 @@ func (h *OpenAIGatewayHandler) submitUsageRecordTask(parent context.Context, tas
 	task = wrapUsageRecordTaskContext(parent, task)
 	if h.usageRecordWorkerPool != nil {
 		if mode := h.usageRecordWorkerPool.Submit(task); mode != service.UsageRecordSubmitModeDroppedStopped {
+			if mode.Dropped() {
+				service.ReleaseLuckySecond(parent)
+			}
 			return
 		}
 		// 池已停止（进程关停窗口）：计费任务不能静默丢失，降级为内联同步执行。

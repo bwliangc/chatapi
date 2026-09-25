@@ -103,6 +103,7 @@ func provideCleanup(
 	proxyExpiry *service.ProxyExpiryService,
 	subscriptionExpiry *service.SubscriptionExpiryService,
 	leaderboardReward *service.LeaderboardRewardService,
+	luckySecond *service.LuckySecondService,
 	usageCleanup *service.UsageCleanupService,
 	idempotencyCleanup *service.IdempotencyCleanupService,
 	batchImageCleanup *service.BatchImageCleanupService,
@@ -288,6 +289,7 @@ func provideCleanup(
 				subscriptionExpiry.Stop()
 				return nil
 			}},
+			{"LuckySecondService", func() error { luckySecond.Stop(); return nil }},
 			{"LeaderboardRewardService", func() error {
 				if leaderboardReward != nil {
 					leaderboardReward.Stop()

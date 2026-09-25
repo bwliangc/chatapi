@@ -796,7 +796,9 @@ const flagPayment = makeSidebarFlag(FeatureFlags.payment)
 const flagGroupRatesMenu = makeSidebarFlag(FeatureFlags.groupRatesMenu)
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
 const flagOnlinePlayground = makeSidebarFlag(FeatureFlags.onlinePlayground)
-const flagLeaderboardRanking = makeSidebarFlag(FeatureFlags.leaderboardRanking)
+const flagRanking = makeSidebarFlag(FeatureFlags.leaderboardRanking)
+const flagLuckySecond = makeSidebarFlag(FeatureFlags.luckySecond)
+const flagLeaderboardRanking = () => flagRanking() || flagLuckySecond()
 const flagSubscription = makeSidebarFlag(FeatureFlags.subscription)
 
 // 购买入口文案随站点计费模式切换：仅充值 → 「充值」，仅订阅 → 「订阅」，否则「充值/订阅」。
@@ -948,6 +950,7 @@ const adminNavItems = computed((): NavItem[] => {
         { path: '/admin/prompt-audit', label: t('nav.promptAudit'), icon: ShieldIcon },
       ],
     },
+    { path: '/admin/lucky-second', label: t('luckySecond.management'), icon: GiftIcon, hideInSimpleMode: true },
     { path: '/admin/redeem', label: t('nav.redeemCodes'), icon: TicketIcon, hideInSimpleMode: true },
     { path: '/admin/promo-codes', label: t('nav.promoCodes'), icon: GiftIcon, hideInSimpleMode: true },
     {

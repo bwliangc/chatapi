@@ -293,6 +293,7 @@ export interface PublicSettings {
   group_rates_menu_enabled: boolean
   online_playground_enabled: boolean
   leaderboard_ranking_visible_enabled: boolean
+  lucky_second_enabled: boolean
   leaderboard_reward_pool_rate?: number
   leaderboard_reward_top_n?: number
   /** When false, the whole user-facing subscription surface is hidden. Default true. */

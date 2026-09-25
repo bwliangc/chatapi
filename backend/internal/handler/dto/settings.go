@@ -336,6 +336,7 @@ type SystemSettings struct {
 	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
 	// Leaderboard ranking page switch (user-facing spending board; opt-in)
 	LeaderboardRankingVisibleEnabled bool `json:"leaderboard_ranking_visible_enabled"`
+	LuckySecondEnabled               bool `json:"lucky_second_enabled"`
 	// Subscription feature switch: gates the whole user-facing subscription surface
 	// (sidebar entries, purchase-page subscription tab, header badge, /subscriptions route).
 	SubscriptionEnabled bool `json:"subscription_enabled"`
@@ -469,6 +470,7 @@ type PublicSettings struct {
 	SubscriptionManagementEnabled bool `json:"subscription_management_enabled"`
 	// Leaderboard ranking page switch (user-facing spending board; opt-in)
 	LeaderboardRankingVisibleEnabled bool    `json:"leaderboard_ranking_visible_enabled"`
+	LuckySecondEnabled               bool    `json:"lucky_second_enabled"`
 	LeaderboardRewardPoolRate        float64 `json:"leaderboard_reward_pool_rate"`
 	LeaderboardRewardTopN            int     `json:"leaderboard_reward_top_n"`
 	SubscriptionEnabled              bool    `json:"subscription_enabled"`

@@ -216,6 +216,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyOnlinePlaygroundEnabled:          "false",
 		SettingKeySubscriptionManagementEnabled:    "true",
 		SettingKeyLeaderboardRankingVisibleEnabled: "false",
+		SettingKeyLuckySecondEnabled:               "false",
 		// Subscription feature (default enabled; opt-out)
 		SettingKeySubscriptionEnabled: "true",
 
@@ -874,6 +875,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	result.OnlinePlaygroundEnabled = settings[SettingKeyOnlinePlaygroundEnabled] == "true"
 	result.SubscriptionManagementEnabled = !isFalseSettingValue(settings[SettingKeySubscriptionManagementEnabled])
 	result.LeaderboardRankingVisibleEnabled = settings[SettingKeyLeaderboardRankingVisibleEnabled] == "true"
+	result.LuckySecondEnabled = settings[SettingKeyLuckySecondEnabled] == "true"
 	// Subscription feature (default: enabled; only an explicit false disables)
 	result.SubscriptionEnabled = !isFalseSettingValue(settings[SettingKeySubscriptionEnabled])
 

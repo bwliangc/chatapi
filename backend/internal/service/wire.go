@@ -961,6 +961,7 @@ var ProviderSet = wire.NewSet(
 	ProvideProxyExpiryService,
 	ProvideSubscriptionExpiryService,
 	ProvideLeaderboardRewardService,
+	NewLuckySecondService,
 	ProvideTimingWheelService,
 	ProvideDashboardAggregationService,
 	ProvideUsageCleanupService,

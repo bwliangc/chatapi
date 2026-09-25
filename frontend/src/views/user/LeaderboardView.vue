@@ -6,10 +6,16 @@
           {{ t('leaderboard.title') }}
         </h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ t('leaderboard.description') }}
+          {{ t(section === 'lucky' ? 'luckySecond.description' : 'leaderboard.description') }}
         </p>
       </div>
 
+      <div v-if="luckyEnabled" class="mb-4 flex gap-2" role="tablist">
+        <button v-if="rankingEnabled" role="tab" :aria-selected="section === 'ranking'" class="btn" :class="section === 'ranking' ? 'btn-primary' : 'btn-secondary'" @click="section = 'ranking'">{{ t('leaderboard.title') }}</button>
+        <button role="tab" :aria-selected="section === 'lucky'" class="btn" :class="section === 'lucky' ? 'btn-primary' : 'btn-secondary'" @click="section = 'lucky'">{{ t('luckySecond.title') }}</button>
+      </div>
+      <LuckySecondPanel v-if="section === 'lucky' && luckyEnabled" />
+      <template v-if="section === 'ranking' && rankingEnabled">
       <!-- 今日/昨日切换 -->
       <div class="mb-4 inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1 dark:border-dark-700 dark:bg-dark-800">
         <button
@@ -147,13 +153,15 @@
           @update:page="handlePageChange"
         />
       </div>
+      </template>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import LuckySecondPanel from '@/components/common/LuckySecondPanel.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import {
@@ -167,6 +175,9 @@ import { extractApiErrorMessage } from '@/utils/apiError'
 const { t } = useI18n()
 const appStore = useAppStore()
 
+const luckyEnabled = computed(() => appStore.cachedPublicSettings?.lucky_second_enabled === true)
+const rankingEnabled = computed(() => appStore.cachedPublicSettings?.leaderboard_ranking_visible_enabled === true)
+const section = ref<'ranking' | 'lucky'>(rankingEnabled.value ? 'ranking' : 'lucky')
 const period = ref<LeaderboardPeriod>('today')
 const pageSize = 10
 const pageByPeriod = reactive<Record<LeaderboardPeriod, number>>({ today: 1, yesterday: 1 })
@@ -267,5 +278,9 @@ function rankClass(rank: number, isWinner: boolean): string {
   return 'text-gray-400'
 }
 
-onMounted(() => load())
+watch([rankingEnabled, luckyEnabled], ([ranking, lucky]) => {
+  if (!ranking && lucky) section.value = 'lucky'
+  else if (!lucky && ranking) section.value = 'ranking'
+}, { immediate: true })
+watch([section, rankingEnabled], ([active, ranking]) => { if (active === 'ranking' && ranking) void load() }, { immediate: true })
 </script>

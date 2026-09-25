@@ -1,3 +1,4 @@
+import luckySecond from './luckySecond'
 import groupRates from './groupRates'
 import landing from './landing'
 import common from './common'
@@ -8,6 +9,7 @@ import admin from './admin'
 import misc from './misc'
 
 export default {
+  ...luckySecond,
   ...groupRates,
   ...landing,
   ...common,

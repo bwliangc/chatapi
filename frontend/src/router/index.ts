@@ -606,6 +606,12 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/lucky-second',
+    name: 'AdminLuckySecond',
+    component: () => import('@/views/admin/LuckySecondView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'Lucky Second Campaigns', titleKey: 'luckySecond.management' }
+  },
+  {
     path: '/admin/redeem',
     name: 'AdminRedeem',
     component: () => import('@/views/admin/RedeemView.vue'),

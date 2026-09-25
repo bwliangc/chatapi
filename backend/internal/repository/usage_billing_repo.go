@@ -27,6 +27,9 @@ func (r *usageBillingRepository) Apply(ctx context.Context, cmd *service.UsageBi
 		return nil, errors.New("usage billing repository db is nil")
 	}
 
+	if attempt := service.LuckySecondAttempt(ctx); attempt != "" {
+		cmd.LuckySecondAttempt = attempt
+	}
 	cmd.Normalize()
 	if cmd.RequestID == "" {
 		return nil, service.ErrUsageBillingRequestIDRequired
@@ -52,6 +55,10 @@ func (r *usageBillingRepository) Apply(ctx context.Context, cmd *service.UsageBi
 
 	result := &service.UsageBillingApplyResult{Applied: true}
 	if err := r.applyUsageBillingEffects(ctx, tx, cmd, result); err != nil {
+		return nil, err
+	}
+
+	if err := qualifyLuckySecond(ctx, tx, cmd); err != nil {
 		return nil, err
 	}
 

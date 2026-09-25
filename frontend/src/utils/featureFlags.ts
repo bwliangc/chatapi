@@ -94,6 +94,7 @@ function defineFlag<K extends keyof PublicSettings>(
  * public-settings-driven switch; see the "Adding a new flag" checklist above.
  */
 export const FeatureFlags = {
+  luckySecond: defineFlag({ key: 'lucky_second_enabled', mode: 'opt-in', label: 'Lucky Second' }),
   channelMonitor: defineFlag({
     key: 'channel_monitor_enabled',
     mode: 'opt-out',
