@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -42,6 +43,61 @@ type LuckySecondCreate struct {
 	RewardCount int       `json:"reward_count"`
 }
 
+var ErrLuckySecondEditLocked = errors.New("活动已开始、已终止或已受理请求，只能修改活动名称")
+var ErrLuckySecondInvalidUpdate = errors.New("活动配置无效")
+
+type LuckySecondUpdate struct {
+	Name        *string    `json:"name"`
+	StartsAt    *time.Time `json:"starts_at"`
+	EndsAt      *time.Time `json:"ends_at"`
+	TotalAmount *string    `json:"total_amount"`
+	RewardCount *int       `json:"reward_count"`
+}
+
+// PlanLuckySecondUpdate preserves existing prizes for renames and equivalent
+// values. Only a real schedule change generates a replacement reward schedule.
+func PlanLuckySecondUpdate(current LuckySecondCampaign, patch LuckySecondUpdate, now time.Time) (LuckySecondCreate, []LuckySecondSlot, error) {
+	in := LuckySecondCreate{Name: current.Name, StartsAt: current.StartsAt, EndsAt: current.EndsAt, Timezone: current.Timezone, TotalAmount: current.TotalAmount, RewardCount: current.RewardCount}
+	if patch.Name != nil {
+		in.Name = strings.TrimSpace(*patch.Name)
+	}
+	if in.Name == "" || len([]rune(in.Name)) > 120 {
+		return in, nil, fmt.Errorf("%w：活动名称不能为空且不能超过 120 个字符", ErrLuckySecondInvalidUpdate)
+	}
+	if patch.StartsAt != nil {
+		in.StartsAt = *patch.StartsAt
+	}
+	if patch.EndsAt != nil {
+		in.EndsAt = *patch.EndsAt
+	}
+	if patch.TotalAmount != nil {
+		in.TotalAmount = *patch.TotalAmount
+	}
+	if patch.RewardCount != nil {
+		in.RewardCount = *patch.RewardCount
+	}
+	previousAmount, err := decimal.NewFromString(current.TotalAmount)
+	if err != nil {
+		return in, nil, err
+	}
+	amount, err := decimal.NewFromString(in.TotalAmount)
+	if err != nil {
+		return in, nil, fmt.Errorf("%w：奖池金额格式无效", ErrLuckySecondInvalidUpdate)
+	}
+	changed := !in.StartsAt.Equal(current.StartsAt) || !in.EndsAt.Equal(current.EndsAt) || !amount.Equal(previousAmount) || in.RewardCount != current.RewardCount
+	if !changed {
+		return in, nil, nil
+	}
+	if current.CancelledAt != nil || !current.StartsAt.After(now) {
+		return in, nil, ErrLuckySecondEditLocked
+	}
+	slots, err := GenerateLuckySecondSchedule(in, now)
+	if err != nil {
+		return in, nil, fmt.Errorf("%w：%v", ErrLuckySecondInvalidUpdate, err)
+	}
+	return in, slots, nil
+}
+
 type LuckySecondSlot struct {
 	ID        int64      `json:"id"`
 	SecondAt  time.Time  `json:"second_at"`
@@ -56,6 +112,7 @@ type LuckySecondSlot struct {
 
 type LuckySecondRepository interface {
 	Create(context.Context, LuckySecondCreate, []LuckySecondSlot) (int64, error)
+	Update(context.Context, int64, LuckySecondUpdate) error
 	List(context.Context, int, int, int64) ([]LuckySecondCampaign, int64, error)
 	Slots(context.Context, int64, bool, int, int) ([]LuckySecondSlot, int64, error)
 	Cancel(context.Context, int64) error

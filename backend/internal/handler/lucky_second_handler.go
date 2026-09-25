@@ -100,6 +100,36 @@ func (h *LuckySecondHandler) Cancel(c *gin.Context) {
 	}
 	response.Success(c, gin.H{"id": id})
 }
+
+func (h *LuckySecondHandler) Update(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		response.BadRequest(c, "活动 ID 无效")
+		return
+	}
+	var in service.LuckySecondUpdate
+	if err = c.ShouldBindJSON(&in); err != nil {
+		response.BadRequest(c, "活动配置格式无效")
+		return
+	}
+	err = h.service.Repo.Update(c.Request.Context(), id, in)
+	if errors.Is(err, sql.ErrNoRows) {
+		response.NotFound(c, "活动不存在")
+		return
+	}
+	if errors.Is(err, service.ErrLuckySecondEditLocked) {
+		response.Error(c, 409, err.Error())
+		return
+	}
+	if errors.Is(err, service.ErrLuckySecondInvalidUpdate) {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	if response.ErrorFrom(c, err) {
+		return
+	}
+	response.Success(c, gin.H{"id": id})
+}
 func (h *LuckySecondHandler) SlotsAdmin(c *gin.Context) { h.slots(c, true) }
 func (h *LuckySecondHandler) SlotsPublic(c *gin.Context) {
 	if !h.service.Enabled(c.Request.Context()) {

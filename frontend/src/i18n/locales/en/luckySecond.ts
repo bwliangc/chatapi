@@ -14,7 +14,7 @@ export default {
     "end": "End time (exclusive)",
     "pool": "Prize pool",
     "count": "Reward count",
-    "immutableHint": "Random amounts and winning seconds are saved once and cannot be edited. Cancel and create a new campaign to change them. Maximum 366 days and 10,000 rewards.",
+    "immutableHint": "Names can be edited at any time. Before an uncancelled campaign starts, changing dates, the pool or reward count regenerates its reward schedule. Maximum 366 days and 10,000 rewards.",
     "rules": "The fixed pool is split into random rewards of at least 0.000001, each assigned to a secret second. The first successfully billed request in server admission order wins. Later requests wait for earlier ones to finish; failed requests are skipped. Text, embeddings, search and synchronous image requests participate. Async jobs, batches and persistent sessions do not. Unclaimed rewards expire without redistribution. Users may win more than once.",
     "empty": "No Lucky Second campaigns yet",
     "awarded": "Amount awarded",
@@ -45,6 +45,11 @@ export default {
       "awarded": "Awarded",
       "expired": "Expired",
       "cancelled": "Cancelled"
-    }
+    },
+    "edit": "Edit campaign",
+    "save": "Save changes",
+    "updated": "Campaign updated",
+    "invalidName": "Enter a campaign name",
+    "nameOnlyHint": "This campaign has started, was cancelled or has participation records. Only its name can be changed."
   }
 }

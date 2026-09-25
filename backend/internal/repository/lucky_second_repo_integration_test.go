@@ -201,3 +201,78 @@ func TestLuckySecondPersonalTotalIncludesAllAwardsOnlyForThisUserAndCampaign(t *
 		require.True(t, found)
 	}
 }
+
+func TestLuckySecondEditRegeneratesFutureScheduleAndPreservesRenames(t *testing.T) {
+	ctx := context.Background()
+	r, id, _, _, _ := luckyFixture(t)
+	name, amount, count := "Edited", "12.345678", 4
+	start := time.Now().UTC().Truncate(time.Second).Add(2 * time.Hour)
+	end := start.Add(time.Hour)
+	require.NoError(t, r.Update(ctx, id, service.LuckySecondUpdate{Name: &name, TotalAmount: &amount, RewardCount: &count, StartsAt: &start, EndsAt: &end}))
+	slots, total, err := r.Slots(ctx, id, true, 1, 20)
+	require.NoError(t, err)
+	require.EqualValues(t, 4, total)
+	for _, slot := range slots {
+		require.False(t, slot.SecondAt.Before(start))
+		require.True(t, slot.SecondAt.Before(end))
+		require.Equal(t, "waiting", slot.State)
+	}
+	var pool, sum, storedName string
+	require.NoError(t, integrationDB.QueryRow(`SELECT name,total_amount::text,(SELECT sum(amount)::text FROM lucky_second_slots WHERE campaign_id=$1) FROM lucky_second_campaigns WHERE id=$1`, id).Scan(&storedName, &pool, &sum))
+	require.Equal(t, name, storedName)
+	require.Equal(t, "12.34567800", pool)
+	require.Equal(t, pool, sum)
+	name = "Renamed"
+	amount = "12.34567800"
+	require.NoError(t, r.Update(ctx, id, service.LuckySecondUpdate{Name: &name, TotalAmount: &amount}))
+	after, _, err := r.Slots(ctx, id, true, 1, 20)
+	require.NoError(t, err)
+	require.Equal(t, slots, after)
+	count = 0
+	require.ErrorIs(t, r.Update(ctx, id, service.LuckySecondUpdate{RewardCount: &count}), service.ErrLuckySecondInvalidUpdate)
+	after, _, err = r.Slots(ctx, id, true, 1, 20)
+	require.NoError(t, err)
+	require.Equal(t, slots, after)
+}
+
+func TestLuckySecondEditProtectsStartedCancelledAndAdmittedCampaigns(t *testing.T) {
+	for _, state := range []string{"started", "cancelled", "admitted"} {
+		t.Run(state, func(t *testing.T) {
+			ctx := context.Background()
+			r, id, slot, user, worker := luckyFixture(t)
+			switch state {
+			case "started":
+				_, err := integrationDB.Exec(`UPDATE lucky_second_campaigns SET starts_at=now()-interval '1 second' WHERE id=$1`, id)
+				require.NoError(t, err)
+			case "cancelled":
+				require.NoError(t, r.Cancel(ctx, id))
+			case "admitted":
+				addLuckyCandidate(t, slot, user, worker, "pending", uuid.NewString())
+			}
+			before, _, err := r.Slots(ctx, id, true, 1, 20)
+			require.NoError(t, err)
+			amount := "2"
+			require.ErrorIs(t, r.Update(ctx, id, service.LuckySecondUpdate{TotalAmount: &amount}), service.ErrLuckySecondEditLocked)
+			name := "New name"
+			require.NoError(t, r.Update(ctx, id, service.LuckySecondUpdate{Name: &name}))
+			after, _, err := r.Slots(ctx, id, true, 1, 20)
+			require.NoError(t, err)
+			require.Equal(t, before, after)
+		})
+	}
+}
+
+func TestLuckySecondEditRechecksStartAfterWaitingForLock(t *testing.T) {
+	ctx := context.Background()
+	r, id, _, _, _ := luckyFixture(t)
+	tx, err := integrationDB.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer tx.Rollback()
+	_, err = tx.Exec(`UPDATE lucky_second_campaigns SET starts_at=now()-interval '1 second' WHERE id=$1`, id)
+	require.NoError(t, err)
+	result := make(chan error, 1)
+	amount := "2"
+	go func() { result <- r.Update(ctx, id, service.LuckySecondUpdate{TotalAmount: &amount}) }()
+	require.NoError(t, tx.Commit())
+	require.ErrorIs(t, <-result, service.ErrLuckySecondEditLocked)
+}

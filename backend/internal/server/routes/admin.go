@@ -41,6 +41,7 @@ func RegisterAdminRoutes(
 		if h.LuckySecond != nil {
 			admin.GET("/lucky-second", h.LuckySecond.ListAdmin)
 			admin.POST("/lucky-second", h.LuckySecond.Create)
+			admin.PATCH("/lucky-second/:id", h.LuckySecond.Update)
 			admin.POST("/lucky-second/:id/cancel", h.LuckySecond.Cancel)
 			admin.GET("/lucky-second/:id/slots", h.LuckySecond.SlotsAdmin)
 		}

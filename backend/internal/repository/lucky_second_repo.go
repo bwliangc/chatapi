@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/lib/pq"
@@ -71,6 +72,81 @@ func (r *luckySecondRepository) List(ctx context.Context, page, size int, viewer
 		items = append(items, c)
 	}
 	return items, total, rows.Err()
+}
+
+func (r *luckySecondRepository) Update(ctx context.Context, id int64, patch service.LuckySecondUpdate) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var current service.LuckySecondCampaign
+	err = tx.QueryRowContext(ctx, `SELECT id,name,starts_at,ends_at,timezone,total_amount::text,reward_count,cancelled_at FROM lucky_second_campaigns WHERE id=$1 FOR UPDATE`, id).Scan(&current.ID, &current.Name, &current.StartsAt, &current.EndsAt, &current.Timezone, &current.TotalAmount, &current.RewardCount, &current.CancelledAt)
+	if err != nil {
+		return err
+	}
+	var now time.Time
+	if err = tx.QueryRowContext(ctx, `SELECT clock_timestamp()`).Scan(&now); err != nil {
+		return err
+	}
+	in, slots, err := service.PlanLuckySecondUpdate(current, patch, now)
+	if err != nil {
+		return err
+	}
+	if slots == nil {
+		_, err = tx.ExecContext(ctx, `UPDATE lucky_second_campaigns SET name=$2 WHERE id=$1`, id, in.Name)
+		if err != nil {
+			return err
+		}
+		return tx.Commit()
+	}
+	// Synchronize with admission and settlement, which lock these same slots.
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM lucky_second_slots WHERE campaign_id=$1 ORDER BY id FOR UPDATE`, id)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var slotID int64
+		if err = rows.Scan(&slotID); err != nil {
+			rows.Close()
+			return err
+		}
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return err
+	}
+	var protected bool
+	err = tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM lucky_second_slots s WHERE campaign_id=$1 AND (state<>'waiting' OR EXISTS(SELECT 1 FROM lucky_second_candidates c WHERE c.slot_id=s.id)))`, id).Scan(&protected)
+	if err != nil {
+		return err
+	}
+	if protected {
+		return service.ErrLuckySecondEditLocked
+	}
+	if _, err = tx.ExecContext(ctx, `DELETE FROM lucky_second_slots WHERE campaign_id=$1`, id); err != nil {
+		return err
+	}
+	for _, slot := range slots {
+		if _, err = tx.ExecContext(ctx, `INSERT INTO lucky_second_slots(campaign_id,second_at,amount) VALUES($1,$2,$3)`, id, slot.SecondAt, slot.Amount); err != nil {
+			return err
+		}
+	}
+	// Recheck both old and new start times after generating/inserting prizes. If
+	// editing crosses the start boundary, roll back the entire replacement.
+	result, err := tx.ExecContext(ctx, `UPDATE lucky_second_campaigns SET name=$2,starts_at=$3,ends_at=$4,total_amount=$5,reward_count=$6 WHERE id=$1 AND starts_at>clock_timestamp() AND $3::timestamptz>clock_timestamp() AND cancelled_at IS NULL`, id, in.Name, in.StartsAt, in.EndsAt, in.TotalAmount, in.RewardCount)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected != 1 {
+		return service.ErrLuckySecondEditLocked
+	}
+	return tx.Commit()
 }
 func (r *luckySecondRepository) Slots(ctx context.Context, id int64, admin bool, page, size int) ([]service.LuckySecondSlot, int64, error) {
 	items := make([]service.LuckySecondSlot, 0)

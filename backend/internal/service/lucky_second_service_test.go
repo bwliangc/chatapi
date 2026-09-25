@@ -87,3 +87,26 @@ func TestLuckySecondAsyncParticipationWaitsForAllTasks(t *testing.T) {
 	ReleaseLuckySecond(snapshot)
 	require.Equal(t, 1, repo.finished)
 }
+
+func TestLuckySecondEditPreservesScheduleForRenameAndEquivalentAmount(t *testing.T) {
+	in := luckySecondInput()
+	current := LuckySecondCampaign{Name: in.Name, StartsAt: in.StartsAt, EndsAt: in.EndsAt, Timezone: in.Timezone, TotalAmount: in.TotalAmount, RewardCount: in.RewardCount}
+	name, amount := " Updated ", "100.00000000"
+	merged, slots, err := PlanLuckySecondUpdate(current, LuckySecondUpdate{Name: &name, TotalAmount: &amount}, in.EndsAt.Add(time.Hour))
+	require.NoError(t, err)
+	require.Equal(t, "Updated", merged.Name)
+	require.Equal(t, in.Timezone, merged.Timezone)
+	require.Nil(t, slots)
+	amount = "200"
+	_, _, err = PlanLuckySecondUpdate(current, LuckySecondUpdate{TotalAmount: &amount}, in.StartsAt)
+	require.ErrorIs(t, err, ErrLuckySecondEditLocked)
+	_, slots, err = PlanLuckySecondUpdate(current, LuckySecondUpdate{TotalAmount: &amount}, in.StartsAt.Add(-time.Hour))
+	require.NoError(t, err)
+	require.Len(t, slots, in.RewardCount)
+	current.CancelledAt = &in.StartsAt
+	_, _, err = PlanLuckySecondUpdate(current, LuckySecondUpdate{TotalAmount: &amount}, in.StartsAt.Add(-time.Hour))
+	require.ErrorIs(t, err, ErrLuckySecondEditLocked)
+	name = " "
+	_, _, err = PlanLuckySecondUpdate(current, LuckySecondUpdate{Name: &name}, in.StartsAt.Add(-time.Hour))
+	require.ErrorIs(t, err, ErrLuckySecondInvalidUpdate)
+}

@@ -7,24 +7,26 @@
       </div>
       <div class="flex gap-2">
         <button class="btn btn-secondary" :disabled="loading" @click="refresh">{{ t('common.refresh') }}</button>
-        <button v-if="admin" class="btn btn-primary" @click="creating = !creating">{{ t('luckySecond.create') }}</button>
+        <button v-if="admin" class="btn btn-primary" :disabled="saving" @click="openCreate">{{ t('luckySecond.create') }}</button>
       </div>
     </div>
     <div v-if="admin && !enabled" class="rounded-lg bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
       {{ t('luckySecond.disabledHint') }}
       <RouterLink class="ml-2 underline" to="/admin/settings">{{ t('luckySecond.openSettings') }}</RouterLink>
     </div>
-    <form v-if="admin && creating" class="card space-y-4 p-5" @submit.prevent="create">
+    <form v-if="admin && creating" ref="formElement" class="card space-y-4 p-5" @submit.prevent="save">
+      <h3 class="font-semibold text-gray-900 dark:text-white">{{ t(editing ? 'luckySecond.edit' : 'luckySecond.create') }}</h3>
+      <p v-if="scheduleLocked" class="text-sm text-amber-600 dark:text-amber-400">{{ t('luckySecond.nameOnlyHint') }}</p>
       <p class="text-sm text-gray-500">{{ t('luckySecond.createHint', { timezone }) }}</p>
       <div class="grid gap-4 sm:grid-cols-2">
-        <label class="sm:col-span-2"><span class="input-label">{{ t('luckySecond.name') }}</span><input v-model="form.name" class="input" maxlength="120" required /></label>
-        <label><span class="input-label">{{ t('luckySecond.start') }}</span><input v-model="form.start" class="input" type="datetime-local" step="1" required /></label>
-        <label><span class="input-label">{{ t('luckySecond.end') }}</span><input v-model="form.end" class="input" type="datetime-local" step="1" required /></label>
-        <label><span class="input-label">{{ t('luckySecond.pool') }}</span><input v-model="form.amount" class="input" type="number" min="0.000001" max="100000000" step="0.000001" required /></label>
-        <label><span class="input-label">{{ t('luckySecond.count') }}</span><input v-model.number="form.count" class="input" type="number" min="1" max="10000" step="1" required /></label>
+        <label class="sm:col-span-2"><span class="input-label">{{ t('luckySecond.name') }}</span><input v-model="form.name" :disabled="saving" class="input" maxlength="120" required /></label>
+        <label><span class="input-label">{{ t('luckySecond.start') }}</span><input v-model="form.start" :disabled="saving || scheduleLocked" class="input" type="datetime-local" step="1" required /></label>
+        <label><span class="input-label">{{ t('luckySecond.end') }}</span><input v-model="form.end" :disabled="saving || scheduleLocked" class="input" type="datetime-local" step="1" required /></label>
+        <label><span class="input-label">{{ t('luckySecond.pool') }}</span><input v-model="form.amount" :disabled="saving || scheduleLocked" class="input" type="number" min="0.000001" max="100000000" step="0.000001" required /></label>
+        <label><span class="input-label">{{ t('luckySecond.count') }}</span><input v-model.number="form.count" :disabled="saving || scheduleLocked" class="input" type="number" min="1" max="10000" step="1" required /></label>
       </div>
       <p class="text-xs text-gray-500">{{ t('luckySecond.immutableHint') }}</p>
-      <div class="flex gap-2"><button class="btn btn-primary" :disabled="saving" type="submit">{{ saving ? t('common.loading') : t('luckySecond.create') }}</button><button class="btn btn-secondary" type="button" :disabled="saving" @click="creating = false">{{ t('common.cancel') }}</button></div>
+      <div class="flex gap-2"><button class="btn btn-primary" :disabled="saving" type="submit">{{ saving ? t('common.loading') : t(editing ? 'luckySecond.save' : 'luckySecond.create') }}</button><button class="btn btn-secondary" type="button" :disabled="saving" @click="closeForm">{{ t('common.cancel') }}</button></div>
     </form>
     <p class="rounded-lg bg-gray-50 p-4 text-xs leading-relaxed text-gray-500 dark:bg-dark-800 dark:text-gray-400">{{ t('luckySecond.rules') }}</p>
     <div v-if="error" role="alert" class="rounded-lg bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">{{ error }}</div>
@@ -37,7 +39,10 @@
             <div class="flex flex-wrap items-center gap-2"><h3 class="font-semibold text-gray-900 dark:text-white">{{ campaign.name }}</h3><span class="rounded-full bg-primary-50 px-2.5 py-1 text-xs text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">{{ status(campaign) }}</span></div>
             <p class="mt-2 text-xs text-gray-500">{{ date(campaign.starts_at, campaign.timezone) }} → {{ date(campaign.ends_at, campaign.timezone) }} ({{ campaign.timezone }})</p>
           </div>
-          <button v-if="admin && !campaign.cancelled_at && new Date(campaign.ends_at).getTime() > now" class="text-sm text-red-600 hover:underline" @click="confirmCancel = campaign.id">{{ t('luckySecond.stop') }}</button>
+          <div v-if="admin" class="flex gap-3">
+          <button class="text-sm text-primary-600 hover:underline" :disabled="saving" @click="openEdit(campaign)">{{ t('luckySecond.edit') }}</button>
+          <button v-if="!campaign.cancelled_at && new Date(campaign.ends_at).getTime() > now" class="text-sm text-red-600 hover:underline" :disabled="saving" @click="confirmCancel = campaign.id">{{ t('luckySecond.stop') }}</button>
+          </div>
         </div>
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div><div class="text-xs text-gray-500">{{ t('luckySecond.pool') }}</div><div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">{{ money(campaign.total_amount) }}</div></div>
@@ -71,9 +76,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { luckySecondAPI, type LuckySecondCampaign, type LuckySecondSlot } from '@/api/luckySecond'
+import { luckySecondAPI, type LuckySecondCampaign, type LuckySecondCreate, type LuckySecondSlot } from '@/api/luckySecond'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import Pagination from './Pagination.vue'
@@ -90,6 +95,24 @@ const selected = ref<number | null>(null), confirmCancel = ref<number | null>(nu
 const creating = ref(false), loading = ref(false), slotsLoading = ref(false), saving = ref(false)
 const error = ref(''), slotsError = ref(''), now = ref(Date.now())
 const form = reactive({ name: '', start: '', end: '', amount: '100', count: 50 })
+const editing = ref<LuckySecondCampaign | null>(null)
+const initialForm = ref({ ...form })
+const formElement = ref<HTMLFormElement | null>(null)
+const scheduleLocked = computed(() => !!editing.value && (!!editing.value.cancelled_at || new Date(editing.value.starts_at).getTime() <= now.value || editing.value.awarded_count > 0 || editing.value.pending_count > 0))
+const localDateTime = (value: string) => {
+  const date = new Date(value)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+function closeForm() { creating.value = false; editing.value = null }
+function showForm() { creating.value = true; error.value = ''; confirmCancel.value = null; void nextTick(() => formElement.value?.scrollIntoView?.({ block: 'start' })) }
+function openCreate() { editing.value = null; Object.assign(form, { name: '', start: '', end: '', amount: '100', count: 50 }); showForm() }
+function openEdit(campaign: LuckySecondCampaign) {
+  editing.value = { ...campaign }
+  Object.assign(form, { name: campaign.name, start: localDateTime(campaign.starts_at), end: localDateTime(campaign.ends_at), amount: campaign.total_amount, count: campaign.reward_count })
+  initialForm.value = { ...form }
+  showForm()
+}
 let listVersion = 0, slotsVersion = 0
 let timer: ReturnType<typeof setInterval> | undefined
 const money = (value: string | number) => '$' + Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })
@@ -117,13 +140,26 @@ async function loadSlots(target = 1) {
 }
 function toggleDetails(id: number) { slotsVersion++; selected.value = selected.value === id ? null : id; slots.value = []; slotsTotal.value = 0; if (selected.value !== null) void loadSlots() }
 async function refresh() { await load(); if (selected.value !== null) await loadSlots(slotsPage.value) }
-async function create() {
+async function save() {
   saving.value = true; error.value = ''
   try {
-    const start = new Date(form.start), end = new Date(form.end)
-    if (!form.name.trim() || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start.getTime() <= Date.now() || end <= start) throw new Error(t('luckySecond.invalidRange'))
-    await luckySecondAPI.create({ name: form.name.trim(), starts_at: start.toISOString(), ends_at: end.toISOString(), timezone, total_amount: String(form.amount), reward_count: form.count })
-    creating.value = false; form.name = ''; appStore.showSuccess(t('luckySecond.created')); await load(1)
+    if (!form.name.trim()) throw new Error(t('luckySecond.invalidName'))
+    if (editing.value) {
+      // Send only edited fields: a rename must preserve timezone, exact instants
+      // (including DST folds), and the previously generated reward schedule.
+      const patch: Partial<Omit<LuckySecondCreate, 'timezone'>> = { name: form.name.trim() }
+      if (form.start !== initialForm.value.start) patch.starts_at = new Date(form.start).toISOString()
+      if (form.end !== initialForm.value.end) patch.ends_at = new Date(form.end).toISOString()
+      if (String(form.amount) !== String(initialForm.value.amount)) patch.total_amount = String(form.amount)
+      if (form.count !== initialForm.value.count) patch.reward_count = form.count
+      await luckySecondAPI.update(editing.value.id, patch)
+      closeForm(); appStore.showSuccess(t('luckySecond.updated')); await refresh()
+    } else {
+      const start = new Date(form.start), end = new Date(form.end)
+      if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start.getTime() <= Date.now() || end <= start) throw new Error(t('luckySecond.invalidRange'))
+      await luckySecondAPI.create({ name: form.name.trim(), starts_at: start.toISOString(), ends_at: end.toISOString(), timezone, total_amount: String(form.amount), reward_count: form.count })
+      closeForm(); form.name = ''; appStore.showSuccess(t('luckySecond.created')); await load(1)
+    }
   } catch (err) { error.value = extractApiErrorMessage(err, t('common.error')) }
   finally { saving.value = false }
 }

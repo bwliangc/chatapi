@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import LuckySecondPanel from '../LuckySecondPanel.vue'
 
 const mocks = vi.hoisted(() => ({
-  list: vi.fn(), slots: vi.fn(), create: vi.fn(), cancel: vi.fn(),
+  list: vi.fn(), slots: vi.fn(), create: vi.fn(), update: vi.fn(), cancel: vi.fn(),
   app: { cachedPublicSettings: { lucky_second_enabled: false }, showSuccess: vi.fn() },
 }))
 vi.mock('@/api/luckySecond', () => ({ luckySecondAPI: mocks }))
@@ -54,5 +54,29 @@ describe('LuckySecondPanel', () => {
     expect(cards[0].text()).toContain('$5.123456')
     expect(cards[1].text()).toContain('$0.00')
     expect(mocks.slots).not.toHaveBeenCalled()
+  })
+  it('prefills an upcoming campaign and submits only edited settings', async () => {
+    mocks.list.mockResolvedValue({ items: [{ ...campaign(1), awarded_count: 0 }], total: 1, page: 1 })
+    const wrapper = render(true); await flushPromises()
+    await wrapper.findAll('button').find(b => b.text() === 'luckySecond.edit')!.trigger('click')
+    const form = wrapper.find('form')
+    expect((form.find('input').element as HTMLInputElement).value).toBe('Campaign 1')
+    expect((form.find('input[type="datetime-local"]').element as HTMLInputElement).disabled).toBe(false)
+    await form.find('input[type="number"]').setValue('150.25')
+    await form.trigger('submit'); await flushPromises()
+    expect(mocks.update).toHaveBeenCalledWith(1, { name: 'Campaign 1', total_amount: '150.25' })
+    expect(mocks.create).not.toHaveBeenCalled()
+    expect(wrapper.find('form').exists()).toBe(false)
+  })
+  it('allows renaming an ended campaign while disabling reward settings', async () => {
+    mocks.list.mockResolvedValue({ items: [{ ...campaign(1), starts_at: '2020-01-01T00:00:00Z', ends_at: '2020-01-02T00:00:00Z' }], total: 1, page: 1 })
+    const wrapper = render(true); await flushPromises()
+    await wrapper.findAll('button').find(b => b.text() === 'luckySecond.edit')!.trigger('click')
+    const form = wrapper.find('form')
+    expect(form.text()).toContain('luckySecond.nameOnlyHint')
+    expect((form.find('input[type="number"]').element as HTMLInputElement).disabled).toBe(true)
+    await form.find('input').setValue('Renamed campaign')
+    await form.trigger('submit'); await flushPromises()
+    expect(mocks.update).toHaveBeenCalledWith(1, { name: 'Renamed campaign' })
   })
 })

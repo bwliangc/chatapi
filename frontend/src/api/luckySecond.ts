@@ -46,6 +46,9 @@ export const luckySecondAPI = {
   async create(input: LuckySecondCreate) {
     return (await apiClient.post<{ id: number }>('/admin/lucky-second', input)).data
   },
+  async update(id: number, input: Partial<Omit<LuckySecondCreate, 'timezone'>>) {
+    return (await apiClient.patch<{ id: number }>(`/admin/lucky-second/${id}`, input)).data
+  },
   async cancel(id: number) {
     await apiClient.post(`/admin/lucky-second/${id}/cancel`)
   },
