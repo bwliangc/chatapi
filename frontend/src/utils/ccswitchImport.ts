@@ -15,6 +15,7 @@ export const CC_SWITCH_DEFAULT_MODELS: Record<CcSwitchAppType, string> = {
 export interface CcSwitchImportConfig {
   app: CcSwitchAppType
   endpoint: string
+  model?: string
 }
 
 export interface CcSwitchImportDeeplinkInput {
@@ -30,9 +31,38 @@ export interface CcSwitchImportDeeplinkInput {
   usageScript: string
 }
 
+/**
+ * Balance query CC Switch runs against the imported provider. CC Switch fills
+ * `{{baseUrl}}` with the provider's base URL as stored — Codex and Grok imports
+ * carry a trailing `/v1` (see `withV1Endpoint`), Claude ones do not, and users
+ * may edit it either way afterwards — then evaluates the script, so the URL
+ * strips an existing `/v1` instead of blindly appending one (`/v1/v1/usage`
+ * is a 404 and CC Switch shows "query failed").
+ */
+export const CC_SWITCH_USAGE_SCRIPT = `({
+    request: {
+      url: "{{baseUrl}}".replace(/\\/+$/, "").replace(/\\/v1$/, "") + "/v1/usage",
+      method: "GET",
+      headers: { "Authorization": "Bearer {{apiKey}}" }
+    },
+    extractor: function(response) {
+      const remaining = response?.remaining ?? response?.quota?.remaining ?? response?.balance;
+      const unit = response?.unit ?? response?.quota?.unit ?? "USD";
+      return {
+        isValid: response?.is_active ?? response?.isValid ?? true,
+        remaining,
+        unit
+      };
+    }
+  })`
+
 function withV1Endpoint(baseUrl: string): string {
   const normalizedBaseUrl = baseUrl.replace(/\/+$/, '')
   return normalizedBaseUrl.endsWith('/v1') ? normalizedBaseUrl : `${normalizedBaseUrl}/v1`
+}
+
+function withoutTrailingSlashes(baseUrl: string): string {
+  return baseUrl.replace(/\/+$/, '')
 }
 
 export function resolveCcSwitchImportConfig(
@@ -45,9 +75,17 @@ export function resolveCcSwitchImportConfig(
     endpoint:
       platform === 'antigravity'
         ? `${baseUrl.replace(/\/+$/, '')}/antigravity`
-        : platform === 'grok' || (platform === 'openai' && app === 'codex')
+        : platform === 'grok'
           ? withV1Endpoint(baseUrl)
-          : baseUrl
+          : platform === 'openai' && app === 'codex'
+            ? withoutTrailingSlashes(baseUrl)
+          : baseUrl,
+    model:
+      platform === 'openai' && app === 'codex'
+        ? OPENAI_CC_SWITCH_CODEX_MODEL
+        : platform === 'grok' && app === 'grokbuild'
+          ? GROK_CC_SWITCH_MODEL
+          : undefined
   }
 }
 
@@ -66,7 +104,7 @@ export function buildCcSwitchImportDeeplink(input: CcSwitchImportDeeplinkInput):
     ['usageAutoInterval', '30']
   ]
 
-  const modelEntries: [string, string | undefined][] = [['model', input.model]]
+  const modelEntries: [string, string | undefined][] = [['model', input.model || config.model]]
   if (config.app === 'claude') {
     modelEntries.push(
       ['haikuModel', input.haikuModel],
