@@ -200,6 +200,25 @@ describe('RedeemView refresh after redemption', () => {
     wrapper.unmount()
   })
 
+  it.each([[0.000001, '+$0.000001'], [1.234567, '+$1.234567'], [2, '+$2.00']])(
+    'shows lucky reward %s with its campaign and exact amount', async (value, formatted) => {
+      getHistory.mockResolvedValue({ total: 1, items: [{
+        id: -2000000000009, code: 'LSR-9', type: 'lucky_second_reward', value,
+        notes: '国庆幸运秒', used_at: '2026-09-27T12:00:00Z'
+      }] })
+      const wrapper = mount(RedeemView, {
+        global: { stubs: { AppLayout: { template: '<div><slot /></div>' }, Icon: true } }
+      })
+      await flushPromises()
+      expect(wrapper.text()).toContain('redeem.balanceAddedLuckySecond')
+      expect(wrapper.text()).toContain('国庆幸运秒')
+      expect(wrapper.text()).toContain(formatted)
+      expect(wrapper.text()).not.toContain('LSR-9')
+      expect(wrapper.text()).not.toContain('redeem.adminAdjustment')
+      wrapper.unmount()
+    }
+  )
+
   it('finishes normally without a warning when profile refresh succeeds', async () => {
     const wrapper = await submitCode()
 

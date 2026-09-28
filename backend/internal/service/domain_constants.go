@@ -210,6 +210,7 @@ const (
 	RedeemTypeInvitation        = domain.RedeemTypeInvitation
 	RedeemTypeAffiliateBalance  = "affiliate_balance"
 	RedeemTypeLeaderboardReward = "leaderboard_reward"
+	RedeemTypeLuckySecondReward = "lucky_second_reward"
 )
 
 // PromoCode status constants

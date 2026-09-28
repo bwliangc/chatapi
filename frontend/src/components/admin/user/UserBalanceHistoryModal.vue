@@ -137,7 +137,7 @@
                 {{ t('redeem.adminAdjustment') }}
               </p>
               <p
-                v-else
+                v-else-if="item.type !== 'lucky_second_reward'"
                 class="font-mono text-xs text-gray-400 dark:text-dark-500"
               >
                 {{ item.code.slice(0, 8) }}...
@@ -204,6 +204,7 @@ const typeOptions = computed(() => [
   { value: 'balance', label: t('admin.users.typeBalance') },
   { value: 'affiliate_balance', label: t('admin.users.typeAffiliateBalance') },
   { value: 'leaderboard_reward', label: t('admin.users.typeLeaderboardReward') },
+  { value: 'lucky_second_reward', label: t('redeem.balanceAddedLuckySecond') },
   { value: 'admin_balance', label: t('admin.users.typeAdminBalance') },
   { value: 'concurrency', label: t('admin.users.typeConcurrency') },
   { value: 'admin_concurrency', label: t('admin.users.typeAdminConcurrency') },
@@ -247,7 +248,7 @@ const loadHistory = async (page: number) => {
 const isAdminType = (type: string) => type === 'admin_balance' || type === 'admin_concurrency'
 
 // Helper: check if balance type (includes admin_balance)
-const isBalanceType = (type: string) => type === 'balance' || type === 'admin_balance' || type === 'affiliate_balance' || type === 'leaderboard_reward'
+const isBalanceType = (type: string) => type === 'balance' || type === 'admin_balance' || type === 'affiliate_balance' || type === 'leaderboard_reward' || type === 'lucky_second_reward'
 
 // Helper: check if subscription type
 const isSubscriptionType = (type: string) => type === 'subscription'
@@ -305,6 +306,8 @@ const getItemTitle = (item: BalanceHistoryItem) => {
       return t('redeem.balanceAddedRedeem')
     case 'affiliate_balance':
       return t('redeem.balanceAddedAffiliate')
+    case 'lucky_second_reward':
+      return t('redeem.balanceAddedLuckySecond')
     case 'leaderboard_reward':
       return t('redeem.balanceAddedLeaderboard')
     case 'admin_balance':
@@ -324,7 +327,7 @@ const getItemTitle = (item: BalanceHistoryItem) => {
 const formatValue = (item: BalanceHistoryItem) => {
   if (isBalanceType(item.type)) {
     const sign = item.value >= 0 ? '+' : ''
-    return `${sign}$${item.value.toFixed(2)}`
+    return `${sign}$${item.type === 'lucky_second_reward' ? item.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6, useGrouping: false }) : item.value.toFixed(2)}`
   }
   if (isSubscriptionType(item.type)) {
     const days = item.validity_days || Math.round(item.value)

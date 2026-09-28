@@ -700,13 +700,17 @@ func (s *RedeemService) GetUserHistory(ctx context.Context, userID int64, limit 
 	if err != nil {
 		// 排行榜激励记录获取失败不应阻断兑换历史展示，降级返回真实记录。
 		logger.LegacyPrintf("service.redeem", "[Redeem] list leaderboard reward history for user %d failed: %v", userID, err)
-		return codes, nil
 	}
-	if len(rewardCodes) == 0 {
-		return codes, nil
+	queryLimit := limit
+	if queryLimit <= 0 {
+		queryLimit = 100
+	}
+	luckyCodes, _, err := listLuckySecondBalanceHistory(ctx, s.entClient, userID, 0, queryLimit)
+	if err != nil {
+		return nil, fmt.Errorf("get lucky second history: %w", err)
 	}
 
-	combined := append(append([]RedeemCode{}, codes...), rewardCodes...)
+	combined := append(append(append([]RedeemCode{}, codes...), rewardCodes...), luckyCodes...)
 	sort.SliceStable(combined, func(i, j int) bool {
 		return redeemCodeHistoryTime(combined[i]).After(redeemCodeHistoryTime(combined[j]))
 	})
@@ -821,5 +825,27 @@ func (s *RedeemService) reduceOrCancelSubscription(ctx context.Context, userID, 
 
 // GetUserHistoryPaginated returns all redemption types for the authenticated user.
 func (s *RedeemService) GetUserHistoryPaginated(ctx context.Context, userID int64, params pagination.PaginationParams) ([]RedeemCode, *pagination.PaginationResult, error) {
-	return s.redeemRepo.ListByUserPaginated(ctx, userID, params, "")
+	needed := params.Offset() + params.Limit()
+	if needed < params.Limit() {
+		return nil, nil, fmt.Errorf("invalid history page")
+	}
+	luckyCodes, luckyTotal, err := listLuckySecondBalanceHistory(ctx, s.entClient, userID, 0, needed)
+	if err != nil {
+		return nil, nil, err
+	}
+	if luckyTotal == 0 {
+		return s.redeemRepo.ListByUserPaginated(ctx, userID, params, "")
+	}
+	codes, total, err := listRedeemBalanceHistoryForMerge(ctx, s.redeemRepo, userID, needed)
+	if err != nil {
+		return nil, nil, err
+	}
+	total += luckyTotal
+	page := params.Page
+	if page < 1 {
+		page = 1
+	}
+	return mergeBalanceHistoryCodes(codes, nil, nil, params, luckyCodes), &pagination.PaginationResult{
+		Total: total, Page: page, PageSize: params.Limit(), Pages: int((total + int64(params.Limit()) - 1) / int64(params.Limit())),
+	}, nil
 }

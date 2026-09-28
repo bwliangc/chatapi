@@ -29,6 +29,26 @@ async function openDialog() {
 }
 
 describe('UserBalanceHistoryModal request ordering', () => {
+  it('shows lucky rewards with campaign, precise amount, and a working type filter', async () => {
+    mocks.getUserBalanceHistory.mockResolvedValue({
+      items: [{ id: -2000000000009, code: 'LSR-9', type: 'lucky_second_reward', value: 0.000001,
+        notes: '国庆幸运秒', used_at: '2026-09-27T12:00:00Z' }], total: 1, total_recharged: 25
+    })
+    const wrapper = await openDialog()
+    await flushPromises()
+    expect(wrapper.text()).toContain('redeem.balanceAddedLuckySecond')
+    expect(wrapper.text()).toContain('国庆幸运秒')
+    expect(wrapper.text()).toContain('+$0.000001')
+    expect(wrapper.text()).toContain('date')
+    expect(wrapper.text()).not.toContain('LSR-9')
+    const select = wrapper.findComponent({ name: 'Select' })
+    expect(select.attributes('options')).toBeDefined()
+    select.vm.$emit('update:modelValue', 'lucky_second_reward')
+    select.vm.$emit('change')
+    await flushPromises()
+    expect(mocks.getUserBalanceHistory).toHaveBeenLastCalledWith(1, 1, 15, 'lucky_second_reward')
+  })
+
   it('keeps the new user history when an old response finishes later', async () => {
     const old = deferred()
     mocks.getUserBalanceHistory.mockReturnValueOnce(old.promise).mockResolvedValueOnce(result(20))

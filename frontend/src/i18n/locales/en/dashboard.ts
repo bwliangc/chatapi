@@ -833,6 +833,7 @@ export default {
     historyWillAppear: 'Your redemption history will appear here',
     balanceAddedRedeem: 'Balance Added (Redeem)',
     balanceAddedAffiliate: 'Balance Added (Affiliate Transfer)',
+    balanceAddedLuckySecond: 'Balance Added (Lucky Second Reward)',
     balanceAddedLeaderboard: 'Balance Added (Leaderboard Reward)',
     balanceAddedAdmin: 'Balance Added (Admin)',
     balanceDeductedAdmin: 'Balance Deducted (Admin)',

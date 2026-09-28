@@ -710,6 +710,14 @@ func (s *adminServiceImpl) GetUserBalanceHistory(ctx context.Context, userID int
 		}
 		return codes, total, totalRecharged, nil
 	}
+	if codeType == RedeemTypeLuckySecondReward {
+		codes, total, err := listLuckySecondBalanceHistory(ctx, s.entClient, userID, params.Offset(), params.Limit())
+		if err != nil {
+			return nil, 0, 0, err
+		}
+		totalRecharged, err := s.redeemCodeRepo.SumPositiveBalanceByUser(ctx, userID)
+		return codes, total, totalRecharged, err
+	}
 	if codeType == RedeemTypeLeaderboardReward {
 		codes, total, err := s.listLeaderboardRewardBalanceHistory(ctx, userID, params)
 		if err != nil {
@@ -757,16 +765,24 @@ func (s *adminServiceImpl) getAllUserBalanceHistory(ctx context.Context, userID 
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	codes := mergeBalanceHistoryCodes(redeemCodes, affiliateCodes, leaderboardCodes, params)
+	luckyCodes, luckyTotal, err := listLuckySecondBalanceHistory(ctx, s.entClient, userID, 0, needed)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	codes := mergeBalanceHistoryCodes(redeemCodes, affiliateCodes, leaderboardCodes, params, luckyCodes)
 
 	totalRecharged, err := s.redeemCodeRepo.SumPositiveBalanceByUser(ctx, userID)
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	return codes, redeemTotal + affiliateTotal + leaderboardTotal, totalRecharged, nil
+	return codes, redeemTotal + affiliateTotal + leaderboardTotal + luckyTotal, totalRecharged, nil
 }
 
 func (s *adminServiceImpl) listRedeemBalanceHistoryForMerge(ctx context.Context, userID int64, needed int) ([]RedeemCode, int64, error) {
+	return listRedeemBalanceHistoryForMerge(ctx, s.redeemCodeRepo, userID, needed)
+}
+
+func listRedeemBalanceHistoryForMerge(ctx context.Context, repo RedeemCodeRepository, userID int64, needed int) ([]RedeemCode, int64, error) {
 	if needed <= 0 {
 		return nil, 0, nil
 	}
@@ -777,7 +793,7 @@ func (s *adminServiceImpl) listRedeemBalanceHistoryForMerge(ctx context.Context,
 	)
 	for page := 1; len(out) < needed; page++ {
 		params := pagination.PaginationParams{Page: page, PageSize: 1000}
-		codes, result, err := s.redeemCodeRepo.ListByUserPaginated(ctx, userID, params, "")
+		codes, result, err := repo.ListByUserPaginated(ctx, userID, params, "")
 		if err != nil {
 			return nil, 0, err
 		}
@@ -1007,8 +1023,11 @@ WHERE user_id = $1`, userID)
 	return total.Int64, nil
 }
 
-func mergeBalanceHistoryCodes(redeemCodes, affiliateCodes, leaderboardCodes []RedeemCode, params pagination.PaginationParams) []RedeemCode {
+func mergeBalanceHistoryCodes(redeemCodes, affiliateCodes, leaderboardCodes []RedeemCode, params pagination.PaginationParams, extra ...[]RedeemCode) []RedeemCode {
 	combined := append(append(append([]RedeemCode{}, redeemCodes...), affiliateCodes...), leaderboardCodes...)
+	for _, codes := range extra {
+		combined = append(combined, codes...)
+	}
 	sort.SliceStable(combined, func(i, j int) bool {
 		return redeemCodeHistoryTime(combined[i]).After(redeemCodeHistoryTime(combined[j]))
 	})

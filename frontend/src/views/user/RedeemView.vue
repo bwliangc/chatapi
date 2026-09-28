@@ -304,12 +304,12 @@
                   {{ formatHistoryValue(item) }}
                 </p>
                 <p
-                  v-if="!isAdminAdjustment(item.type)"
+                  v-if="!isAdminAdjustment(item.type) && item.type !== 'lucky_second_reward'"
                   class="font-mono text-xs text-gray-400 dark:text-dark-500"
                 >
                   {{ item.code.slice(0, 8) }}...
                 </p>
-                <p v-else class="text-xs text-gray-400 dark:text-dark-500">
+                <p v-else-if="isAdminAdjustment(item.type)" class="text-xs text-gray-400 dark:text-dark-500">
                   {{ t('redeem.adminAdjustment') }}
                 </p>
                 <!-- Display notes for admin adjustments -->
@@ -408,7 +408,7 @@ const contactInfo = ref('')
 
 // Helper functions for history display
 const isBalanceType = (type: string) => {
-  return type === 'balance' || type === 'admin_balance' || type === 'leaderboard_reward'
+  return type === 'balance' || type === 'admin_balance' || type === 'leaderboard_reward' || type === 'lucky_second_reward'
 }
 
 const isSubscriptionType = (type: string) => {
@@ -430,6 +430,8 @@ const getHistoryItemTitle = (item: RedeemHistoryItem) => {
     return item.value >= 0 ? t('redeem.concurrencyAddedAdmin') : t('redeem.concurrencyReducedAdmin')
   } else if (item.type === 'subscription') {
     return t('redeem.subscriptionAssigned')
+  } else if (item.type === 'lucky_second_reward') {
+    return t('redeem.balanceAddedLuckySecond')
   } else if (item.type === 'leaderboard_reward') {
     return t('redeem.leaderboardReward')
   }
@@ -439,7 +441,7 @@ const getHistoryItemTitle = (item: RedeemHistoryItem) => {
 const formatHistoryValue = (item: RedeemHistoryItem) => {
   if (isBalanceType(item.type)) {
     const sign = item.value >= 0 ? '+' : ''
-    return `${sign}$${item.value.toFixed(2)}`
+    return `${sign}$${item.type === 'lucky_second_reward' ? item.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6, useGrouping: false }) : item.value.toFixed(2)}`
   } else if (isSubscriptionType(item.type)) {
     // 订阅类型显示有效天数和分组名称
     const days = item.validity_days || Math.round(item.value)
