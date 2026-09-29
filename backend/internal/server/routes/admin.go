@@ -55,6 +55,8 @@ func RegisterAdminRoutes(
 		// 账号管理
 		registerAccountRoutes(admin, h, stepUpAuth)
 		admin.GET("/model-detection", h.Admin.Account.ModelDetectionInfo)
+		admin.GET("/model-detection/schedule", h.Admin.Account.GetModelDetectionSchedule)
+		admin.PUT("/model-detection/schedule", h.Admin.Account.SaveModelDetectionSchedule)
 		admin.GET("/model-detection/bank", h.Admin.Account.GetModelDetectionBank)
 		admin.POST("/model-detection/bank/check", h.Admin.Account.CheckModelDetectionBank)
 		admin.POST("/model-detection/bank/update", gin.HandlerFunc(stepUpAuth), h.Admin.Account.UpdateModelDetectionBank)
@@ -417,6 +419,7 @@ func registerAccountRoutes(admin *gin.RouterGroup, h *handler.Handlers, stepUpAu
 		accounts.DELETE("/:id", h.Admin.Account.Delete)
 		accounts.POST("/:id/test", h.Admin.Account.Test)
 		accounts.POST("/:id/model-detection", h.Admin.Account.DetectAccountModel)
+		accounts.GET("/:id/model-detection/history", h.Admin.Account.GetModelDetectionHistory)
 		accounts.GET("/:id/abnormal-notification", h.Admin.Account.GetAbnormalNotification)
 		accounts.PUT("/:id/abnormal-notification", h.Admin.Account.UpdateAbnormalNotification)
 		accounts.GET("/:id/auto-reset", h.Admin.Account.GetAutoReset)

@@ -40,6 +40,15 @@ type ModelDetectionResult struct {
 }
 
 func validateModelDetectionAccount(account *Account, model string) error {
+	if err := validateModelDetectionAccountModel(account, model); err != nil {
+		return err
+	}
+	if !account.IsSchedulable() {
+		return errors.New("账号当前不可调度，请检查账号状态、额度及限流")
+	}
+	return nil
+}
+func validateModelDetectionAccountModel(account *Account, model string) error {
 	if account == nil {
 		return errors.New("账号不存在")
 	}
@@ -51,9 +60,6 @@ func validateModelDetectionAccount(account *Account, model string) error {
 	}
 	if account.Type != AccountTypeAPIKey && account.Type != AccountTypeOAuth {
 		return errors.New("目前支持 API Key 和 OAuth 账号")
-	}
-	if !account.IsSchedulable() {
-		return errors.New("账号当前不可调度，请检查账号状态、额度及限流")
 	}
 	if !account.IsModelSupported(model) {
 		return errors.New("所选账号不支持该模型")
@@ -67,9 +73,10 @@ func validateModelDetectionAccount(account *Account, model string) error {
 	return nil
 }
 
-// DetectModel is tied to the HTTP request: cancellation/closing the page stops
-// collection. Every probe is pinned to this account, with no scheduler failover.
-func (s *AccountTestService) DetectModel(ctx context.Context, accountID int64, model string, concurrency *ConcurrencyService, progress func(ModelDetectionProgress)) (*ModelDetectionResult, error) {
+// DetectModel follows the caller's context: manual runs stop when the HTTP
+// request closes, while scheduled runs use the worker context. Every probe is
+// pinned to this account, with no scheduler failover.
+func (s *AccountTestService) DetectModel(ctx context.Context, accountID int64, model string, concurrency *ConcurrencyService, progress func(ModelDetectionProgress)) (finalResult *ModelDetectionResult, finalErr error) {
 	if !s.ModelDetectionEnabled(ctx) {
 		return nil, errors.New("模型检测功能未启用")
 	}
@@ -82,10 +89,27 @@ func (s *AccountTestService) DetectModel(ctx context.Context, accountID int64, m
 	if accountID <= 0 {
 		return nil, errors.New("无效账号")
 	}
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
 	if _, busy := s.modelDetectionActive.LoadOrStore(accountID, true); busy {
 		return nil, errors.New("该账号已有检测任务正在运行")
 	}
 	defer s.modelDetectionActive.Delete(accountID)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	release, err := s.acquireDetectionLease(ctx, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	defer func() {
+		source, _ := ctx.Value(modelDetectionSourceKey{}).(string)
+		if err := s.saveDetectionSnapshot(accountID, model, finalResult, finalErr, source); err != nil {
+			finalErr = fmt.Errorf("保存检测结果失败: %w", err)
+		}
+	}()
+
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -97,7 +121,6 @@ func (s *AccountTestService) DetectModel(ctx context.Context, accountID int64, m
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	var workers sync.WaitGroup
 	defer func() {
 		cancel()

@@ -111,3 +111,29 @@ export async function updateBank(commit: string, revision: string): Promise<Bank
 export async function rollbackBank(revision: string): Promise<BankStatus> {
   return (await apiClient.post<BankStatus>('/admin/model-detection/bank/rollback', { revision })).data
 }
+
+export interface DetectionSnapshot {
+  status: string
+  model: string
+  checked_at: string
+  reason: string
+  prediction?: string
+}
+export interface DetectionTarget { account_id: number; account_name?: string; model: string; next_run_at?: string }
+export interface DetectionSchedule { enabled: boolean; interval_minutes: number; targets: DetectionTarget[] }
+export async function getDetectionSchedule(): Promise<DetectionSchedule> {
+  return (await apiClient.get<DetectionSchedule>('/admin/model-detection/schedule')).data
+}
+export async function saveDetectionSchedule(config: DetectionSchedule): Promise<DetectionSchedule> {
+  return (await apiClient.put<DetectionSchedule>('/admin/model-detection/schedule', config)).data
+}
+
+export interface DetectionHistoryRecord extends DetectionSnapshot {
+  id: string
+  source: 'manual' | 'scheduled' | 'legacy'
+}
+export async function getDetectionHistory(accountID: number, page = 1, pageSize = 20, signal?: AbortSignal): Promise<import('@/types').PaginatedResponse<DetectionHistoryRecord>> {
+  return (await apiClient.get(`/admin/accounts/${accountID}/model-detection/history`, {
+    params: { page, page_size: pageSize }, signal
+  })).data
+}

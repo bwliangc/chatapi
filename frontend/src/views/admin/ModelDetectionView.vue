@@ -11,6 +11,7 @@
         </div>
       </header>
 
+
       <div class="grid items-start gap-5 xl:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] xl:gap-6">
         <section class="card min-w-0" aria-labelledby="detection-configuration">
           <div class="flex items-center gap-2 border-b border-gray-100 px-5 py-4 dark:border-dark-700 sm:px-6">
@@ -153,6 +154,7 @@
           </details>
         </div>
       </div>
+      <ModelDetectionSchedule v-if="info" :info="info" />
     </div>
   </AppLayout>
 </template>
@@ -161,6 +163,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import ModelDetectionSchedule from '@/components/admin/ModelDetectionSchedule.vue'
 import Icon from '@/components/icons/Icon.vue'
 import * as accountsAPI from '@/api/admin/accounts'
 import { detectAccountModel, getDetectionInfo, type DetectionInfo, type DetectionResult } from '@/api/admin/modelDetection'

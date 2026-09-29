@@ -104,3 +104,59 @@ func (h *AccountHandler) DetectAccountModel(c *gin.Context) {
 		}
 	}
 }
+
+func (h *AccountHandler) GetModelDetectionSchedule(c *gin.Context) {
+	if !h.accountTestService.ModelDetectionEnabled(c.Request.Context()) {
+		response.NotFound(c, "模型检测功能未启用")
+		return
+	}
+	config, err := h.accountTestService.GetModelDetectionSchedule(c.Request.Context())
+	if err != nil {
+		response.Error(c, 503, "读取定时检测配置失败")
+		return
+	}
+	response.Success(c, config)
+}
+func (h *AccountHandler) SaveModelDetectionSchedule(c *gin.Context) {
+	if !h.accountTestService.ModelDetectionEnabled(c.Request.Context()) {
+		response.NotFound(c, "模型检测功能未启用")
+		return
+	}
+	var config service.ModelDetectionSchedule
+	decoder := json.NewDecoder(http.MaxBytesReader(c.Writer, c.Request.Body, 64*1024))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&config); err != nil {
+		response.BadRequest(c, "定时检测参数无效")
+		return
+	}
+	var extra any
+	if decoder.Decode(&extra) != io.EOF {
+		response.BadRequest(c, "定时检测参数无效")
+		return
+	}
+	result, err := h.accountTestService.SaveModelDetectionSchedule(c.Request.Context(), config)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	response.Success(c, result)
+}
+
+// History remains readable when new detection runs are disabled.
+func (h *AccountHandler) GetModelDetectionHistory(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		response.BadRequest(c, "无效账号 ID")
+		return
+	}
+	page, size := response.ParsePagination(c)
+	if size > 100 {
+		size = 100
+	}
+	items, total, err := h.accountTestService.GetModelDetectionHistory(c.Request.Context(), id, page, size)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, items, total, page, size)
+}

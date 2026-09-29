@@ -209,3 +209,21 @@ func TestModelDetectionOAuthUsesChallengeAndSanitizesErrors(t *testing.T) {
 		t.Fatal("raw upstream error exposed")
 	}
 }
+
+func (r *detectionSettingRepo) CompareAndSwapValue(context.Context, string, string, string) (bool, error) {
+	return true, nil
+}
+func (r *detectionAccountRepo) UpdateExtra(_ context.Context, _ int64, values map[string]any) error {
+	return nil
+}
+
+func (r *detectionAccountRepo) GetByIDs(_ context.Context, _ []int64) ([]*Account, error) {
+	return []*Account{r.account}, nil
+}
+
+func (r *detectionAccountRepo) SaveModelDetectionResult(ctx context.Context, id int64, source string, snapshot ModelDetectionSnapshot) error {
+	return r.UpdateExtra(ctx, id, map[string]any{ModelDetectionSnapshotExtraKey: snapshot})
+}
+func (r *detectionAccountRepo) ListModelDetectionHistory(context.Context, int64, int, int) ([]ModelDetectionHistoryRecord, int64, error) {
+	return nil, 0, nil
+}

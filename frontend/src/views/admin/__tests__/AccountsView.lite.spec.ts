@@ -67,6 +67,7 @@ const DataTableStub = defineComponent({
     <div>
       <div v-for="row in data" :key="row.id" :data-account-name="row.name">
         <slot name="cell-groups" :row="row" />
+        <slot name="cell-model_detection" :row="row" />
         <slot name="cell-actions" :row="row" />
       </div>
     </div>
@@ -111,6 +112,7 @@ function mountView(stubActionMenu = true) {
         ReAuthAccountModal: true,
         AccountTestModal: AccountTestModalStub,
         AccountStatsModal: AccountStatsModalStub,
+        ModelDetectionHistoryModal: { props: ['show', 'account'], template: '<div data-test="detection-history">{{ show ? account?.name : "" }}</div>' },
         ScheduledTestsPanel: true,
         SyncFromCrsModal: true,
         TempUnschedStatusModal: true,
@@ -174,6 +176,14 @@ describe('admin AccountsView lite account list', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.restoreAllMocks()
+  })
+
+  it('opens the selected account history from its status icon', async () => {
+    const wrapper = mountView(); await flushPromises()
+    await wrapper.find('[aria-label="admin.modelDetection.history.open"]').trigger('click')
+    expect(wrapper.find('[data-test="detection-history"]').text()).toBe(listRow.name)
+    expect(getById).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 
   it('keeps lite=1 on the initial list request', async () => {

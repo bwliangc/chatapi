@@ -1,5 +1,44 @@
 export default {
   "modelDetection": {
+    "history": {
+      "open": "查看检测历史",
+      "title": "降智检测历史",
+      "empty": "暂无检测记录",
+      "time": "检测时间",
+      "source": "检测来源",
+      "details": "判定说明",
+      "retry": "重新加载",
+      "previous": "上一页",
+      "pagination": "共 {total} 条 · 第 {page} / {pages} 页",
+      "sources": {
+        "manual": "手动检测",
+        "scheduled": "定时检测",
+        "legacy": "已有结果"
+      }
+    },
+    "statusColumn": "降智检测",
+    "statuses": {
+      "consistent": "特征一致",
+      "suspected_mismatch": "疑似降智",
+      "inconclusive": "暂不能判断",
+      "unsupported": "模型未收录",
+      "insufficient": "样本不足",
+      "error": "检测失败",
+      "cancelled": "检测已取消",
+      "untested": "未检测"
+    },
+    "schedule": {
+      "title": "定时降智检测",
+      "enabled": "启用定时检测",
+      "description": "多选账号后选择检测模型，可批量设置或逐个调整。后台按间隔依次检测，关闭页面不影响执行；每次检测会消耗账号额度。新账号保存后进入检测队列，每 15 秒检查到期任务，结果显示在账号管理中。",
+      "accounts": "选择账号（最多 100 个）",
+      "selected": "已选择 {count} 个账号",
+      "batchModel": "批量选择模型",
+      "applyModel": "应用到所选账号",
+      "interval": "检测间隔（分钟，15–10080）",
+      "nextRun": "下次检测不早于",
+      "saved": "定时检测配置已保存"
+    },
     "title": "模型一致性检测",
     "description": "选择账号与模型，并发采集三份独立回答，对照 ModelTrace 参考指纹。",
     "notice": "检测结果是候选库内的特征相似度，不是模型身份确证。未知模型也可能接近已收录模型，疑似不一致请人工复测。",

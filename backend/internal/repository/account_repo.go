@@ -67,6 +67,7 @@ var schedulerNeutralExtraKeyPrefixes = []string{
 }
 
 var schedulerNeutralExtraKeys = map[string]struct{}{
+	service.ModelDetectionSnapshotExtraKey:     {},
 	"codex_usage_updated_at":                   {},
 	"grok_billing_snapshot":                    {},
 	"session_window_utilization":               {},
@@ -678,7 +679,8 @@ func lockAndMergeAccountProbeExtra(
 				false
 			),
 			extra -> 'opencode_go_usage_auto_refresh',
-			extra -> 'opencode_go_usage_snapshot'
+			extra -> 'opencode_go_usage_snapshot',
+			extra -> 'model_detection_snapshot'
 		FROM accounts
 		WHERE id = $1 AND deleted_at IS NULL
 		FOR NO KEY UPDATE
@@ -707,6 +709,7 @@ func lockAndMergeAccountProbeExtra(
 		currentOllamaSnapshot          []byte
 		currentOpenCodeAutoRefresh     []byte
 		currentOpenCodeSnapshot        []byte
+		currentDetectionSnapshot       []byte
 	)
 	if err := rows.Scan(
 		&identityUnchanged,
@@ -721,6 +724,7 @@ func lockAndMergeAccountProbeExtra(
 		&opencodeGroupIdentityUnchanged,
 		&currentOpenCodeAutoRefresh,
 		&currentOpenCodeSnapshot,
+		&currentDetectionSnapshot,
 	); err != nil {
 		return nil, err
 	}
@@ -729,6 +733,14 @@ func lockAndMergeAccountProbeExtra(
 	}
 
 	extra := copyJSONMap(normalizeJSONMap(account.Extra))
+	// Detection results are server-owned; stale edit forms must never replace them.
+	delete(extra, service.ModelDetectionSnapshotExtraKey)
+	if value, ok, err := decodeAccountExtraJSON(currentDetectionSnapshot); err != nil {
+		return nil, err
+	} else if ok {
+		extra[service.ModelDetectionSnapshotExtraKey] = value
+	}
+
 	for _, key := range []string{
 		service.UpstreamBillingProbeEnabledExtraKey,
 		service.UpstreamBillingRateSyncEnabledExtraKey,

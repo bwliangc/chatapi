@@ -1,5 +1,44 @@
 export default {
   "modelDetection": {
+    "history": {
+      "open": "View detection history",
+      "title": "Degradation check history",
+      "empty": "No detection records yet",
+      "time": "Checked at",
+      "source": "Source",
+      "details": "Verdict details",
+      "retry": "Retry",
+      "previous": "Previous",
+      "pagination": "{total} records · Page {page} of {pages}",
+      "sources": {
+        "manual": "Manual",
+        "scheduled": "Scheduled",
+        "legacy": "Previous result"
+      }
+    },
+    "statusColumn": "Degradation check",
+    "statuses": {
+      "consistent": "Consistent",
+      "suspected_mismatch": "Suspected degradation",
+      "inconclusive": "Inconclusive",
+      "unsupported": "Unlisted model",
+      "insufficient": "Insufficient samples",
+      "error": "Detection failed",
+      "cancelled": "Cancelled",
+      "untested": "Not tested"
+    },
+    "schedule": {
+      "title": "Scheduled degradation checks",
+      "enabled": "Enable scheduled checks",
+      "description": "Select accounts and models, applying a model to all or adjusting each one. Checks run sequentially in the background and continue after this page closes. Each check uses account quota. Newly added accounts are queued after saving; due tasks are checked every 15 seconds. Results appear in account management.",
+      "accounts": "Select accounts (up to 100)",
+      "selected": "{count} accounts selected",
+      "batchModel": "Model for selected accounts",
+      "applyModel": "Apply to selected accounts",
+      "interval": "Interval (minutes, 15–10080)",
+      "nextRun": "Next check no earlier than",
+      "saved": "Detection schedule saved"
+    },
     "title": "Model Identity Detection",
     "description": "Choose an account and model, then collect three independent responses concurrently and compare them with ModelTrace fingerprints.",
     "notice": "Scores measure similarity within a closed candidate set, not proof of identity. Unknown models may resemble known candidates. Verify suspected mismatches manually.",

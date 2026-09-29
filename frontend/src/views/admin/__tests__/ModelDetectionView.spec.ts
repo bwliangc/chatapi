@@ -8,7 +8,7 @@ vi.mock('@/components/layout/AppLayout.vue', () => ({ default: { template: '<div
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string, values?: unknown) => key === 'admin.modelDetection.progress' ? `${key} ${JSON.stringify(values)}` : key }) }))
 vi.mock('@/api/admin/accounts', () => ({ list: mock.list, getAvailableModels: mock.models }))
 vi.mock('@/api/admin/modelDetection', () => ({ getDetectionInfo: mock.info, detectAccountModel: mock.detect }))
-const render = () => mount(ModelDetectionView, { global: { stubs: { AppLayout: { template: '<div><slot /></div>' } } } })
+const render = () => mount(ModelDetectionView, { global: { stubs: { ModelDetectionSchedule: true, AppLayout: { template: '<div><slot /></div>' } } } })
 
 afterEach(() => { vi.useRealTimers() })
 
