@@ -81,6 +81,7 @@ describe('HomeView transparent pricing', () => {
 
     const rows = [
       { model: 'gpt-6-astra', prices: ['$10', '$1', '$12.5', '$50'] },
+      { model: 'gpt-6.1-sol', prices: ['$2', '$0.1', '$2.5', '$10'] },
       { model: 'gpt-6-sol', prices: ['$2', '$0.2', '$2.5', '$10'] },
       { model: 'gpt-6-luna', prices: ['$0.1', '$0.01', '$0.125', '$0.5'] },
       { model: 'gpt-5.6-sol', prices: ['$5', '$0.5', '$6.25', '$30'] },
@@ -93,7 +94,7 @@ describe('HomeView transparent pricing', () => {
     const expectPrices = () => {
       for (const layout of ['desktop', 'mobile']) {
         const pricingLayout = wrapper.get(`[data-pricing-layout="${layout}"]`)
-        expect(pricingLayout.findAll('[data-model]')).toHaveLength(7)
+        expect(pricingLayout.findAll('[data-model]')).toHaveLength(8)
         rows.forEach(({ model, prices }) => {
           const row = pricingLayout.get(`[data-model="${model}"]`)
           priceKinds.forEach((kind, index) => {

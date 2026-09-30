@@ -545,6 +545,16 @@ const featuredPrices: FeaturedPrice[] = [
     }
   },
   {
+    model: 'gpt-6.1-sol',
+    multiplier: uniformMultiplier,
+    prices: {
+      input: 0.000002,
+      cacheRead: 0.0000001,
+      cacheWrite: 0.0000025,
+      output: 0.00001
+    }
+  },
+  {
     model: 'gpt-6-sol',
     multiplier: uniformMultiplier,
     prices: {
