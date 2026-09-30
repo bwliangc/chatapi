@@ -733,6 +733,7 @@ func TestAPIContracts(t *testing.T) {
 						"login_agreement_enabled": false,
 						"login_agreement_mode": "modal",
 						"login_agreement_updated_at": "2026-03-31",
+						"lucky_second_enabled": false,
 						"login_agreement_documents": [
 							{"id": "terms", "title": "服务条款", "content_md": ""},
 							{"id": "usage-policy", "title": "使用政策", "content_md": ""},
@@ -1012,6 +1013,7 @@ func TestAPIContracts(t *testing.T) {
 					"plugin_management_enabled": false,
 					"model_detection_enabled": false,
 					"risk_control_enabled": false,
+					"cyber_policy_user_allowlist": "",
 					"cyber_session_block_enabled": false,
 					"cyber_session_block_ttl_seconds": 3600,
 					"affiliate_enabled": false,
@@ -1104,6 +1106,7 @@ func TestAPIContracts(t *testing.T) {
 						"login_agreement_enabled": false,
 						"login_agreement_mode": "modal",
 						"login_agreement_updated_at": "2026-03-31",
+						"lucky_second_enabled": false,
 						"login_agreement_documents": [
 							{"id": "terms", "title": "服务条款", "content_md": ""},
 							{"id": "usage-policy", "title": "使用政策", "content_md": ""},
@@ -1346,6 +1349,7 @@ func TestAPIContracts(t *testing.T) {
 					"plugin_management_enabled": false,
 					"model_detection_enabled": false,
 					"risk_control_enabled": false,
+					"cyber_policy_user_allowlist": "",
 					"cyber_session_block_enabled": false,
 					"cyber_session_block_ttl_seconds": 3600,
 					"affiliate_enabled": false,
@@ -2688,7 +2692,7 @@ func (r *stubUsageLogRepo) GetAPIKeyUsageTrend(ctx context.Context, startTime, e
 	return nil, errors.New("not implemented")
 }
 
-func (r *stubUsageLogRepo) GetUserUsageTrend(ctx context.Context, startTime, endTime time.Time, granularity string, limit int) ([]usagestats.UserUsageTrendPoint, error) {
+func (r *stubUsageLogRepo) GetUserUsageTrend(ctx context.Context, startTime, endTime time.Time, granularity string, limit int, metric string) ([]usagestats.UserUsageTrendPoint, error) {
 	return nil, errors.New("not implemented")
 }
 
