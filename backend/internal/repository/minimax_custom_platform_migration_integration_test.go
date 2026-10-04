@@ -19,6 +19,44 @@ func TestMigration238PreservesCustomPlatforms(t *testing.T) {
 	testPlatformMigrationPreservesCustom(t, "238_opencode_go_platform.sql", "opencode_go")
 }
 
+func TestMigration241PreservesCustomPlatforms(t *testing.T) {
+	tx := testTx(t)
+	ctx := context.Background()
+	previous, err := dbmigrations.FS.ReadFile("238_opencode_go_platform.sql")
+	require.NoError(t, err)
+	_, err = tx.ExecContext(ctx, string(previous))
+	require.NoError(t, err)
+
+	var userID, groupID int64
+	require.NoError(t, tx.QueryRowContext(ctx, `INSERT INTO users (email, password_hash)
+VALUES ('migration241@example.com', 'test-hash') RETURNING id`).Scan(&userID))
+	require.NoError(t, tx.QueryRowContext(ctx, `INSERT INTO groups (name, platform)
+VALUES ('migration241', 'composite') RETURNING id`).Scan(&groupID))
+	insertPlatform := func(platform string) {
+		t.Helper()
+		_, err := tx.ExecContext(ctx, `INSERT INTO user_platform_quotas (user_id, platform) VALUES ($1, $2)`, userID, platform)
+		require.NoError(t, err)
+		_, err = tx.ExecContext(ctx, `INSERT INTO composite_model_routes (group_id, public_model, target_platform)
+VALUES ($1, $2, $2)`, groupID, platform)
+		require.NoError(t, err)
+	}
+	for _, platform := range []string{"custom", "minimax", "opencode_go"} {
+		insertPlatform(platform)
+	}
+	migration, err := dbmigrations.FS.ReadFile("241_add_typesafe_platform.sql")
+	require.NoError(t, err)
+	_, err = tx.ExecContext(ctx, string(migration))
+	require.NoError(t, err, "upgrade must accept existing custom rows")
+	insertPlatform("typesafe")
+	_, err = tx.ExecContext(ctx, string(migration))
+	require.NoError(t, err, "migration must be replayable")
+	var count int
+	require.NoError(t, tx.QueryRowContext(ctx, `SELECT count(*) FROM user_platform_quotas WHERE user_id=$1`, userID).Scan(&count))
+	require.Equal(t, 4, count)
+	require.NoError(t, tx.QueryRowContext(ctx, `SELECT count(*) FROM composite_model_routes WHERE group_id=$1`, groupID).Scan(&count))
+	require.Equal(t, 4, count)
+}
+
 func testPlatformMigrationPreservesCustom(t *testing.T, filename, newPlatform string) {
 	t.Helper()
 	tx := testTx(t)
