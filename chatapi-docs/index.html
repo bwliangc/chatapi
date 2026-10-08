@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="ChatAPI 使用手册：从注册、充值和创建 API 密钥，到 CC-Switch、Cherry Studio、OpenAI SDK 接入与用量排查。" />
+    <meta name="description" content="ChatAPI 使用手册：从注册、充值和创建 API 密钥，到 CC-Switch、Cherry Studio、OpenAI SDK 接入、图片生成与用量排查。" />
     <meta name="theme-color" content="#f7f8f5" />
     <title>ChatAPI 使用手册</title>
     <link rel="icon" href="./public/logo.svg" type="image/svg+xml" />
@@ -41,27 +41,28 @@
           <p class="nav-label">接入</p>
           <a href="#keys" data-route="keys"><span>04</span>API 密钥</a>
           <a href="#api" data-route="api"><span>05</span>API 调用</a>
+          <a href="#images" data-route="images"><span>06</span>图片 API</a>
 
           <p class="nav-label">客户端</p>
-          <a href="#ccswitch" data-route="ccswitch"><span>06</span>CC-Switch 配置</a>
-          <a href="#codex-cli" data-route="codex-cli"><span>07</span>Codex CLI</a>
-          <a href="#codex-desktop" data-route="codex-desktop"><span>08</span>Codex Desktop</a>
-          <a href="#claude-code" data-route="claude-code"><span>09</span>Claude Code</a>
-          <a href="#gemini-cli" data-route="gemini-cli"><span>10</span>Gemini CLI</a>
-          <a href="#cherry-studio" data-route="cherry-studio"><span>11</span>Cherry Studio</a>
-          <a href="#cherry-studio-app" data-route="cherry-studio-app"><span>12</span>Cherry Studio App</a>
+          <a href="#ccswitch" data-route="ccswitch"><span>07</span>CC-Switch 配置</a>
+          <a href="#codex-cli" data-route="codex-cli"><span>08</span>Codex CLI</a>
+          <a href="#codex-desktop" data-route="codex-desktop"><span>09</span>Codex Desktop</a>
+          <a href="#claude-code" data-route="claude-code"><span>10</span>Claude Code</a>
+          <a href="#gemini-cli" data-route="gemini-cli"><span>11</span>Gemini CLI</a>
+          <a href="#cherry-studio" data-route="cherry-studio"><span>12</span>Cherry Studio</a>
+          <a href="#cherry-studio-app" data-route="cherry-studio-app"><span>13</span>Cherry Studio App</a>
 
           <p class="nav-label">操作</p>
-          <a href="#playground" data-route="playground"><span>13</span>在线测试</a>
+          <a href="#playground" data-route="playground"><span>14</span>在线测试</a>
 
           <p class="nav-label">账户</p>
-          <a href="#usage" data-route="usage"><span>14</span>用量与账单</a>
-          <a href="#balance" data-route="balance"><span>15</span>购买与兑换</a>
-          <a href="#features" data-route="features"><span>16</span>其他功能</a>
-          <a href="#security" data-route="security"><span>17</span>安全设置</a>
+          <a href="#usage" data-route="usage"><span>15</span>用量与账单</a>
+          <a href="#balance" data-route="balance"><span>16</span>购买与兑换</a>
+          <a href="#features" data-route="features"><span>17</span>其他功能</a>
+          <a href="#security" data-route="security"><span>18</span>安全设置</a>
 
           <p class="nav-label">支持</p>
-          <a href="#troubleshooting" data-route="troubleshooting"><span>18</span>常见问题</a>
+          <a href="#troubleshooting" data-route="troubleshooting"><span>19</span>常见问题</a>
         </nav>
         <div class="sidebar-footer">
           <span class="status-dot"></span>
@@ -104,6 +105,7 @@
               <a class="topic" href="#cherry-studio"><span class="topic-icon">CS</span><strong>在电脑上使用 Cherry Studio</strong><small>Windows、macOS、Linux 多模型聊天</small></a>
               <a class="topic" href="#cherry-studio-app"><span class="topic-icon">▯</span><strong>在手机上使用 ChatAPI</strong><small>Cherry Studio App 的 Android 与 iOS 配置</small></a>
               <a class="topic" href="#api"><span class="topic-icon">{ }</span><strong>接入自己的程序</strong><small>cURL、Python 与 JavaScript 示例</small></a>
+              <a class="topic" href="#images"><span class="topic-icon">▧</span><strong>生成与编辑图片</strong><small>同步、异步与 Gemini 批量生图接口</small></a>
               <a class="topic" href="#usage"><span class="topic-icon">▥</span><strong>核对消费</strong><small>查看 Token、费用、延迟和错误请求</small></a>
               <a class="topic" href="#troubleshooting"><span class="topic-icon">!</span><strong>调用失败排查</strong><small>401、403、429 与模型不可用</small></a>
             </div>
@@ -208,9 +210,11 @@ curl "$CHATAPI_BASE_URL/models" \
               <tr><th>API 根地址</th><td><code>https://chatapi.bwliangc.com/v1</code></td></tr>
               <tr><th>备用根地址</th><td><code>https://chatapis.cc/v1</code></td></tr>
               <tr><th>认证请求头</th><td><code>Authorization: Bearer sk-your-api-key</code></td></tr>
-              <tr><th>常用端点</th><td><code>GET /models</code>、<code>POST /responses</code>、<code>POST /chat/completions</code>、<code>POST /messages</code></td></tr>
+              <tr><th>常用端点</th><td><code>GET /models</code>、<code>POST /responses</code>、<code>POST /chat/completions</code>、<code>POST /messages</code>、<code>POST /images/generations</code>、<code>POST /images/edits</code></td></tr>
             </tbody></table></div>
           </section>
+
+          <p>图片生成、编辑、异步任务及识图调用详见 <a href="#images">图片 API</a>。</p>
 
           <section><h2>Responses API</h2>
             <div class="code-block" data-language="bash"><div class="code-head"><span>cURL</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl "https://chatapi.bwliangc.com/v1/responses" \
@@ -257,6 +261,337 @@ console.log(response.output_text);</code></pre></div>
           <aside class="callout warning"><strong>模型名会变化</strong><p>示例模型用于说明请求格式。实际调用前请查询 <code>/v1/models</code> 或在“渠道状态”确认当前分组支持的模型。</p></aside>
         </article>
 
+        <article class="doc-page" data-page="images" data-title="图片 API">
+          <header class="page-header"><p class="eyebrow">IMAGE API</p><h1>图片 API</h1><p class="lead">调用图片生成、编辑与识图接口，使用异步任务处理长耗时生图，并下载 Gemini 批量生成结果。</p></header>
+
+          <section><h2>准备密钥与选择接口</h2>
+            <p>先创建 <a href="#keys">API 密钥</a>，确认分组支持目标模型、已开启图片生成权限，并有可用额度。图片模型与聊天模型的权限可能不同；下列示例模型名需替换为当前分组实际可用的模型。</p>
+            <div class="data-table endpoint-table"><table><thead><tr><th>用途</th><th>请求端点</th><th>适用分组</th></tr></thead><tbody>
+              <tr><td>文本生成图片</td><td><code>POST /v1/images/generations</code></td><td>OpenAI、Grok；综合分组按模型路由</td></tr>
+              <tr><td>参考图编辑 / 图生图</td><td><code>POST /v1/images/edits</code></td><td>OpenAI、Grok；综合分组按模型路由</td></tr>
+              <tr><td>异步生成 / 编辑</td><td><code>POST /v1/images/generations/async</code><br /><code>POST /v1/images/edits/async</code></td><td>OpenAI、Grok，需站点开启异步图片任务</td></tr>
+              <tr><td>查询异步任务</td><td><code>GET /v1/images/tasks/{task_id}</code></td><td>使用提交任务的同一 API 密钥</td></tr>
+              <tr><td>Gemini 原生生图</td><td><code>POST /v1beta/models/{model}:generateContent</code></td><td>Gemini 兼容分组；Antigravity 前缀为 <code>/antigravity/v1beta</code></td></tr>
+              <tr><td>Gemini 批量生图</td><td><code>POST /v1/images/batches</code></td><td>开启批量生图权限的 Gemini 分组</td></tr>
+              <tr><td>图片理解 / 识图</td><td><code>POST /v1/chat/completions</code><br /><code>POST /v1/responses</code></td><td>支持图片输入的聊天模型</td></tr>
+            </tbody></table></div>
+            <p>本页 cURL 示例先设置以下环境变量。Gemini 原生接口使用 <code>/v1beta</code>，因此额外保留站点根地址：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>Terminal</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>export CHATAPI_ORIGIN=&quot;https://chatapi.bwliangc.com&quot;
+export CHATAPI_BASE_URL=&quot;$CHATAPI_ORIGIN/v1&quot;
+export CHATAPI_API_KEY=&quot;sk-your-api-key&quot;
+
+curl --fail-with-body &quot;$CHATAPI_BASE_URL/models&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot;</code></pre></div>
+            <p>备用站根地址为 <code>https://chatapis.cc</code>。OpenAI 分组也可通过已配置的兼容图片渠道调用 Gemini 图片模型，具体以渠道支持情况为准；Gemini 原生分组请使用 <code>/v1beta</code> 格式。以下请求格式依据项目当前实现核对，日期为 2026-10-07。</p>
+          </section>
+
+          <section><h2>文本生成图片</h2>
+            <p>OpenAI 图片模型示例：请求 JSON 会返回图片数据，将响应保存为 <code>image-response.json</code>，再按下方说明提取图片。</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · OpenAI Images</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl --fail-with-body &quot;$CHATAPI_BASE_URL/images/generations&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{
+    &quot;model&quot;: &quot;gpt-image-2.5-flare&quot;,
+    &quot;prompt&quot;: &quot;一只橘猫坐在窗边，午后阳光，水彩插画&quot;,
+    &quot;n&quot;: 1,
+    &quot;size&quot;: &quot;1024x1024&quot;,
+    &quot;quality&quot;: &quot;auto&quot;,
+    &quot;output_format&quot;: &quot;png&quot;
+  }&#x27; \
+  -o image-response.json</code></pre></div>
+            <div class="data-table"><table><thead><tr><th>参数</th><th>说明</th></tr></thead><tbody>
+              <tr><td><code>model</code></td><td>填写图片模型，例如 <code>gpt-image-2.5-flare</code>、<code>gpt-image-2.5-sunburst</code> 或分组支持的其他图片模型</td></tr>
+              <tr><td><code>prompt</code></td><td>描述画面、构图、风格和需要保留的文字；编辑时写明修改目标</td></tr>
+              <tr><td><code>n</code></td><td>输出数量，默认 1；最大数量由所选模型和渠道决定</td></tr>
+              <tr><td><code>size</code></td><td>例如 <code>1024x1024</code>、<code>1536x1024</code>、<code>1024x1536</code>；自动尺寸和自定义尺寸取决于模型</td></tr>
+              <tr><td><code>quality</code></td><td>模型相关的质量选项；项目的 GPT Image 2.5 支持 <code>auto</code>、<code>xhigh</code>、<code>max</code></td></tr>
+              <tr><td><code>output_format</code></td><td>GPT Image 可按模型能力指定 <code>png</code>、<code>jpeg</code>、<code>webp</code>；保存时使用对应扩展名</td></tr>
+              <tr><td><code>response_format</code></td><td>支持该字段的渠道可指定 <code>url</code> 或 <code>b64_json</code>；实际响应可能因模型及渠道而异</td></tr>
+              <tr><td><code>background</code> / <code>mask</code></td><td>透明背景和局部编辑能力取决于模型，调用前确认渠道支持</td></tr>
+            </tbody></table></div>
+            <p>Grok 分组使用相同的生成端点，但采用 Grok 参数格式，例如：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · Grok Images</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl --fail-with-body &quot;$CHATAPI_BASE_URL/images/generations&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{
+    &quot;model&quot;: &quot;grok-imagine-image&quot;,
+    &quot;prompt&quot;: &quot;一只橘猫坐在窗边，水彩插画&quot;,
+    &quot;n&quot;: 1,
+    &quot;aspect_ratio&quot;: &quot;1:1&quot;,
+    &quot;response_format&quot;: &quot;url&quot;
+  }&#x27; \
+  -o image-response.json</code></pre></div>
+          </section>
+
+          <section><h2>图片编辑与图生图</h2>
+            <p>上传本地图片时使用 <code>multipart/form-data</code>。先准备当前目录中的 <code>input.png</code>，由 cURL 自动生成 Content-Type 和 boundary：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · 上传参考图</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl --fail-with-body &quot;$CHATAPI_BASE_URL/images/edits&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot; \
+  -F &#x27;model=gpt-image-2.5-flare&#x27; \
+  -F &#x27;prompt=保留人物和构图，将背景改为海边日落&#x27; \
+  -F &#x27;image=@input.png;type=image/png&#x27; \
+  -F &#x27;size=1024x1024&#x27; \
+  -F &#x27;output_format=png&#x27; \
+  -o image-response.json</code></pre></div>
+            <p>多张参考图可重复传入 <code>-F 'image[]=@文件名.png'</code>；模型支持局部编辑时可添加 <code>-F 'mask=@mask.png;type=image/png'</code>。文件类型、数量、大小及遮罩要求以所选模型为准。</p>
+            <p>OpenAI 分组也接受 JSON 引用图片：<code>images[].image_url</code> 可填写可访问的图片 URL 或完整的 <code>data:image/png;base64,...</code>。替换下面的示例 URL 后再调用；此格式不支持 <code>images[].file_id</code>。</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · URL 参考图</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl --fail-with-body &quot;$CHATAPI_BASE_URL/images/edits&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{
+    &quot;model&quot;: &quot;gpt-image-2.5-flare&quot;,
+    &quot;prompt&quot;: &quot;保留产品形状，将背景改为白色摄影棚&quot;,
+    &quot;images&quot;: [{&quot;image_url&quot;: &quot;https://example.com/input.png&quot;}],
+    &quot;output_format&quot;: &quot;png&quot;
+  }&#x27; \
+  -o image-response.json</code></pre></div>
+            <p>JSON 遮罩格式为 <code>"mask": {"image_url": "https://example.com/mask.png"}</code>。Grok 分组的 JSON 编辑请求使用 <code>"model": "grok-imagine-image"</code> 和 <code>"image": {"url": "https://example.com/input.png", "type": "image_url"}</code>，其余参数按 Grok 模型能力填写。</p>
+          </section>
+
+          <section><h2>读取结果并保存图片</h2>
+            <p>同步 Images 响应的图片在 <code>data</code> 数组中。<code>b64_json</code> 是需要解码的图片字节；<code>url</code> 是下载地址。响应结构示意如下，省略号不是可解码的图片：</p>
+            <div class="code-block" data-language="json"><div class="code-head"><span>JSON · 响应结构示意</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>{
+  &quot;created&quot;: 1791331200,
+  &quot;data&quot;: [{&quot;b64_json&quot;: &quot;...&quot;}]
+}</code></pre></div>
+            <p>下列 Python 脚本无需额外依赖，读取前面保存的 JSON 并保存所有图片。它也能处理异步任务的 <code>result.data</code>；图片格式应与请求的 <code>output_format</code> 一致：</p>
+            <div class="code-block" data-language="python"><div class="code-head"><span>Python · 保存 PNG 图片</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>import base64
+import json
+from pathlib import Path
+from urllib.request import urlopen
+
+payload = json.loads(Path(&quot;image-response.json&quot;).read_text())
+if payload.get(&quot;error&quot;):
+    raise RuntimeError(payload[&quot;error&quot;])
+if payload.get(&quot;status&quot;) in {&quot;processing&quot;, &quot;failed&quot;}:
+    raise RuntimeError(f&quot;任务尚未成功：{payload[&#x27;status&#x27;]}&quot;)
+result = payload.get(&quot;result&quot;, payload)
+images = result.get(&quot;data&quot;, [])
+if not images:
+    raise RuntimeError(&quot;响应中没有图片，请检查任务状态或错误信息&quot;)
+for index, item in enumerate(images, start=1):
+    if item.get(&quot;b64_json&quot;):
+        image_bytes = base64.b64decode(item[&quot;b64_json&quot;])
+    elif item.get(&quot;url&quot;):
+        with urlopen(item[&quot;url&quot;], timeout=60) as response:
+            image_bytes = response.read()
+    else:
+        raise RuntimeError(&quot;图片缺少 b64_json 或 url&quot;)
+    Path(f&quot;image-{index}.png&quot;).write_bytes(image_bytes)</code></pre></div>
+            <p>下载链接可能过期，请及时保存。图片计费可能按图片数量、分辨率或 Token 计算；实际费用请在 <a href="#usage">用量与账单</a>核对，异步提交成功并不代表图片已生成。</p>
+          </section>
+
+          <section><h2>OpenAI Python 与 JavaScript SDK</h2>
+            <p>在服务端安装 <code>openai</code> SDK，并设置 <code>CHATAPI_API_KEY</code> 和 <code>CHATAPI_BASE_URL</code> 环境变量。以下示例生成并保存第一张图片：</p>
+            <div class="code-block" data-language="python"><div class="code-head"><span>Python · pip install openai</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>import base64
+import os
+from pathlib import Path
+from urllib.request import urlopen
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ[&quot;CHATAPI_API_KEY&quot;],
+    base_url=os.environ[&quot;CHATAPI_BASE_URL&quot;],
+    timeout=600.0,
+    max_retries=0,
+)
+response = client.images.generate(
+    model=&quot;gpt-image-2.5-flare&quot;,
+    prompt=&quot;一只橘猫坐在窗边，水彩插画&quot;,
+    n=1,
+    size=&quot;1024x1024&quot;,
+    output_format=&quot;png&quot;,
+)
+if not response.data:
+    raise RuntimeError(&quot;响应中没有图片&quot;)
+image = response.data[0]
+if image.b64_json:
+    image_bytes = base64.b64decode(image.b64_json)
+elif image.url:
+    with urlopen(image.url, timeout=60) as download:
+        image_bytes = download.read()
+else:
+    raise RuntimeError(&quot;图片缺少 b64_json 或 url&quot;)
+Path(&quot;image.png&quot;).write_bytes(image_bytes)</code></pre></div>
+            <p>Python SDK 编辑图片时将上面的生成调用改为：</p>
+            <div class="code-block" data-language="python"><div class="code-head"><span>Python · 图片编辑</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>with open(&quot;input.png&quot;, &quot;rb&quot;) as source:
+    response = client.images.edit(
+        model=&quot;gpt-image-2.5-flare&quot;,
+        image=source,
+        prompt=&quot;保留主体，将背景改为海边日落&quot;,
+        output_format=&quot;png&quot;,
+    )
+# 使用上面的 response.data 保存逻辑提取结果。</code></pre></div>            <div class="code-block" data-language="javascript"><div class="code-head"><span>Node.js · npm install openai</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>import OpenAI from &quot;openai&quot;;
+import { writeFile } from &quot;node:fs/promises&quot;;
+
+const client = new OpenAI({
+  apiKey: process.env.CHATAPI_API_KEY,
+  baseURL: process.env.CHATAPI_BASE_URL,
+  timeout: 600_000,
+  maxRetries: 0,
+});
+const response = await client.images.generate({
+  model: &quot;gpt-image-2.5-flare&quot;,
+  prompt: &quot;一只橘猫坐在窗边，水彩插画&quot;,
+  n: 1,
+  size: &quot;1024x1024&quot;,
+  output_format: &quot;png&quot;,
+});
+const image = response.data?.[0];
+let bytes;
+if (image?.b64_json) {
+  bytes = Buffer.from(image.b64_json, &quot;base64&quot;);
+} else if (image?.url) {
+  const download = await fetch(image.url, {
+    signal: AbortSignal.timeout(60_000),
+  });
+  if (!download.ok) throw new Error(`下载失败：${download.status}`);
+  bytes = Buffer.from(await download.arrayBuffer());
+} else {
+  throw new Error(&quot;响应中没有图片&quot;);
+}
+await writeFile(&quot;image.png&quot;, bytes);</code></pre></div>
+            <p>SDK 超时设置只控制客户端等待时间，无法消除代理或 CDN 的超时。长耗时任务可使用下一节的异步端点。</p>
+          </section>
+
+          <section><h2>异步生成、编辑与轮询</h2>
+            <p>异步接口先返回 <code>202 Accepted</code>，随后通过任务 ID 查询结果，适合容易遇到 524 或连接超时的生图请求。站点需开启异步图片任务并配置结果存储；当前仅支持 OpenAI 和 Grok 分组，且不能提交 <code>stream: true</code>。</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · 提交异步任务</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl --fail-with-body -i &quot;$CHATAPI_BASE_URL/images/generations/async&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{
+    &quot;model&quot;: &quot;gpt-image-2.5-flare&quot;,
+    &quot;prompt&quot;: &quot;海边灯塔，暴风雨后的晚霞，电影感构图&quot;,
+    &quot;size&quot;: &quot;1536x1024&quot;,
+    &quot;output_format&quot;: &quot;png&quot;
+  }&#x27;</code></pre></div>            <div class="code-block" data-language="json"><div class="code-head"><span>JSON · 提交响应示意</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>{
+  &quot;id&quot;: &quot;imgtask_0123456789abcdef&quot;,
+  &quot;task_id&quot;: &quot;imgtask_0123456789abcdef&quot;,
+  &quot;object&quot;: &quot;image.generation.task&quot;,
+  &quot;status&quot;: &quot;processing&quot;,
+  &quot;created_at&quot;: 1791331200,
+  &quot;expires_at&quot;: 1791417600,
+  &quot;poll_url&quot;: &quot;/v1/images/tasks/imgtask_0123456789abcdef&quot;
+}</code></pre></div>
+            <p>响应头中的 <code>Location</code> 是查询路径，<code>Retry-After: 3</code> 建议间隔 3 秒查询。将下面的任务 ID 替换为实际返回值，并使用提交时的同一密钥：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · 查询任务</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>export CHATAPI_IMAGE_TASK_ID=&quot;imgtask_0123456789abcdef&quot;
+
+curl --fail-with-body &quot;$CHATAPI_BASE_URL/images/tasks/$CHATAPI_IMAGE_TASK_ID&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot; \
+  -o image-response.json</code></pre></div>
+            <div class="data-table"><table><thead><tr><th>status</th><th>下一步</th></tr></thead><tbody>
+              <tr><td><code>processing</code></td><td>等待后继续查询同一任务，不要重新提交生成请求</td></tr>
+              <tr><td><code>completed</code></td><td>从 <code>result.data[].url</code> 下载全部图片；<code>image_url</code> 是第一张图片的快捷字段</td></tr>
+              <tr><td><code>failed</code></td><td>读取 <code>error</code> 与 <code>http_status</code>；查询接口的 HTTP 200 不代表生成成功</td></tr>
+            </tbody></table></div>
+            <p>异步完成后返回存储链接，即使上游输出 Base64，也会转换为 <code>result.data[].url</code>。任务记录从最近一次状态更新起保留 24 小时，执行时间最多 30 分钟；下载链接有效期由站点配置决定。编辑任务沿用同步编辑的 JSON 或文件上传请求，只需把端点改为 <code>/images/edits/async</code>。</p>
+          </section>
+
+          <section><h2>通过 Responses 工具生成图片</h2>
+            <p>在 OpenAI 分组中，需要结合对话上下文生图时，可显式调用 <code>image_generation</code> 工具。顶层 <code>model</code> 填支持 Responses 的文本模型，图片模型放在工具的 <code>model</code> 中：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · Responses 图片工具</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl --fail-with-body &quot;$CHATAPI_BASE_URL/responses&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{
+    &quot;model&quot;: &quot;gpt-5.6-luna&quot;,
+    &quot;input&quot;: &quot;生成一张橘猫坐在窗边的水彩插画&quot;,
+    &quot;tools&quot;: [{
+      &quot;type&quot;: &quot;image_generation&quot;,
+      &quot;model&quot;: &quot;gpt-image-2.5-flare&quot;,
+      &quot;size&quot;: &quot;1024x1024&quot;
+    }],
+    &quot;tool_choice&quot;: {&quot;type&quot;: &quot;image_generation&quot;}
+  }&#x27; \
+  -o response-image.json</code></pre></div>
+            <p>图片位于 <code>output</code> 中类型为 <code>image_generation_call</code> 的项，其 <code>result</code> 为 Base64 图片；遍历这些项并解码保存。该响应使用 Responses 结构，与 Images 的 <code>data[]</code> 结构不同。</p>
+          </section>
+
+          <section><h2>Gemini 原生图片生成</h2>
+            <p>Gemini 分组使用原生 <code>generateContent</code> 格式。先从 <code>GET /v1beta/models</code> 确认可用图片模型，再按模型能力设置宽高比与图片尺寸。Antigravity 分组将模型列表和生成请求的路径前缀改为 <code>/antigravity/v1beta</code>：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · Gemini generateContent</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl --fail-with-body \
+  &quot;$CHATAPI_ORIGIN/v1beta/models/gemini-3.1-flash-image:generateContent&quot; \
+  -H &quot;x-goog-api-key: $CHATAPI_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{
+    &quot;contents&quot;: [{
+      &quot;role&quot;: &quot;user&quot;,
+      &quot;parts&quot;: [{&quot;text&quot;: &quot;生成一张橘猫坐在窗边的水彩插画&quot;}]
+    }],
+    &quot;generationConfig&quot;: {
+      &quot;responseModalities&quot;: [&quot;TEXT&quot;, &quot;IMAGE&quot;],
+      &quot;imageConfig&quot;: {&quot;aspectRatio&quot;: &quot;1:1&quot;, &quot;imageSize&quot;: &quot;1K&quot;}
+    }
+  }&#x27; \
+  -o gemini-image-response.json</code></pre></div>
+            <p>输出图片位于 <code>candidates[].content.parts[].inlineData.data</code>，为 Base64 字节；<code>inlineData.mimeType</code> 表示图片格式。参考图编辑可在同一 <code>parts</code> 中加入 <code>{"inlineData": {"mimeType": "image/png", "data": "纯 Base64 图片字节"}}</code>，与文字指令一起发送；此处 Base64 不带 Data URL 前缀。</p>
+          </section>
+
+          <section><h2>Gemini 批量生图与下载</h2>
+            <p>批量接口需要站点开启功能，且密钥绑定的 Gemini 分组同时开启图片生成和批量生图权限。先查询专用模型列表，按返回的 <code>id</code> 与 <code>provider</code> 选择模型；Provider 可以是 <code>gemini_api</code> 或 <code>vertex</code>：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · 查询批量模型</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl --fail-with-body &quot;$CHATAPI_BASE_URL/images/batches/models&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot;</code></pre></div>            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · 提交批量任务</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl --fail-with-body &quot;$CHATAPI_BASE_URL/images/batches&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Idempotency-Key: cover-series-001&quot; \
+  -d &#x27;{
+    &quot;model&quot;: &quot;gemini-3.1-flash-image&quot;,
+    &quot;provider&quot;: &quot;gemini_api&quot;,
+    &quot;items&quot;: [
+      {&quot;custom_id&quot;: &quot;cover_001&quot;, &quot;prompt&quot;: &quot;春日花园的水彩封面&quot;, &quot;output_count&quot;: 1},
+      {&quot;custom_id&quot;: &quot;cover_002&quot;, &quot;prompt&quot;: &quot;夏日海边的水彩封面&quot;, &quot;output_count&quot;: 1}
+    ],
+    &quot;image_size&quot;: &quot;1K&quot;
+  }&#x27;</code></pre></div>
+            <p>提交返回 HTTP 200 和 <code>image.batch</code> 对象，记录其 <code>id</code>。<code>custom_id</code> 在同一批次内必须唯一；<code>output_count</code> 默认 1，每项最多 4，展开后每批最多 200 张。当前批量接口仅接受 <code>image_size: "1K"</code>。相同提交的重试使用同一个 <code>Idempotency-Key</code>，新批次使用新值。参考图可通过每项的 <code>reference_images</code> 传入，包含 <code>mime_type</code> 和纯 Base64 <code>data</code>。</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · 查询批次与结果项</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>export CHATAPI_IMAGE_BATCH_ID=&quot;imgbatch_replace-with-actual-id&quot;
+
+curl --fail-with-body &quot;$CHATAPI_BASE_URL/images/batches/$CHATAPI_IMAGE_BATCH_ID&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot;
+
+curl --fail-with-body &quot;$CHATAPI_BASE_URL/images/batches/$CHATAPI_IMAGE_BATCH_ID/items&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot;</code></pre></div>
+            <p>任务通常依次经过 <code>queued</code>、<code>running</code>、<code>processing_results</code>、<code>settling</code>、<code>completed</code>；失败或取消状态为 <code>failed</code>、<code>cancelled</code>。<code>completed</code> 时仍需核对 <code>success_count</code>、<code>fail_count</code> 及结果项错误。结果项列表可用 <code>?limit=100&amp;cursor=0</code> 分页，<code>cursor</code> 为偏移量；返回 <code>has_more: true</code> 时按已读取数量增加偏移继续查询。</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · 完成后下载 ZIP</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl --fail-with-body &quot;$CHATAPI_BASE_URL/images/batches/$CHATAPI_IMAGE_BATCH_ID/download&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot; \
+  -o batch-images.zip</code></pre></div>
+            <p>单张结果可通过 <code>GET /v1/images/batches/{id}/items/{custom_id}/content</code> 下载；取消接口为 <code>POST /v1/images/batches/{id}/cancel</code>。批量生图按成功图片结算，取消时已经成功的图片仍会计费；结果保存时间以站点设置为准，清理后下载返回 410。</p>
+          </section>
+
+          <section><h2>图片理解与识图</h2>
+            <p>分析现有图片时选择支持视觉输入的聊天模型，将文字和图片组成消息内容。下面展示 Chat Completions 格式，替换图片 URL 后调用：</p>
+            <div class="code-block" data-language="bash"><div class="code-head"><span>cURL · 图片输入</span><button class="copy-button" type="button" title="复制代码" aria-label="复制代码">⧉</button></div><pre><code>curl --fail-with-body &quot;$CHATAPI_BASE_URL/chat/completions&quot; \
+  -H &quot;Authorization: Bearer $CHATAPI_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{
+    &quot;model&quot;: &quot;gpt-5.6-luna&quot;,
+    &quot;messages&quot;: [{
+      &quot;role&quot;: &quot;user&quot;,
+      &quot;content&quot;: [
+        {&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;描述这张图片中的主体和场景&quot;},
+        {&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: {&quot;url&quot;: &quot;https://example.com/input.png&quot;}}
+      ]
+    }]
+  }&#x27;</code></pre></div>
+            <p>本地图片先编码为 <code>data:image/png;base64,...</code> 再放入 <code>image_url.url</code>。使用 Responses 时，消息内容类型对应为 <code>input_text</code> 和 <code>input_image</code>，图片字段为字符串 <code>image_url</code>；无需添加图片生成工具。聊天模型是否能识图取决于当前渠道支持情况。</p>
+          </section>
+
+          <section><h2>常见错误与排查</h2>
+            <div class="data-table"><table><thead><tr><th>错误或现象</th><th>检查方式</th></tr></thead><tbody>
+              <tr><td>401</td><td>核对密钥值、启用状态和有效期；Gemini 原生请求确认 <code>x-goog-api-key</code> 正确</td></tr>
+              <tr><td>403 / 图片生成被禁用</td><td>确认分组已开启图片生成权限、模型在白名单内，批量任务还需批量生图权限</td></tr>
+              <tr><td>404 / 不支持当前平台</td><td>核对分组平台与请求格式；Gemini 原生接口使用 <code>/v1beta</code></td></tr>
+              <tr><td>404 / <code>async image tasks are not enabled</code></td><td>联系站点管理员确认异步功能及结果存储配置，或使用同步接口</td></tr>
+              <tr><td>404 / <code>image task not found</code></td><td>确认任务 ID、记录有效期，并使用提交任务的同一 API 密钥</td></tr>
+              <tr><td>400 / 参数或参考图错误</td><td>核对图片模型、尺寸、质量和字段格式；OpenAI JSON 编辑用 <code>images[].image_url</code>，文件上传用 <code>image</code></td></tr>
+              <tr><td>429 / 并发限制</td><td>降低并发并延后重试；异步查询不会解除生成请求的并发限制</td></tr>
+              <tr><td>524 / 请求超时</td><td>优先提交异步任务；连接超时后先检查用量，避免直接重复提交已在执行的生成请求</td></tr>
+              <tr><td>只有 JSON，没有图片文件</td><td>解码 <code>b64_json</code> 或下载 <code>url</code>；Gemini 和 Responses 使用各自的返回结构</td></tr>
+            </tbody></table></div>
+            <p>更多密钥、余额和模型问题见 <a href="#troubleshooting">常见问题</a>，请求费用见 <a href="#usage">用量与账单</a>。</p>
+          </section>
+
+        </article>
+
         <article class="doc-page" data-page="ccswitch" data-title="CC-Switch 配置">
           <header class="page-header"><p class="eyebrow">CC-SWITCH</p><h1>CC-Switch 配置</h1><p class="lead">从 ChatAPI 一键导入供应商，无需手动编辑 Codex 配置文件。</p></header>
 
@@ -273,10 +608,10 @@ console.log(response.output_text);</code></pre></div>
           <section><h2>安装目标客户端</h2>
             <aside class="callout info"><strong>CC-Switch 不包含 AI 客户端</strong><p>CC-Switch 负责管理和切换供应商配置。使用前仍需单独安装目标客户端；ChatAPI 当前一键导入支持 Codex CLI、Codex Desktop、Claude Code 和 Gemini CLI。</p></aside>
             <div class="client-directory">
-              <a href="#codex-cli"><span>07</span><strong>Codex CLI</strong><small>终端安装、版本检查和 ChatAPI 接入</small></a>
-              <a href="#codex-desktop"><span>08</span><strong>Codex Desktop</strong><small>macOS、Windows 下载与配置目录</small></a>
-              <a href="#claude-code"><span>09</span><strong>Claude Code</strong><small>各系统安装命令和 Messages API 分组</small></a>
-              <a href="#gemini-cli"><span>10</span><strong>Gemini CLI</strong><small>npm、Homebrew 与临时运行方式</small></a>
+              <a href="#codex-cli"><span>08</span><strong>Codex CLI</strong><small>终端安装、版本检查和 ChatAPI 接入</small></a>
+              <a href="#codex-desktop"><span>09</span><strong>Codex Desktop</strong><small>macOS、Windows 下载与配置目录</small></a>
+              <a href="#claude-code"><span>10</span><strong>Claude Code</strong><small>各系统安装命令和 Messages API 分组</small></a>
+              <a href="#gemini-cli"><span>11</span><strong>Gemini CLI</strong><small>npm、Homebrew 与临时运行方式</small></a>
             </div>
 
             <div class="data-table"><table><thead><tr><th>目标客户端</th><th>创建密钥时选择</th><th>CCS 导入应用</th></tr></thead><tbody>
