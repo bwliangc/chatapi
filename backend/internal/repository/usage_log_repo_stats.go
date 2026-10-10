@@ -884,9 +884,9 @@ func buildCostCalculatorUsageCostExpression(alias string, args []any, accountUsa
 			}
 			args = append(args, period.UsageCostRate)
 			ratePlaceholder := fmt.Sprintf("$%d::numeric", len(args))
-			_, _ = builder.WriteString(fmt.Sprintf(" WHEN %s THEN %s", condition, ratePlaceholder))
+			_, _ = fmt.Fprintf(&builder, " WHEN %s THEN %s", condition, ratePlaceholder)
 		}
-		_, _ = builder.WriteString(fmt.Sprintf(" ELSE %s END", defaultRatePlaceholder))
+		_, _ = fmt.Fprintf(&builder, " ELSE %s END", defaultRatePlaceholder)
 		rateExpr = builder.String()
 	}
 

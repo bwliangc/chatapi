@@ -33,13 +33,13 @@ func (r *dashboardAggregationRepository) SyncGroupDynamicRates(ctx context.Conte
 	for rows.Next() {
 		var g candidate
 		if err := rows.Scan(&g.id, &g.raw, &g.rate, &g.created, &g.updated); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		groups = append(groups, g)
 	}
 	err = rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (r *dashboardAggregationRepository) SyncGroupDynamicRates(ctx context.Conte
 	if err == nil {
 		err = retainedRows.Err()
 	}
-	retainedRows.Close()
+	_ = retainedRows.Close()
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (r *dashboardAggregationRepository) groupDynamicRateUsage(ctx context.Conte
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	history := make([]float64, hours)
 	var current float64
 	for rows.Next() {

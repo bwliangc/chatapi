@@ -201,7 +201,7 @@ func (m *modelDetectionBankManager) get(ctx context.Context, url string, maxByte
 	if err != nil {
 		return nil, errors.New("无法连接 ModelTrace 更新源，请检查网络后重试")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("ModelTrace 更新源返回 HTTP %d（403/429 可能为 GitHub 限流）", resp.StatusCode)
 	}

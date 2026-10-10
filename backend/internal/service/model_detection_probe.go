@@ -23,7 +23,7 @@ const modelDetectionOutputLimit = 128 * 1024
 func (s *AccountTestService) probeModelIdentity(ctx context.Context, account *Account, model, prompt string) (string, string, error) {
 	model = account.GetMappedModel(model)
 	protocol := "responses"
-	payload := map[string]any{}
+	var payload map[string]any
 	headers := http.Header{"Content-Type": {"application/json"}, "Accept": {"text/event-stream"}}
 	apiURL := ""
 	if account.Platform == PlatformAnthropic {
@@ -152,7 +152,7 @@ func (s *AccountTestService) probeModelIdentity(ctx context.Context, account *Ac
 	if err != nil {
 		return "", "", errors.New("上游请求失败，请检查账号认证、代理或网络")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return "", "", fmt.Errorf("上游返回 HTTP %d", resp.StatusCode)
 	}
@@ -268,7 +268,7 @@ func parseModelDetectionStream(body io.Reader, protocol string) (string, string,
 		if output.Len()+len(text) > modelDetectionOutputLimit {
 			return errors.New("上游回答超过长度限制")
 		}
-		output.WriteString(text)
+		_, _ = output.WriteString(text)
 		if len(actual) > 160 {
 			return errors.New("上游模型名称无效")
 		}

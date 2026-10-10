@@ -154,7 +154,11 @@ func (r *detectionSnapshotRepo) UpdateExtra(ctx context.Context, _ int64, update
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	r.snapshot = updates[ModelDetectionSnapshotExtraKey].(ModelDetectionSnapshot)
+	snapshot, ok := updates[ModelDetectionSnapshotExtraKey].(ModelDetectionSnapshot)
+	if !ok {
+		return errors.New("invalid model detection snapshot type")
+	}
+	r.snapshot = snapshot
 	return r.err
 }
 func TestModelDetectionSnapshotVerdictsAndErrors(t *testing.T) {

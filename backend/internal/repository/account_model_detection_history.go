@@ -63,7 +63,7 @@ func (r *accountRepository) ListModelDetectionHistory(ctx context.Context, accou
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var item service.ModelDetectionHistoryRecord
 		var raw []byte

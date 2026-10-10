@@ -28,7 +28,9 @@ func listLuckySecondBalanceHistory(ctx context.Context, client *dbent.Client, us
 	if err == nil {
 		err = counts.Err()
 	}
-	counts.Close()
+	if closeErr := counts.Close(); err == nil {
+		err = closeErr
+	}
 	if err != nil {
 		return nil, 0, err
 	}
@@ -42,7 +44,7 @@ ORDER BY s.awarded_at DESC,s.id DESC OFFSET $2 LIMIT $3`, userID, offset, limit)
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	codes := make([]RedeemCode, 0)
 	for rows.Next() {
 		var id int64

@@ -28,7 +28,7 @@ func (r *usageLogRepository) GetGroupRateUsage(ctx context.Context, ids []int64,
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := make([]service.GroupRateUsageBucket, 0)
 	for rows.Next() {
 		var b service.GroupRateUsageBucket
@@ -66,7 +66,7 @@ func (r *usageLogRepository) GetGroupRateHistory(ctx context.Context, ids []int6
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := make([]service.GroupRateHistoryPoint, 0)
 	for rows.Next() {
 		var point service.GroupRateHistoryPoint

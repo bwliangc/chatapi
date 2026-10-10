@@ -156,7 +156,10 @@ func (s *GroupRatesService) Get(ctx context.Context, userID int64) (*GroupRateBo
 	if err != nil {
 		return nil, err
 	}
-	snapshot := value.(groupRateUsageSnapshot)
+	snapshot, ok := value.(groupRateUsageSnapshot)
+	if !ok {
+		return nil, fmt.Errorf("invalid group rate usage snapshot type %T", value)
+	}
 	out.UsageAt = snapshot.at
 	byGroup := make(map[int64][]GroupRateUsageBucket)
 	for _, bucket := range snapshot.buckets {

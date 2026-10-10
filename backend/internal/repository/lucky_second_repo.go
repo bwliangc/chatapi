@@ -22,7 +22,7 @@ func (r *luckySecondRepository) Create(ctx context.Context, in service.LuckySeco
 	if err != nil {
 		return 0, err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	var id int64
 	err = tx.QueryRowContext(ctx, `INSERT INTO lucky_second_campaigns(name,starts_at,ends_at,timezone,total_amount,reward_count) VALUES($1,$2,$3,$4,$5,$6) RETURNING id`, in.Name, in.StartsAt, in.EndsAt, in.Timezone, in.TotalAmount, in.RewardCount).Scan(&id)
 	if err != nil {
@@ -59,7 +59,7 @@ func (r *luckySecondRepository) List(ctx context.Context, page, size int, viewer
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var c service.LuckySecondCampaign
 		var myAmount string
@@ -79,7 +79,7 @@ func (r *luckySecondRepository) Update(ctx context.Context, id int64, patch serv
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	var current service.LuckySecondCampaign
 	err = tx.QueryRowContext(ctx, `SELECT id,name,starts_at,ends_at,timezone,total_amount::text,reward_count,cancelled_at FROM lucky_second_campaigns WHERE id=$1 FOR UPDATE`, id).Scan(&current.ID, &current.Name, &current.StartsAt, &current.EndsAt, &current.Timezone, &current.TotalAmount, &current.RewardCount, &current.CancelledAt)
 	if err != nil {
@@ -108,12 +108,12 @@ func (r *luckySecondRepository) Update(ctx context.Context, id int64, patch serv
 	for rows.Next() {
 		var slotID int64
 		if err = rows.Scan(&slotID); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 	}
 	err = rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func (r *luckySecondRepository) Slots(ctx context.Context, id int64, admin bool,
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var s service.LuckySecondSlot
 		if err = rows.Scan(&s.ID, &s.SecondAt, &s.Amount, &s.State, &s.UserID, &s.Name, &s.RequestID, &s.AwardedAt); err != nil {
@@ -174,7 +174,7 @@ func (r *luckySecondRepository) Cancel(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	result, err := tx.ExecContext(ctx, `UPDATE lucky_second_campaigns SET cancelled_at=COALESCE(cancelled_at,clock_timestamp()) WHERE id=$1`, id)
 	if err != nil {
 		return err
@@ -196,7 +196,7 @@ func (r *luckySecondRepository) Begin(ctx context.Context, worker, attempt strin
 	if err != nil {
 		return false, err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	// The common DB clock and ordered slot locks define arrival/admission order
 	// across gateway instances. Register before auth/forwarding/async billing.
 	rows, err := tx.QueryContext(ctx, `SELECT s.id FROM lucky_second_slots s JOIN lucky_second_campaigns c ON c.id=s.campaign_id
@@ -210,13 +210,13 @@ func (r *luckySecondRepository) Begin(ctx context.Context, worker, attempt strin
 	for rows.Next() {
 		var id int64
 		if err = rows.Scan(&id); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return false, err
 		}
 		ids = append(ids, id)
 	}
 	err = rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if err != nil {
 		return false, err
 	}
@@ -271,7 +271,7 @@ func (r *luckySecondRepository) settleOne(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	var id int64
 	var amount string
 	// A later completed candidate never overtakes an earlier pending candidate.
@@ -312,7 +312,7 @@ func (r *luckySecondRepository) PendingCacheInvalidations(ctx context.Context) (
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	result := map[int64][]int64{}
 	for rows.Next() {
 		var id, user int64

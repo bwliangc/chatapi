@@ -19,14 +19,17 @@ func TestSettingCompareAndSwap(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	db.SetMaxOpenConns(1)
 	_, err = db.Exec(`CREATE TABLE settings (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT NOT NULL UNIQUE, value TEXT NOT NULL, updated_at DATETIME NOT NULL)`)
 	if err != nil {
 		t.Fatal(err)
 	}
 	client := dbent.NewClient(dbent.Driver(entsql.OpenDB(dialect.SQLite, db)))
-	repo := NewSettingRepository(client).(*settingRepository)
+	repo, typeOK := NewSettingRepository(client).(*settingRepository)
+	if !typeOK {
+		t.Fatal("unexpected setting repository type")
+	}
 	ctx := context.Background()
 	// Competing first writes initialize the key without overwriting the winner.
 	var wins atomic.Int32

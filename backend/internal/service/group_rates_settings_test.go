@@ -26,6 +26,8 @@ func TestGroupRatesMenuSettingsRoundTrip(t *testing.T) {
 		require.Equal(t, enabled, public.GroupRatesMenuEnabled)
 		injected, err := svc.GetPublicSettingsForInjection(ctx)
 		require.NoError(t, err)
-		require.Equal(t, enabled, injected.(*PublicSettingsInjectionPayload).GroupRatesMenuEnabled)
+		payload, ok := injected.(*PublicSettingsInjectionPayload)
+		require.True(t, ok)
+		require.Equal(t, enabled, payload.GroupRatesMenuEnabled)
 	}
 }

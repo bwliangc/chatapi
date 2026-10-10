@@ -240,7 +240,12 @@ func (s *LuckySecondService) tick() {
 	defer cancel()
 	s.enabled.Store(s.Enabled(ctx))
 	s.unfinished.Range(func(key, _ any) bool {
-		if err := s.Repo.Finish(ctx, key.(string)); err == nil {
+		slotKey, ok := key.(string)
+		if !ok {
+			slog.Error("invalid lucky second unfinished slot key", "key", key)
+			return ctx.Err() == nil
+		}
+		if err := s.Repo.Finish(ctx, slotKey); err == nil {
 			s.unfinished.Delete(key)
 		}
 		return ctx.Err() == nil

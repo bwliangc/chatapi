@@ -46,9 +46,10 @@ func openAIAutoResetPendingEmails(account *Account) ([]openAIAutoResetPendingEma
 
 func buildOpenAIAutoResetEmail(account *Account, settings AccountAutoResetSettings, result *OpenAIQuotaResetResult, strategy, triggerValue string, remaining int, now time.Time) openAIAutoResetPendingEmail {
 	strategyLabel := "Weekly usage threshold"
-	if strategy == AccountAutoResetStrategyCreditExpiry {
+	switch strategy {
+	case AccountAutoResetStrategyCreditExpiry:
 		strategyLabel = "Reset credit nearing expiry"
-	} else if strategy == AccountAutoResetStrategyBothConditions {
+	case AccountAutoResetStrategyBothConditions:
 		strategyLabel = "Weekly usage threshold or reset credit nearing expiry"
 	}
 	return openAIAutoResetPendingEmail{

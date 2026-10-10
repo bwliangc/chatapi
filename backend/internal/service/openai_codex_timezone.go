@@ -140,8 +140,8 @@ func rewriteCodexTimezoneText(text, targetTimezone, targetDate string) (string, 
 			if !changed {
 				output.Grow(len(text))
 			}
-			output.WriteString(text[copyFrom:contentStart])
-			output.WriteString(rewrittenBlock)
+			_, _ = output.WriteString(text[copyFrom:contentStart])
+			_, _ = output.WriteString(rewrittenBlock)
 			copyFrom = closeOffset
 			changed = true
 		}
@@ -150,7 +150,7 @@ func rewriteCodexTimezoneText(text, targetTimezone, targetDate string) (string, 
 	if !changed {
 		return text, false
 	}
-	output.WriteString(text[copyFrom:])
+	_, _ = output.WriteString(text[copyFrom:])
 	return output.String(), true
 }
 
@@ -186,8 +186,8 @@ func replaceCodexTimezoneTag(text, tag, replacement string) (string, bool) {
 		if !changed {
 			output.Grow(len(text))
 		}
-		output.WriteString(text[copyFrom:valueStart])
-		output.WriteString(replacement)
+		_, _ = output.WriteString(text[copyFrom:valueStart])
+		_, _ = output.WriteString(replacement)
 		copyFrom = closeOffset
 		scanFrom = closeOffset + len(closeTag)
 		changed = true
@@ -195,6 +195,6 @@ func replaceCodexTimezoneTag(text, tag, replacement string) (string, bool) {
 	if !changed {
 		return text, false
 	}
-	output.WriteString(text[copyFrom:])
+	_, _ = output.WriteString(text[copyFrom:])
 	return output.String(), true
 }

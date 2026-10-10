@@ -69,7 +69,7 @@ func testPlatformMigrationPreservesCustom(t *testing.T, filename, newPlatform st
 		{"channel_monitors", "provider", "channel_monitors_provider_check"},
 		{"channel_monitor_request_templates", "provider", "channel_monitor_request_templates_provider_check"},
 	} {
-		_, err := tx.ExecContext(ctx, fmt.Sprintf(`ALTER TABLE %s DROP CONSTRAINT %s;
+		_, err := tx.ExecContext(ctx, fmt.Sprintf(`ALTER TABLE %s DROP CONSTRAINT IF EXISTS %s;
 ALTER TABLE %s ADD CONSTRAINT %s CHECK (%s IN
 ('anthropic', 'openai', 'gemini', 'antigravity', 'grok', 'custom', 'kimi', 'zhipu', 'deepseek'));`,
 			spec.table, spec.constraint, spec.table, spec.constraint, spec.column))
