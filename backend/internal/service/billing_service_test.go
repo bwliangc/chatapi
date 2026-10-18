@@ -138,6 +138,27 @@ func TestGetModelPricing_CaseInsensitive(t *testing.T) {
 	require.Equal(t, p1.InputPricePerToken, p2.InputPricePerToken)
 }
 
+func TestCalculateCost_GeminiArgonAliasesUseSpecificFallback(t *testing.T) {
+	svc := newTestBillingService()
+	for _, tc := range []struct {
+		model string
+		cost  float64
+	}{
+		{"gemini-4-argon-high", 2.11},
+		{"gemini-4-argon-medium", 2.11},
+		{"gemini-4-argon-low", 2.11},
+		{"gemini-4-argon-cyber-permissive-high", 4.22},
+	} {
+		t.Run(tc.model, func(t *testing.T) {
+			cost, err := svc.CalculateCost(tc.model, UsageTokens{
+				InputTokens: 1_000_000, OutputTokens: 10_000, CacheReadTokens: 100_000,
+			}, 1)
+			require.NoError(t, err)
+			require.InDelta(t, tc.cost, cost.TotalCost, 1e-10)
+		})
+	}
+}
+
 func TestGetModelPricing_JevLatestInputOnlyAndChannelOverride(t *testing.T) {
 	svc := newTestBillingService()
 	pricing, err := svc.GetModelPricing("jev-latest")
