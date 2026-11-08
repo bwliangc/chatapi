@@ -614,7 +614,7 @@ describe('user KeysView column settings', () => {
     expect(wrapper.get('[data-test="base-dialog"]').text()).toContain('Import to CCS')
     expect(wrapper.get('[data-test="ccs-app-codex"]').attributes('aria-pressed')).toBe('true')
     expect((wrapper.get('[data-test="ccs-primary-model"]').element as HTMLInputElement).value).toBe(
-      'gpt-5.5'
+      'gpt-6.1-sol'
     )
     expect(wrapper.find('[data-test="ccs-claude-models"]').exists()).toBe(false)
 

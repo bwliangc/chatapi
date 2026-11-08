@@ -1,6 +1,7 @@
 import type { GroupPlatform } from '@/types'
+import { buildCodexApiKeyAuthConfig } from '@/utils/codexAuthConfig'
 
-export const OPENAI_CC_SWITCH_CODEX_MODEL = 'gpt-5.5'
+export const OPENAI_CC_SWITCH_CODEX_MODEL = 'gpt-6.1-sol'
 export const GROK_CC_SWITCH_MODEL = 'grok-4.5'
 
 export type CcSwitchAppType = 'claude' | 'codex' | 'gemini' | 'grokbuild'
@@ -91,6 +92,7 @@ export function resolveCcSwitchImportConfig(
 
 export function buildCcSwitchImportDeeplink(input: CcSwitchImportDeeplinkInput): string {
   const config = resolveCcSwitchImportConfig(input.platform, input.app, input.baseUrl)
+  const model = (input.model || config.model)?.trim()
   const entries: [string, string][] = [
     ['resource', 'provider'],
     ['app', config.app],
@@ -104,7 +106,7 @@ export function buildCcSwitchImportDeeplink(input: CcSwitchImportDeeplinkInput):
     ['usageAutoInterval', '30']
   ]
 
-  const modelEntries: [string, string | undefined][] = [['model', input.model || config.model]]
+  const modelEntries: [string, string | undefined][] = [['model', model]]
   if (config.app === 'claude') {
     modelEntries.push(
       ['haikuModel', input.haikuModel],
@@ -120,6 +122,24 @@ export function buildCcSwitchImportDeeplink(input: CcSwitchImportDeeplinkInput):
       entries.splice(insertAt, 0, [key, trimmedValue])
       insertAt += 1
     }
+  }
+
+  if (config.app === 'codex') {
+    // CC Switch's embedded-config import preserves provider auth and headers.
+    // It deliberately leaves global [features] settings to the user.
+    const modelConfig = model ? `model = ${JSON.stringify(model)}\n` : ''
+    const codexConfig = `model_provider = "sub2api"
+${modelConfig}web_search = "live"
+
+[model_providers.sub2api]
+name = "Sub2API"
+base_url = ${JSON.stringify(config.endpoint)}
+wire_api = "responses"
+${buildCodexApiKeyAuthConfig(input.apiKey)}
+`
+    const payload = JSON.stringify({ config: codexConfig })
+    const bytes = new TextEncoder().encode(payload)
+    entries.push(['config', btoa(Array.from(bytes, (byte) => String.fromCharCode(byte)).join(''))])
   }
 
   return `ccswitch://v1/import?${new URLSearchParams(entries).toString()}`
