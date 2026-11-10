@@ -299,6 +299,9 @@ type SystemSettings struct {
 	OpenAIAdvancedSchedulerEnabled                         bool
 	OpenAIAdvancedSchedulerStickyWeightedEnabled           bool
 	OpenAIAdvancedSchedulerSubscriptionPriorityEnabled     bool
+	OpenAIAdvancedSchedulerWeeklyExpiryPriorityEnabled     bool
+	OpenAIAdvancedSchedulerWeeklyExpiryWindowHours         string
+	OpenAIAdvancedSchedulerWeeklyExpiryWeight              string
 	OpenAIAdvancedSchedulerLBTopK                          string
 	OpenAIAdvancedSchedulerWeightPriority                  string
 	OpenAIAdvancedSchedulerWeightLoad                      string
