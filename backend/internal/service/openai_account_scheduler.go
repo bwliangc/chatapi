@@ -3131,10 +3131,15 @@ func (w GatewayOpenAIWSSchedulerScoreWeightsView) quotaScore(account *Account, n
 		return 0
 	}
 	headroom, resetAt := openAIQuotaHeadroomAndReset(account, now)
+	// 基础分：按剩余额度排序，鼓励优先用余额多的账号。
 	score := w.QuotaHeadroom * headroom
 	if !resetAt.IsZero() {
+		// urgency 加成独立于 headroom：距周限重置越近，加成越高，不被当前
+		// 额度消耗拖累。原实现 score += expiry.weight * headroom * urgency
+		// 会让 headroom 随用量下降时把倒计时加成一并抵消，表现为一周内
+		// 权重只降不升。
 		urgency := 1 - clamp01(resetAt.Sub(now).Hours()/expiry.windowHours)
-		score += expiry.weight * headroom * urgency
+		score += expiry.weight * urgency
 	}
 	return score
 }
