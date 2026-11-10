@@ -118,6 +118,19 @@ const historyGroups = computed(() => groupsWithHistory.value.length <= HISTORY_L
 watch(groups, value => {
   if (selectedGroup.value !== 'all' && !value.some(group => String(group.id) === selectedGroup.value)) selectedGroup.value = 'all'
 })
+// 趋势分析默认选中冠军分组（需有 24h 用量）；用户手动选过后不再自动切换
+const trendPicked = ref(false)
+const championId = computed(() => {
+  const champion = podiumSlots.value[0]?.group
+  return champion && champion.last_24_hours.total_tokens > 0 ? String(champion.id) : null
+})
+watch(championId, id => {
+  if (!trendPicked.value) selectedGroup.value = id ?? 'all'
+}, { immediate: true })
+function pickTrendGroup(value: unknown) {
+  trendPicked.value = true
+  selectedGroup.value = String(value ?? 'all')
+}
 const trend = computed<GroupRateTrendPoint[]>(() => {
   const points = new Map<string, GroupRateTrendPoint>()
   for (const group of chartGroups.value) for (const point of group.trend) {
@@ -168,6 +181,7 @@ function onSpotLeave(event: PointerEvent) {
   (event.currentTarget as HTMLElement).style.transform = ''
 }
 function showTrend(group: GroupRateBoardItem) {
+  trendPicked.value = true
   selectedGroup.value = String(group.id)
   document.getElementById('group-rate-trend')?.scrollIntoView({ block: 'start' })
 }
@@ -386,7 +400,7 @@ onBeforeUnmount(() => {
           <section id="group-rate-trend" class="scroll-mt-24 space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <h2 class="text-lg font-semibold text-gray-950 dark:text-white">{{ t('groupRates.trendSection') }}</h2>
-              <Select v-model="selectedGroup" class="w-full sm:w-64" :options="trendGroupOptions" :aria-label="t('groupRates.trendGroup')" />
+              <Select :model-value="selectedGroup" class="w-full sm:w-64" :options="trendGroupOptions" :aria-label="t('groupRates.trendGroup')" @update:model-value="pickTrendGroup" />
             </div>
             <div class="grid gap-4 xl:grid-cols-2">
               <div class="card p-4 sm:p-6">
