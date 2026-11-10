@@ -30,6 +30,7 @@ export default {
     "cacheWrite": "Cache write",
     "groups": "Current group rates",
     "baseRate": "Current group base multiplier",
+    "currentRate": "Current multiplier",
     "yourRate": "Your current multiplier {rate}×",
     "customRate": "Personal override applied",
     "peak": "Peak factor {rate}×",

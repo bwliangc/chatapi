@@ -118,11 +118,11 @@ const historyGroups = computed(() => groupsWithHistory.value.length <= HISTORY_L
 watch(groups, value => {
   if (selectedGroup.value !== 'all' && !value.some(group => String(group.id) === selectedGroup.value)) selectedGroup.value = 'all'
 })
-// 趋势分析默认选中冠军分组（需有 24h 用量）；用户手动选过后不再自动切换
+// 趋势分析默认选中冠军分组（即用量排序第一的分组，无用量时也选它）；用户手动选过后不再自动切换
 const trendPicked = ref(false)
 const championId = computed(() => {
-  const champion = podiumSlots.value[0]?.group
-  return champion && champion.last_24_hours.total_tokens > 0 ? String(champion.id) : null
+  const champion = sortedGroups.value[0]
+  return champion ? String(champion.id) : null
 })
 watch(championId, id => {
   if (!trendPicked.value) selectedGroup.value = id ?? 'all'
@@ -307,9 +307,13 @@ onBeforeUnmount(() => {
                         <span class="text-xs tabular-nums text-gray-500 dark:text-gray-400">{{ t('groupRates.share', { pct: rate(Math.round(slot.share * 10) / 10) }) }}</span>
                       </div>
                     </div>
-                    <dl class="mt-5 grid grid-cols-3 gap-2 border-t border-gray-100 pt-4 dark:border-dark-700">
-                      <div><dt class="text-xs text-gray-500 dark:text-gray-400">{{ t('groupRates.colBaseRate') }}</dt><dd class="mt-0.5 font-semibold tabular-nums text-gray-900 dark:text-gray-100">{{ rate(slot.group.rate_multiplier) }}×</dd></div>
-                      <div><dt class="text-xs text-gray-500 dark:text-gray-400">{{ t('groupRates.colYourRate') }}</dt><dd class="mt-0.5 font-semibold tabular-nums text-teal-700 dark:text-teal-300">{{ rate(slot.group.effective_multiplier) }}×</dd></div>
+                    <dl class="mt-5 grid grid-cols-2 gap-2 border-t border-gray-100 pt-4 dark:border-dark-700">
+                      <div>
+                        <dt class="text-xs text-gray-500 dark:text-gray-400">{{ t('groupRates.currentRate') }}</dt>
+                        <dd class="mt-0.5 font-semibold tabular-nums text-teal-700 dark:text-teal-300">{{ rate(slot.group.effective_multiplier) }}×
+                          <span v-if="slot.group.effective_multiplier !== slot.group.rate_multiplier" class="ml-1 text-[11px] font-normal text-gray-400">({{ t('groupRates.colBaseRate') }} {{ rate(slot.group.rate_multiplier) }}×)</span>
+                        </dd>
+                      </div>
                       <div><dt class="text-xs text-gray-500 dark:text-gray-400">{{ t('groupRates.dayRequests') }}</dt><dd class="mt-0.5 font-semibold tabular-nums text-gray-900 dark:text-gray-100" :title="exact(slot.group.last_24_hours.requests)">{{ count(slot.group.last_24_hours.requests) }}</dd></div>
                     </dl>
                     <button type="button" class="mt-4 text-xs font-semibold text-teal-700 hover:underline dark:text-teal-400" @click="showTrend(slot.group)">{{ t('groupRates.viewTrend') }} <span aria-hidden="true">↗</span></button>
@@ -342,8 +346,7 @@ onBeforeUnmount(() => {
                   <span class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ group.name }}</span>
                 </span>
                 <span class="relative mt-0.5 truncate text-[11px] text-gray-500 dark:text-gray-400">{{ platformLabel(group.platform) }}</span>
-                <span class="relative mt-3 text-2xl font-semibold tabular-nums tracking-tight text-gray-950 dark:text-white">{{ rate(group.rate_multiplier) }}<span class="ml-0.5 text-sm font-normal text-gray-400">×</span></span>
-                <span class="relative mt-0.5 text-[11px] font-medium text-teal-700 dark:text-teal-300">{{ t('groupRates.yourRate', { rate: rate(group.effective_multiplier) }) }}</span>
+                <span class="relative mt-3 text-2xl font-semibold tabular-nums tracking-tight text-gray-950 dark:text-white">{{ rate(group.effective_multiplier) }}<span class="ml-0.5 text-sm font-normal text-gray-400">×</span></span>
                 <span class="relative mt-3 border-t border-gray-100 pt-2 text-[11px] text-gray-500 dark:border-dark-700 dark:text-gray-400">24h <b class="tabular-nums text-gray-800 dark:text-gray-200">{{ count(group.last_24_hours.total_tokens) }}</b> Tokens</span>
               </button>
               <button
@@ -371,11 +374,11 @@ onBeforeUnmount(() => {
                   <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" :class="group.dynamic_rate.enabled ? 'bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300' : 'bg-gray-100 text-gray-500 dark:bg-dark-800 dark:text-gray-400'">{{ group.dynamic_rate.enabled ? t('groupRates.dynamic') : t('groupRates.fixed') }}</span>
                 </div>
                 <div class="my-4">
-                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('groupRates.baseRate') }}</p>
-                  <p class="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-gray-950 dark:text-white">{{ rate(group.rate_multiplier) }}<span class="ml-1 text-lg font-normal text-gray-400">×</span></p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('groupRates.currentRate') }}</p>
+                  <p class="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-gray-950 dark:text-white">{{ rate(group.effective_multiplier) }}<span class="ml-1 text-lg font-normal text-gray-400">×</span></p>
+                  <div v-if="group.effective_multiplier !== group.rate_multiplier" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('groupRates.baseRate') }} {{ rate(group.rate_multiplier) }}×</div>
                   <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-                    <span class="font-medium text-teal-700 dark:text-teal-300">{{ t('groupRates.yourRate', { rate: rate(group.effective_multiplier) }) }}</span>
-                    <span v-if="group.user_rate_multiplier !== undefined" class="text-gray-500 dark:text-gray-400">{{ t('groupRates.customRate') }}</span>
+                    <span v-if="group.user_rate_multiplier !== undefined" class="font-medium text-teal-700 dark:text-teal-300">{{ t('groupRates.customRate') }}</span>
                     <span v-if="group.peak_multiplier !== 1" class="text-amber-600 dark:text-amber-400">{{ t('groupRates.peak', { rate: rate(group.peak_multiplier) }) }}</span>
                   </div>
                 </div>

@@ -30,6 +30,7 @@ export default {
     "cacheWrite": "缓存写入",
     "groups": "分组实时倍率",
     "baseRate": "当前分组基础倍率",
+    "currentRate": "当前倍率",
     "yourRate": "你的当前倍率 {rate}×",
     "customRate": "已应用专属倍率",
     "peak": "高峰叠加 {rate}×",
