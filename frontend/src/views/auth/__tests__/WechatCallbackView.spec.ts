@@ -189,6 +189,7 @@ describe('WechatCallbackView', () => {
     })
     getPublicSettingsMock.mockResolvedValue({
       invitation_code_enabled: false,
+      aff_code_as_invitation_enabled: false,
       turnstile_enabled: false,
       turnstile_site_key: '',
     })

@@ -253,6 +253,8 @@ export default {
         promoCodeHint: '允许用户在注册时使用优惠码',
         invitationCode: '邀请码注册',
         invitationCodeHint: '开启后，用户注册时需要填写有效的邀请码',
+        affCodeAsInvitation: '推广码作为邀请码',
+        affCodeAsInvitationHint: '开启后，用户的推广码（aff_code）也可用于注册验证，并自动绑定邀请关系',
         passwordReset: '忘记密码',
         passwordResetHint: '允许用户通过邮箱重置密码',
         frontendUrl: '前端地址',

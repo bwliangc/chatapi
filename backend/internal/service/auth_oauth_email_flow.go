@@ -72,13 +72,19 @@ func (s *AuthService) validateOAuthRegistrationInvitation(ctx context.Context, i
 	}
 
 	redeemCode, err := s.loadOAuthRegistrationInvitation(ctx, invitationCode)
-	if err != nil {
-		return nil, ErrInvitationCodeInvalid
+	if err == nil && redeemCode.Type == RedeemTypeInvitation && redeemCode.CanUse() {
+		return redeemCode, nil
 	}
-	if redeemCode.Type != RedeemTypeInvitation || !redeemCode.CanUse() {
-		return nil, ErrInvitationCodeInvalid
+
+	// 兑换码不匹配时，若允许推广码作为邀请码，尝试 aff_code 验证
+	if s.settingService.IsAffCodeAsInvitationEnabled(ctx) && s.affiliateService != nil {
+		affSummary, affErr := s.affiliateService.GetAffiliateByCode(ctx, invitationCode)
+		if affErr == nil && affSummary != nil {
+			return nil, nil // aff_code 有效，无兑换码需消耗
+		}
 	}
-	return redeemCode, nil
+
+	return nil, ErrInvitationCodeInvalid
 }
 
 // VerifyOAuthEmailCode verifies the locally entered email verification code for
@@ -298,7 +304,13 @@ func (s *AuthService) FinalizeOAuthEmailAccount(
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	// snapshot user × platform quota（fail-open）
 	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-	s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
+	// 若 invitationCode 实际为推广码（invitationRedeemCode == nil），
+	// 且未单独提供 affiliateCode，则把 invitationCode 作为邀请关系绑定。
+	effectiveAffCode := strings.TrimSpace(affiliateCode)
+	if effectiveAffCode == "" && invitationRedeemCode == nil && strings.TrimSpace(invitationCode) != "" {
+		effectiveAffCode = strings.TrimSpace(invitationCode)
+	}
+	s.bindOAuthAffiliate(ctx, user.ID, effectiveAffCode)
 	return nil
 }
 

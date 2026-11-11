@@ -264,6 +264,15 @@ func (s *AffiliateService) EnsureUserAffiliate(ctx context.Context, userID int64
 	return s.repo.EnsureUserAffiliate(ctx, userID)
 }
 
+// GetAffiliateByCode 按推广码查询邀请人摘要，找不到时返回错误。
+// 供注册流程校验 invitation_code 是否为有效推广码。
+func (s *AffiliateService) GetAffiliateByCode(ctx context.Context, code string) (*AffiliateSummary, error) {
+	if s == nil || s.repo == nil {
+		return nil, ErrServiceUnavailable
+	}
+	return s.repo.GetAffiliateByCode(ctx, code)
+}
+
 func (s *AffiliateService) GetAffiliateDetail(ctx context.Context, userID int64) (*AffiliateDetail, error) {
 	// Lazy thaw: move any matured frozen quota to available before reading.
 	if s != nil && s.repo != nil {

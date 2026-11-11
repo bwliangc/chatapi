@@ -1544,6 +1544,21 @@
                 </div>
                 <Toggle v-model="form.invitation_code_enabled" />
               </div>
+              <!-- aff_code as invitation - Only show when invitation code is enabled -->
+              <div
+                v-if="form.invitation_code_enabled"
+                class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
+              >
+                <div>
+                  <label class="font-medium text-gray-900 dark:text-white">{{
+                    t("admin.settings.registration.affCodeAsInvitation")
+                  }}</label>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.registration.affCodeAsInvitationHint") }}
+                  </p>
+                </div>
+                <Toggle v-model="form.aff_code_as_invitation_enabled" />
+              </div>
               <!-- Password Reset - Only show when email verification is enabled -->
               <div
                 v-if="form.email_verify_enabled"
@@ -10162,6 +10177,7 @@ const form = reactive<SettingsForm>({
   registration_email_domain_quota_enabled: false,
   promo_code_enabled: true,
   invitation_code_enabled: false,
+  aff_code_as_invitation_enabled: false,
   password_reset_enabled: false,
   totp_enabled: false,
   totp_encryption_key_configured: false,
@@ -11957,6 +11973,7 @@ async function saveSettings() {
         form.registration_email_domain_quota_enabled,
       promo_code_enabled: form.promo_code_enabled,
       invitation_code_enabled: form.invitation_code_enabled,
+      aff_code_as_invitation_enabled: form.aff_code_as_invitation_enabled,
       password_reset_enabled: form.password_reset_enabled,
       totp_enabled: form.totp_enabled,
       passkey_enabled: form.passkey_enabled,

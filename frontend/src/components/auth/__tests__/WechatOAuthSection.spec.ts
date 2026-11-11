@@ -60,6 +60,7 @@ function buildPublicSettings(overrides: Partial<WeChatPublicSettings> = {}): WeC
     promo_code_enabled: true,
     password_reset_enabled: false,
     invitation_code_enabled: false,
+      aff_code_as_invitation_enabled: false,
     turnstile_enabled: false,
     turnstile_site_key: '',
     site_name: 'Sub2API',

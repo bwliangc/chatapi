@@ -28,6 +28,7 @@ const publicSettings = {
   email_verify_enabled: false,
   promo_code_enabled: false,
   invitation_code_enabled: false,
+      aff_code_as_invitation_enabled: false,
   affiliate_enabled: true,
   turnstile_enabled: true,
   turnstile_site_key: 'site-key',

@@ -72,6 +72,16 @@ func (s *SettingService) IsInvitationCodeEnabled(ctx context.Context) bool {
 	return value == "true"
 }
 
+// IsAffCodeAsInvitationEnabled 检查是否允许用户推广码（aff_code）作为注册邀请码使用。
+// 仅在邀请码注册（invitation_code_enabled）开启时有意义。
+func (s *SettingService) IsAffCodeAsInvitationEnabled(ctx context.Context) bool {
+	value, err := s.settingRepo.GetValue(ctx, SettingKeyAffCodeAsInvitationEnabled)
+	if err != nil {
+		return false // 默认关闭
+	}
+	return value == "true"
+}
+
 // GetCustomMenuItemsRaw returns the raw JSON string of custom_menu_items setting.
 func (s *SettingService) GetCustomMenuItemsRaw(ctx context.Context) string {
 	value, err := s.settingRepo.GetValue(ctx, SettingKeyCustomMenuItems)

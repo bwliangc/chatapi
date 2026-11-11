@@ -253,6 +253,8 @@ export default {
         promoCodeHint: 'Allow users to use promo codes during registration',
         invitationCode: 'Invitation Code Registration',
         invitationCodeHint: 'When enabled, users must enter a valid invitation code to register',
+        affCodeAsInvitation: 'Affiliate Code as Invitation',
+        affCodeAsInvitationHint: 'When enabled, user affiliate codes (aff_code) also satisfy registration invitation validation and auto-bind the inviter relationship',
         passwordReset: 'Password Reset',
         passwordResetHint: 'Allow users to reset their password via email',
         frontendUrl: 'Frontend URL',
