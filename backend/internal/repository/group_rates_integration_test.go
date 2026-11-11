@@ -29,7 +29,9 @@ func TestGroupRateUsageWindowsAndGroupIsolation(t *testing.T) {
 		groupID int64
 	}{
 		{-24 * time.Hour, 1, group.ID},
-		{-24*time.Hour - time.Second, 99, group.ID},
+		// Window lower bound is hour-aligned (at.Add(-24h).Truncate(hour)); with
+		// at = HH:30 this row sits one second before that bound and must be excluded.
+		{-24*time.Hour - 30*time.Minute - time.Second, 99, group.ID},
 		{-time.Hour, 2, group.ID},
 		{-time.Hour - time.Second, 3, group.ID},
 		{-5 * time.Minute, 4, group.ID},

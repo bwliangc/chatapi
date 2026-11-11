@@ -315,6 +315,8 @@ onBeforeUnmount(() => {
                         </dd>
                       </div>
                       <div><dt class="text-xs text-gray-500 dark:text-gray-400">{{ t('groupRates.dayRequests') }}</dt><dd class="mt-0.5 font-semibold tabular-nums text-gray-900 dark:text-gray-100" :title="exact(slot.group.last_24_hours.requests)">{{ count(slot.group.last_24_hours.requests) }}</dd></div>
+                      <div><dt class="text-xs text-gray-500 dark:text-gray-400">{{ t('groupRates.hourTokens') }}</dt><dd class="mt-0.5 font-semibold tabular-nums text-gray-900 dark:text-gray-100" :title="exact(slot.group.last_hour.total_tokens)">{{ count(slot.group.last_hour.total_tokens) }}</dd></div>
+                      <div><dt class="text-xs text-gray-500 dark:text-gray-400">{{ t('groupRates.hourRequests') }}</dt><dd class="mt-0.5 font-semibold tabular-nums text-gray-900 dark:text-gray-100" :title="exact(slot.group.last_hour.requests)">{{ count(slot.group.last_hour.requests) }}</dd></div>
                     </dl>
                     <button type="button" class="mt-4 text-xs font-semibold text-teal-700 hover:underline dark:text-teal-400" @click="showTrend(slot.group)">{{ t('groupRates.viewTrend') }} <span aria-hidden="true">↗</span></button>
                   </div>
@@ -348,6 +350,7 @@ onBeforeUnmount(() => {
                 <span class="relative mt-0.5 truncate text-[11px] text-gray-500 dark:text-gray-400">{{ platformLabel(group.platform) }}</span>
                 <span class="relative mt-3 text-2xl font-semibold tabular-nums tracking-tight text-gray-950 dark:text-white">{{ rate(group.effective_multiplier) }}<span class="ml-0.5 text-sm font-normal text-gray-400">×</span></span>
                 <span class="relative mt-3 border-t border-gray-100 pt-2 text-[11px] text-gray-500 dark:border-dark-700 dark:text-gray-400">24h <b class="tabular-nums text-gray-800 dark:text-gray-200">{{ count(group.last_24_hours.total_tokens) }}</b> Tokens</span>
+                <span class="relative text-[11px] text-gray-500 dark:text-gray-400">1h <b class="tabular-nums text-gray-800 dark:text-gray-200">{{ count(group.last_hour.total_tokens) }}</b> Tokens</span>
               </button>
               <button
                 v-if="foldHiddenCount > 0"

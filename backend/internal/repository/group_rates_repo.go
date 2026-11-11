@@ -24,7 +24,7 @@ func (r *usageLogRepository) GetGroupRateUsage(ctx context.Context, ids []int64,
 		COALESCE(SUM(cache_creation_tokens::bigint) FILTER (WHERE created_at >= $4), 0),
 		COALESCE(SUM(cache_read_tokens::bigint) FILTER (WHERE created_at >= $4), 0)
 		FROM usage_logs WHERE group_id = ANY($1) AND created_at >= $2 AND created_at < $3
-		GROUP BY group_id, bucket ORDER BY group_id, bucket`, pq.Array(ids), at.Add(-24*time.Hour), at, at.Add(-time.Hour))
+		GROUP BY group_id, bucket ORDER BY group_id, bucket`, pq.Array(ids), at.Add(-24*time.Hour).Truncate(time.Hour), at, at.Add(-time.Hour))
 	if err != nil {
 		return nil, err
 	}
