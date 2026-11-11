@@ -37,6 +37,28 @@ describe('UsageProgressBar', () => {
     expect(wrapper.text()).not.toContain('usage.resetNow')
   })
 
+  it('倒计时右侧显示本地时区的实际重置时刻，过期后不显示', () => {
+    const resetsAt = '2026-03-17T02:30:00Z'
+    const wrapper = mount(UsageProgressBar, {
+      props: { label: '5h', utilization: 40, resetsAt, color: 'indigo' }
+    })
+
+    const d = new Date(resetsAt)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const expected = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+    expect(wrapper.get('[data-test="reset-absolute-time"]').text()).toBe(`(${expected})`)
+
+    const expired = mount(UsageProgressBar, {
+      props: { label: '5h', utilization: 40, resetsAt: '2026-03-16T23:00:00Z', color: 'indigo' }
+    })
+    expect(expired.find('[data-test="reset-absolute-time"]').exists()).toBe(false)
+
+    const idle = mount(UsageProgressBar, {
+      props: { label: '5h', utilization: 0, showNowWhenIdle: true, color: 'indigo' }
+    })
+    expect(idle.find('[data-test="reset-absolute-time"]').exists()).toBe(false)
+  })
+
   it('showNowWhenIdle=true 但利用率大于 0 时显示倒计时', () => {
     const wrapper = mount(UsageProgressBar, {
       props: {

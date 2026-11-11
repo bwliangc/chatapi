@@ -57,6 +57,15 @@
       <span v-if="shouldShowResetTime" class="shrink-0 text-[10px] text-gray-400">
         {{ formatResetTime }}
       </span>
+
+      <!-- Absolute reset time (local timezone) -->
+      <span
+        v-if="resetAbsoluteTime"
+        data-test="reset-absolute-time"
+        class="shrink-0 whitespace-nowrap text-[10px] text-gray-400/80 dark:text-gray-500"
+      >
+        ({{ resetAbsoluteTime }})
+      </span>
     </div>
   </div>
 </template>
@@ -218,6 +227,16 @@ const formatResetTime = computed(() => {
   } else {
     return `${diffMins}m`
   }
+})
+
+// 倒计时右侧的实际重置时刻（本地时区，YYYY-MM-DD HH:mm）；已过期/无效时不显示。
+const resetAbsoluteTime = computed(() => {
+  if (!props.resetsAt) return ''
+  const date = new Date(props.resetsAt)
+  const ts = date.getTime()
+  if (Number.isNaN(ts) || ts <= now.value.getTime()) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 })
 
 // Window stats formatters
