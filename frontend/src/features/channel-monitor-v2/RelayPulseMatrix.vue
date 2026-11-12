@@ -16,15 +16,7 @@
       </div>
       <div class="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 text-xs text-gray-500 dark:text-gray-400 sm:w-auto">
         <span class="badge badge-gray shrink-0">{{ bucketLabel }}</span>
-        <span class="hidden text-[11px] text-gray-400 dark:text-dark-400 sm:inline">{{ t('channelMonitorV2.matrix.wheelZoomX') }}</span>
-        <button
-          type="button"
-          class="inline-flex shrink-0 items-center rounded-lg border border-gray-200 bg-white px-2 py-1 text-[11px] font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 dark:border-dark-700 dark:bg-dark-900 dark:text-gray-300 dark:hover:bg-dark-800"
-          :disabled="!zoomed"
-          @click="resetMatrixZoom"
-        >
-          {{ t('channelMonitorV2.matrix.resetZoom') }}
-        </button>
+        <MonitorZoomControls v-model="zoom" :disabled="!rows.length || allBucketStarts.length < 2" />
       </div>
     </div>
 
@@ -34,6 +26,7 @@
         ref="scrollRef"
         class="matrix-scroll max-h-[min(42vh,420px)] max-w-full overflow-auto rounded-2xl bg-gray-50/60 p-2 dark:bg-dark-900/30"
         @wheel="onMatrixWheel"
+        @scroll="hideTooltip"
       >
         <div class="matrix-table w-full" :style="tableStyle">
           <div
@@ -177,6 +170,7 @@ import type {
 } from '@/api/channelMonitorV2'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Icon from '@/components/icons/Icon.vue'
+import MonitorZoomControls from './MonitorZoomControls.vue'
 import {
   formatLatencyPrivacy,
   formatMonitorMs,
@@ -189,8 +183,7 @@ import {
   healthScoreClass,
 } from '@/features/channel-monitor-v2/monitorFormat'
 import {
-  applyWheelZoom,
-  clientXRatio,
+  handleMonitorWheel,
   isZoomed,
   resetZoom,
   sliceByZoom,
@@ -310,24 +303,13 @@ const alignedRows = computed(() => {
 })
 
 function onMatrixWheel(event: WheelEvent) {
-  const track = scrollRef.value
-  const target = event.target as HTMLElement | null
-  const pulse = target?.closest('.pulse-track') as HTMLElement | null
-  const overMatrix = Boolean(target?.closest('.matrix-scroll'))
-  // Plain vertical wheel over the matrix zooms X (narrower range → wider cells).
-  // Shift+wheel or horizontal delta pans; leave non-matrix page scroll alone.
-  const isPan = event.shiftKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)
-  if (!overMatrix && !pulse) return
-  // When not zoomed and user scrolls vertically outside pulse, still zoom if over matrix body.
-  if (!overMatrix && !isPan) return
-  event.preventDefault()
-  const ratioEl = pulse || track
-  const ratio = clientXRatio(event.clientX, ratioEl)
-  zoom.value = applyWheelZoom(zoom.value, event, ratio)
-}
-
-function resetMatrixZoom() {
-  zoom.value = resetZoom()
+  if (allBucketStarts.value.length < 2) return
+  const pulse = (event.target as Element | null)?.closest<HTMLElement>('.pulse-track')
+  const next = handleMonitorWheel(zoom.value, event, pulse ?? scrollRef.value, scrollRef.value)
+  if (next !== zoom.value) {
+    hideTooltip()
+    zoom.value = next
+  }
 }
 
 watch(

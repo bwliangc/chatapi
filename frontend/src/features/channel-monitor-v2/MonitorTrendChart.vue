@@ -25,14 +25,7 @@
           <span class="h-2 w-2 rounded-full bg-sky-500"></span>{{ t('channelMonitorV2.chart.ttftLegend') }}
         </span>
         <span class="badge badge-gray shrink-0">{{ bucketLabel }}</span>
-        <button
-          type="button"
-          class="inline-flex shrink-0 items-center rounded-lg border border-gray-200 bg-white px-2 py-1 text-[11px] font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 dark:border-dark-700 dark:bg-dark-900 dark:text-gray-300 dark:hover:bg-dark-800"
-          :disabled="!zoomed"
-          @click="resetChartZoom"
-        >
-          {{ t('channelMonitorV2.chart.resetZoom') }}
-        </button>
+        <MonitorZoomControls v-model="zoom" :disabled="loading || trend.length < 2" />
       </div>
     </div>
     <div class="card-body min-h-0 flex-1 !p-0">
@@ -76,10 +69,9 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import Icon from '@/components/icons/Icon.vue'
 import type { MonitorCoverage, MonitorMetric, MonitorHealth } from '@/api/channelMonitorV2'
 import { formatMonitorMs, formatMonitorPercent } from '@/features/channel-monitor-v2/monitorFormat'
+import MonitorZoomControls from './MonitorZoomControls.vue'
 import {
-  applyWheelZoom,
-  clientXRatio,
-  isZoomed,
+  handleMonitorWheel,
   resetZoom,
   sliceByZoom,
   type ZoomState,
@@ -96,7 +88,6 @@ const props = defineProps<{
 
 const chartRef = ref<HTMLElement | null>(null)
 const zoom = ref<ZoomState>(resetZoom())
-const zoomed = computed(() => isZoomed(zoom.value))
 
 const isDark = computed(() =>
   typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
@@ -179,14 +170,8 @@ const chartData = computed(() => {
 const visibleTrend = computed(() => sliceByZoom(props.trend || [], zoom.value))
 
 function onChartWheel(event: WheelEvent) {
-  // Plain vertical wheel zooms X (narrower time range); shift/horizontal pans.
-  event.preventDefault()
-  const ratio = clientXRatio(event.clientX, chartRef.value)
-  zoom.value = applyWheelZoom(zoom.value, event, ratio)
-}
-
-function resetChartZoom() {
-  zoom.value = resetZoom()
+  if (props.trend.length < 2) return
+  zoom.value = handleMonitorWheel(zoom.value, event, chartRef.value)
 }
 
 watch(() => props.trend, () => {
