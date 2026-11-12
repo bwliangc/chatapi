@@ -709,18 +709,6 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/admin/cost-calculator',
-    name: 'AdminCostCalculator',
-    component: () => import('@/views/admin/CostCalculatorView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Cost Calculator',
-      titleKey: 'admin.costCalculator.title',
-      descriptionKey: 'admin.costCalculator.description'
-    }
-  },
-  {
     path: '/admin/token-leaderboard',
     name: 'AdminTokenLeaderboard',
     redirect: (to) => ({

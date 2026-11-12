@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"testing"
-	"time"
 
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -76,10 +75,6 @@ func (r *redeemRejectRepo) ListByUserPaginated(ctx context.Context, userID int64
 
 func (r *redeemRejectRepo) SumPositiveBalanceByUser(ctx context.Context, userID int64) (float64, error) {
 	panic("unexpected SumPositiveBalanceByUser call")
-}
-
-func (r *redeemRejectRepo) GetCostCalculatorBalanceRechargeSummary(ctx context.Context, startTime, endTime time.Time, excludeAdmins bool) (*CostCalculatorBalanceRechargeSummary, error) {
-	panic("unexpected GetCostCalculatorBalanceRechargeSummary call")
 }
 
 func TestRedeemRejectsInvitationCodeBeforeTransaction(t *testing.T) {

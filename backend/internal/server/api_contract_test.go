@@ -2254,10 +2254,6 @@ func (stubRedeemCodeRepo) SumPositiveBalanceByUser(ctx context.Context, userID i
 	return 0, errors.New("not implemented")
 }
 
-func (stubRedeemCodeRepo) GetCostCalculatorBalanceRechargeSummary(ctx context.Context, startTime, endTime time.Time, excludeAdmins bool) (*service.CostCalculatorBalanceRechargeSummary, error) {
-	return nil, nil
-}
-
 type stubUserSubscriptionRepo struct {
 	byUser       map[int64][]service.UserSubscription
 	activeByUser map[int64][]service.UserSubscription

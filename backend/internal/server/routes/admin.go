@@ -112,9 +112,6 @@ func RegisterAdminRoutes(
 		// 使用记录管理
 		registerUsageRoutes(admin, h)
 
-		// 成本计算
-		registerCostCalculatorRoutes(admin, h)
-
 		// 用户属性管理
 		registerUserAttributeRoutes(admin, h)
 
@@ -177,17 +174,6 @@ func registerAuditLogRoutes(admin *gin.RouterGroup, h *handler.Handlers, _ middl
 		auditLogs.GET("/:id", h.Admin.AuditLog.Get)
 		// 清空需现场 TOTP 校验（在 handler 内强制），不复用 step-up sudo 窗口
 		auditLogs.POST("/clear", h.Admin.AuditLog.Clear)
-	}
-}
-
-func registerCostCalculatorRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
-	costCalculator := admin.Group("/cost-calculator")
-	{
-		costCalculator.GET("/config", h.Admin.CostCalculator.GetConfig)
-		costCalculator.PUT("/config", h.Admin.CostCalculator.UpdateConfig)
-		costCalculator.GET("/usage-summary", h.Admin.CostCalculator.GetUsageSummary)
-		costCalculator.GET("/balance-recharge-summary", h.Admin.CostCalculator.GetBalanceRechargeSummary)
-		costCalculator.GET("/balance-liability-summary", h.Admin.CostCalculator.GetBalanceLiabilitySummary)
 	}
 }
 
