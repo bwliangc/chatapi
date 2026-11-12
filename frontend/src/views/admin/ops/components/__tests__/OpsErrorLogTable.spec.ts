@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import OpsErrorLogTable from '../OpsErrorLogTable.vue'
 import zhLocale from '@/i18n/locales/zh'
 import enLocale from '@/i18n/locales/en'
@@ -40,7 +41,7 @@ function mountTable(row: Partial<OpsErrorLog>) {
 
   return mount(OpsErrorLogTable, {
     props: { rows: [base], total: 1, loading: false, page: 1, pageSize: 20 },
-    global: { stubs: { 'el-tooltip': TooltipStub, Pagination: PaginationStub } },
+    global: { plugins: [createPinia()], stubs: { 'el-tooltip': TooltipStub, Pagination: PaginationStub } },
   })
 }
 

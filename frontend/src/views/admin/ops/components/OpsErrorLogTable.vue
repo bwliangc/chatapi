@@ -29,7 +29,7 @@
 
         <template #cell-ingress_domain="{ row }">
           <span class="block max-w-44 truncate text-sm text-gray-700 dark:text-gray-300" :title="row.ingress_domain || undefined">
-            {{ row.ingress_domain || '-' }}
+            {{ ingressNodeLabel(row.ingress_domain) }}
           </span>
         </template>
 
@@ -192,6 +192,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import IpGeoCell from '@/components/common/IpGeoCell.vue'
 import IpGeoBatchToolbar from '@/components/common/IpGeoBatchToolbar.vue'
+import { useIngressNodeLabel } from '@/composables/useIngressNodeLabel'
 import type { OpsErrorLog } from '@/api/admin/ops'
 import type { Column } from '@/components/common/types'
 import { getSeverityClass, formatDateTime } from '../utils/opsFormatters'
@@ -199,6 +200,7 @@ import { mapErrorCategory } from '@/utils/errorCategory'
 import { mapErrorSortKey, statusCodeBadgeClass } from '@/utils/errorBadges'
 
 const { t } = useI18n()
+const ingressNodeLabel = useIngressNodeLabel()
 
 // 列序对齐管理端用量明细:身份(用户→Key→账号)→ 请求形态(平台→模型→端点→分组→类型)
 // → 结果(状态→消息)→ 时间→UA→IP→操作

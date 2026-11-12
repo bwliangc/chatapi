@@ -106,7 +106,7 @@
 
         <template #cell-ingress_domain="{ row }">
           <span class="block max-w-44 truncate text-sm text-gray-700 dark:text-gray-300" :title="row.ingress_domain || undefined">
-            {{ row.ingress_domain || '-' }}
+            {{ ingressNodeLabel(row.ingress_domain) }}
           </span>
         </template>
 
@@ -554,6 +554,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
+import { useIngressNodeLabel } from '@/composables/useIngressNodeLabel'
 import { formatDateTime, formatReasoningEffort, reasoningEffortValuesEqual } from '@/utils/format'
 import { formatCacheTokens, formatMultiplier } from '@/utils/formatters'
 import { formatTokenPricePerMillion } from '@/utils/usagePricing'
@@ -635,6 +636,7 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const appStore = useAppStore()
+const ingressNodeLabel = useIngressNodeLabel()
 const copiedRequestId = ref<string | null>(null)
 const showAccountBilling = props.showAccountBilling
 const showUpstreamEndpoint = props.showUpstreamEndpoint

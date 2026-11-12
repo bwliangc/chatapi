@@ -72,8 +72,8 @@
 
         <div v-if="detail.ingress_domain" class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900">
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400">{{ t('admin.usage.ingressDomain') }}</div>
-          <div class="mt-1 break-all font-mono text-sm font-medium text-gray-900 dark:text-white">
-            {{ detail.ingress_domain }}
+          <div class="mt-1 break-words text-sm font-medium text-gray-900 dark:text-white" :title="detail.ingress_domain">
+            {{ ingressNodeLabel(detail.ingress_domain) }}
           </div>
         </div>
 
@@ -250,7 +250,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
-import { useAppStore } from '@/stores'
+import { useAppStore } from '@/stores/app'
+import { useIngressNodeLabel } from '@/composables/useIngressNodeLabel'
 import { opsAPI, type OpsErrorDetail } from '@/api/admin/ops'
 import { formatDateTime } from '@/utils/format'
 import { resolveUpstreamPayload } from '../utils/errorDetailResponse'
@@ -272,6 +273,7 @@ const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const ingressNodeLabel = useIngressNodeLabel()
 
 const loading = ref(false)
 const detail = ref<OpsErrorDetail | null>(null)
