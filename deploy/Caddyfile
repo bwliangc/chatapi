@@ -44,6 +44,8 @@ api.sub2api.com {
 		header_up X-Forwarded-For {remote_host}
 		header_up X-Forwarded-Proto {scheme}
 		header_up X-Forwarded-Host {host}
+		# 此站点匹配单个明确域名；入口标记覆盖客户端同名请求头。
+		header_up X-ChatAPI-Ingress-Domain {host}
 		# 连接池优化
 		transport http {
 			keepalive 120s

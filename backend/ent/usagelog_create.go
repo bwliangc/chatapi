@@ -651,6 +651,20 @@ func (_c *UsageLogCreate) SetNillableCacheTTLOverridden(v *bool) *UsageLogCreate
 	return _c
 }
 
+// SetIngressDomain sets the "ingress_domain" field.
+func (_c *UsageLogCreate) SetIngressDomain(v string) *UsageLogCreate {
+	_c.mutation.SetIngressDomain(v)
+	return _c
+}
+
+// SetNillableIngressDomain sets the "ingress_domain" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableIngressDomain(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetIngressDomain(*v)
+	}
+	return _c
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (_c *UsageLogCreate) SetCreatedAt(v time.Time) *UsageLogCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -970,6 +984,11 @@ func (_c *UsageLogCreate) check() error {
 	if _, ok := _c.mutation.CacheTTLOverridden(); !ok {
 		return &ValidationError{Name: "cache_ttl_overridden", err: errors.New(`ent: missing required field "UsageLog.cache_ttl_overridden"`)}
 	}
+	if v, ok := _c.mutation.IngressDomain(); ok {
+		if err := usagelog.IngressDomainValidator(v); err != nil {
+			return &ValidationError{Name: "ingress_domain", err: fmt.Errorf(`ent: validator failed for field "UsageLog.ingress_domain": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "UsageLog.created_at"`)}
 	}
@@ -1180,6 +1199,10 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.CacheTTLOverridden(); ok {
 		_spec.SetField(usagelog.FieldCacheTTLOverridden, field.TypeBool, value)
 		_node.CacheTTLOverridden = value
+	}
+	if value, ok := _c.mutation.IngressDomain(); ok {
+		_spec.SetField(usagelog.FieldIngressDomain, field.TypeString, value)
+		_node.IngressDomain = &value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(usagelog.FieldCreatedAt, field.TypeTime, value)
@@ -2165,6 +2188,24 @@ func (u *UsageLogUpsert) SetCacheTTLOverridden(v bool) *UsageLogUpsert {
 // UpdateCacheTTLOverridden sets the "cache_ttl_overridden" field to the value that was provided on create.
 func (u *UsageLogUpsert) UpdateCacheTTLOverridden() *UsageLogUpsert {
 	u.SetExcluded(usagelog.FieldCacheTTLOverridden)
+	return u
+}
+
+// SetIngressDomain sets the "ingress_domain" field.
+func (u *UsageLogUpsert) SetIngressDomain(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldIngressDomain, v)
+	return u
+}
+
+// UpdateIngressDomain sets the "ingress_domain" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateIngressDomain() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldIngressDomain)
+	return u
+}
+
+// ClearIngressDomain clears the value of the "ingress_domain" field.
+func (u *UsageLogUpsert) ClearIngressDomain() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldIngressDomain)
 	return u
 }
 
@@ -3197,6 +3238,27 @@ func (u *UsageLogUpsertOne) SetCacheTTLOverridden(v bool) *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) UpdateCacheTTLOverridden() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateCacheTTLOverridden()
+	})
+}
+
+// SetIngressDomain sets the "ingress_domain" field.
+func (u *UsageLogUpsertOne) SetIngressDomain(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetIngressDomain(v)
+	})
+}
+
+// UpdateIngressDomain sets the "ingress_domain" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateIngressDomain() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateIngressDomain()
+	})
+}
+
+// ClearIngressDomain clears the value of the "ingress_domain" field.
+func (u *UsageLogUpsertOne) ClearIngressDomain() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearIngressDomain()
 	})
 }
 
@@ -4395,6 +4457,27 @@ func (u *UsageLogUpsertBulk) SetCacheTTLOverridden(v bool) *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) UpdateCacheTTLOverridden() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateCacheTTLOverridden()
+	})
+}
+
+// SetIngressDomain sets the "ingress_domain" field.
+func (u *UsageLogUpsertBulk) SetIngressDomain(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetIngressDomain(v)
+	})
+}
+
+// UpdateIngressDomain sets the "ingress_domain" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateIngressDomain() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateIngressDomain()
+	})
+}
+
+// ClearIngressDomain clears the value of the "ingress_domain" field.
+func (u *UsageLogUpsertBulk) ClearIngressDomain() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearIngressDomain()
 	})
 }
 

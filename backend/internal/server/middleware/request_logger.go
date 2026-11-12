@@ -38,6 +38,9 @@ func RequestLogger() gin.HandlerFunc {
 			zap.String("path", c.Request.URL.Path),
 			zap.String("method", c.Request.Method),
 		)
+		if domain := ctxkey.IngressDomainFromContext(ctx); domain != "" {
+			requestLogger = requestLogger.With(zap.String("ingress_domain", domain))
+		}
 
 		ctx = logger.IntoContext(ctx, requestLogger)
 		c.Request = c.Request.WithContext(ctx)

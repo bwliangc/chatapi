@@ -25,6 +25,7 @@ func TestBatchImageRepository_CreateJobAndDuplicates(t *testing.T) {
 	tx := testTx(t)
 	repo := newBatchImageRepositoryWithSQL(tx)
 	batchID := batchImageTestID(t, "create")
+	domain := "hk.api.example.com"
 
 	job, err := repo.CreateBatchImageJob(ctx, service.CreateBatchImageJobParams{
 		BatchID:       batchID,
@@ -33,11 +34,16 @@ func TestBatchImageRepository_CreateJobAndDuplicates(t *testing.T) {
 		Model:         "gemini-2.5-flash-image",
 		ItemCount:     2,
 		EstimatedCost: 0.02,
+		IngressDomain: &domain,
 	})
 	require.NoError(t, err)
 	require.Equal(t, batchID, job.BatchID)
 	require.Equal(t, service.BatchImageJobStatusCreated, job.Status)
 	require.Equal(t, "USD", job.Currency)
+	loaded, err := repo.GetBatchImageJobByBatchID(ctx, batchID)
+	require.NoError(t, err)
+	require.NotNil(t, loaded.IngressDomain)
+	require.Equal(t, domain, *loaded.IngressDomain)
 
 	_, err = repo.CreateBatchImageJob(ctx, service.CreateBatchImageJobParams{
 		BatchID:   batchID,

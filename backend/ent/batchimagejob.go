@@ -67,6 +67,8 @@ type BatchImageJob struct {
 	RequestHash *string `json:"request_hash,omitempty"`
 	// ManifestHash holds the value of the "manifest_hash" field.
 	ManifestHash *string `json:"manifest_hash,omitempty"`
+	// IngressDomain holds the value of the "ingress_domain" field.
+	IngressDomain *string `json:"ingress_domain,omitempty"`
 	// RetryCount holds the value of the "retry_count" field.
 	RetryCount int `json:"retry_count,omitempty"`
 	// Version holds the value of the "version" field.
@@ -109,7 +111,7 @@ func (*BatchImageJob) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case batchimagejob.FieldID, batchimagejob.FieldUserID, batchimagejob.FieldAPIKeyID, batchimagejob.FieldAccountID, batchimagejob.FieldItemCount, batchimagejob.FieldSuccessCount, batchimagejob.FieldFailCount, batchimagejob.FieldCancelledCount, batchimagejob.FieldRetryCount, batchimagejob.FieldVersion:
 			values[i] = new(sql.NullInt64)
-		case batchimagejob.FieldBatchID, batchimagejob.FieldProvider, batchimagejob.FieldModel, batchimagejob.FieldTaskName, batchimagejob.FieldStatus, batchimagejob.FieldProviderJobName, batchimagejob.FieldProviderInputRef, batchimagejob.FieldProviderOutputRef, batchimagejob.FieldGcsInputURI, batchimagejob.FieldGcsOutputURI, batchimagejob.FieldCurrency, batchimagejob.FieldHoldID, batchimagejob.FieldIdempotencyKey, batchimagejob.FieldRequestHash, batchimagejob.FieldManifestHash, batchimagejob.FieldLastErrorCode, batchimagejob.FieldLastErrorMessage:
+		case batchimagejob.FieldBatchID, batchimagejob.FieldProvider, batchimagejob.FieldModel, batchimagejob.FieldTaskName, batchimagejob.FieldStatus, batchimagejob.FieldProviderJobName, batchimagejob.FieldProviderInputRef, batchimagejob.FieldProviderOutputRef, batchimagejob.FieldGcsInputURI, batchimagejob.FieldGcsOutputURI, batchimagejob.FieldCurrency, batchimagejob.FieldHoldID, batchimagejob.FieldIdempotencyKey, batchimagejob.FieldRequestHash, batchimagejob.FieldManifestHash, batchimagejob.FieldIngressDomain, batchimagejob.FieldLastErrorCode, batchimagejob.FieldLastErrorMessage:
 			values[i] = new(sql.NullString)
 		case batchimagejob.FieldOutputExpiresAt, batchimagejob.FieldInputDeletedAt, batchimagejob.FieldOutputDeletedAt, batchimagejob.FieldDownloadedAt, batchimagejob.FieldUserDeletedAt, batchimagejob.FieldCreatedAt, batchimagejob.FieldUpdatedAt, batchimagejob.FieldSubmittedAt, batchimagejob.FieldStartedAt, batchimagejob.FieldFinishedAt, batchimagejob.FieldSettledAt:
 			values[i] = new(sql.NullTime)
@@ -296,6 +298,13 @@ func (_m *BatchImageJob) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ManifestHash = new(string)
 				*_m.ManifestHash = value.String
+			}
+		case batchimagejob.FieldIngressDomain:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field ingress_domain", values[i])
+			} else if value.Valid {
+				_m.IngressDomain = new(string)
+				*_m.IngressDomain = value.String
 			}
 		case batchimagejob.FieldRetryCount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -532,6 +541,11 @@ func (_m *BatchImageJob) String() string {
 	builder.WriteString(", ")
 	if v := _m.ManifestHash; v != nil {
 		builder.WriteString("manifest_hash=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.IngressDomain; v != nil {
+		builder.WriteString("ingress_domain=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

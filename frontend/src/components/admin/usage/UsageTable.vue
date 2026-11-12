@@ -104,6 +104,12 @@
           </span>
         </template>
 
+        <template #cell-ingress_domain="{ row }">
+          <span class="block max-w-44 truncate text-sm text-gray-700 dark:text-gray-300" :title="row.ingress_domain || undefined">
+            {{ row.ingress_domain || '-' }}
+          </span>
+        </template>
+
         <template #cell-endpoint="{ row }">
           <div class="max-w-[320px] space-y-1 text-xs">
             <div class="break-all text-gray-700 dark:text-gray-300">

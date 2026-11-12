@@ -402,7 +402,7 @@ func estimateOpsErrorLogJobBytes(entry *service.OpsInsertErrorLogInput) int64 {
 	const fixedOverhead = 512
 	size := fixedOverhead + len(entry.RequestID) + len(entry.ClientRequestID) +
 		len(entry.Platform) + len(entry.Model) + len(entry.RequestPath) +
-		len(entry.InboundEndpoint) + len(entry.UpstreamEndpoint) +
+		len(entry.InboundEndpoint) + len(entry.UpstreamEndpoint) + len(entry.IngressDomain) +
 		len(entry.RequestedModel) + len(entry.UpstreamModel) + len(entry.UserAgent) +
 		len(entry.ErrorPhase) + len(entry.ErrorType) + len(entry.Severity) +
 		len(entry.ErrorMessage) + len(entry.ErrorBody) + len(entry.ErrorSource) +
@@ -1210,6 +1210,7 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 			}(),
 			Stream:           stream,
 			InboundEndpoint:  GetInboundEndpoint(c),
+			IngressDomain:    ctxkey.IngressDomainFromContext(c.Request.Context()),
 			UpstreamEndpoint: GetUpstreamEndpoint(c, platform),
 			RequestedModel:   modelName,
 			UpstreamModel: func() string {
@@ -1356,6 +1357,7 @@ func logOpsRecoveredUpstream(c *gin.Context, ops *service.OpsService, finalStatu
 
 	if c.Request != nil {
 		entry.UserAgent = c.GetHeader("User-Agent")
+		entry.IngressDomain = ctxkey.IngressDomainFromContext(c.Request.Context())
 		if c.Request.URL != nil {
 			entry.RequestPath = c.Request.URL.Path
 		}
@@ -1525,6 +1527,7 @@ func logOpsStreamErrorValue(c *gin.Context, ops *service.OpsService, wireStatus 
 		// 带内错误默认挂在 SSE 流上；NonStream 标记的来自非流式 2xx 响应体。
 		Stream:           !streamErr.NonStream,
 		InboundEndpoint:  GetInboundEndpoint(c),
+		IngressDomain:    ctxkey.IngressDomainFromContext(c.Request.Context()),
 		UpstreamEndpoint: GetUpstreamEndpoint(c, platform),
 		RequestedModel:   modelName,
 		UpstreamModel: func() string {

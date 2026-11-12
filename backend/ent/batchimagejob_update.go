@@ -512,6 +512,26 @@ func (_u *BatchImageJobUpdate) ClearManifestHash() *BatchImageJobUpdate {
 	return _u
 }
 
+// SetIngressDomain sets the "ingress_domain" field.
+func (_u *BatchImageJobUpdate) SetIngressDomain(v string) *BatchImageJobUpdate {
+	_u.mutation.SetIngressDomain(v)
+	return _u
+}
+
+// SetNillableIngressDomain sets the "ingress_domain" field if the given value is not nil.
+func (_u *BatchImageJobUpdate) SetNillableIngressDomain(v *string) *BatchImageJobUpdate {
+	if v != nil {
+		_u.SetIngressDomain(*v)
+	}
+	return _u
+}
+
+// ClearIngressDomain clears the value of the "ingress_domain" field.
+func (_u *BatchImageJobUpdate) ClearIngressDomain() *BatchImageJobUpdate {
+	_u.mutation.ClearIngressDomain()
+	return _u
+}
+
 // SetRetryCount sets the "retry_count" field.
 func (_u *BatchImageJobUpdate) SetRetryCount(v int) *BatchImageJobUpdate {
 	_u.mutation.ResetRetryCount()
@@ -893,6 +913,11 @@ func (_u *BatchImageJobUpdate) check() error {
 			return &ValidationError{Name: "manifest_hash", err: fmt.Errorf(`ent: validator failed for field "BatchImageJob.manifest_hash": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.IngressDomain(); ok {
+		if err := batchimagejob.IngressDomainValidator(v); err != nil {
+			return &ValidationError{Name: "ingress_domain", err: fmt.Errorf(`ent: validator failed for field "BatchImageJob.ingress_domain": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.LastErrorCode(); ok {
 		if err := batchimagejob.LastErrorCodeValidator(v); err != nil {
 			return &ValidationError{Name: "last_error_code", err: fmt.Errorf(`ent: validator failed for field "BatchImageJob.last_error_code": %w`, err)}
@@ -1053,6 +1078,12 @@ func (_u *BatchImageJobUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if _u.mutation.ManifestHashCleared() {
 		_spec.ClearField(batchimagejob.FieldManifestHash, field.TypeString)
+	}
+	if value, ok := _u.mutation.IngressDomain(); ok {
+		_spec.SetField(batchimagejob.FieldIngressDomain, field.TypeString, value)
+	}
+	if _u.mutation.IngressDomainCleared() {
+		_spec.ClearField(batchimagejob.FieldIngressDomain, field.TypeString)
 	}
 	if value, ok := _u.mutation.RetryCount(); ok {
 		_spec.SetField(batchimagejob.FieldRetryCount, field.TypeInt, value)
@@ -1639,6 +1670,26 @@ func (_u *BatchImageJobUpdateOne) ClearManifestHash() *BatchImageJobUpdateOne {
 	return _u
 }
 
+// SetIngressDomain sets the "ingress_domain" field.
+func (_u *BatchImageJobUpdateOne) SetIngressDomain(v string) *BatchImageJobUpdateOne {
+	_u.mutation.SetIngressDomain(v)
+	return _u
+}
+
+// SetNillableIngressDomain sets the "ingress_domain" field if the given value is not nil.
+func (_u *BatchImageJobUpdateOne) SetNillableIngressDomain(v *string) *BatchImageJobUpdateOne {
+	if v != nil {
+		_u.SetIngressDomain(*v)
+	}
+	return _u
+}
+
+// ClearIngressDomain clears the value of the "ingress_domain" field.
+func (_u *BatchImageJobUpdateOne) ClearIngressDomain() *BatchImageJobUpdateOne {
+	_u.mutation.ClearIngressDomain()
+	return _u
+}
+
 // SetRetryCount sets the "retry_count" field.
 func (_u *BatchImageJobUpdateOne) SetRetryCount(v int) *BatchImageJobUpdateOne {
 	_u.mutation.ResetRetryCount()
@@ -2033,6 +2084,11 @@ func (_u *BatchImageJobUpdateOne) check() error {
 			return &ValidationError{Name: "manifest_hash", err: fmt.Errorf(`ent: validator failed for field "BatchImageJob.manifest_hash": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.IngressDomain(); ok {
+		if err := batchimagejob.IngressDomainValidator(v); err != nil {
+			return &ValidationError{Name: "ingress_domain", err: fmt.Errorf(`ent: validator failed for field "BatchImageJob.ingress_domain": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.LastErrorCode(); ok {
 		if err := batchimagejob.LastErrorCodeValidator(v); err != nil {
 			return &ValidationError{Name: "last_error_code", err: fmt.Errorf(`ent: validator failed for field "BatchImageJob.last_error_code": %w`, err)}
@@ -2210,6 +2266,12 @@ func (_u *BatchImageJobUpdateOne) sqlSave(ctx context.Context) (_node *BatchImag
 	}
 	if _u.mutation.ManifestHashCleared() {
 		_spec.ClearField(batchimagejob.FieldManifestHash, field.TypeString)
+	}
+	if value, ok := _u.mutation.IngressDomain(); ok {
+		_spec.SetField(batchimagejob.FieldIngressDomain, field.TypeString, value)
+	}
+	if _u.mutation.IngressDomainCleared() {
+		_spec.ClearField(batchimagejob.FieldIngressDomain, field.TypeString)
 	}
 	if value, ok := _u.mutation.RetryCount(); ok {
 		_spec.SetField(batchimagejob.FieldRetryCount, field.TypeInt, value)

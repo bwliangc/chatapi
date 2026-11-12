@@ -141,6 +141,8 @@ type UsageLog struct {
 	RequestedReasoningEffort *string
 	// InboundEndpoint is the client-facing API endpoint path, e.g. /v1/chat/completions.
 	InboundEndpoint *string
+	// IngressDomain identifies the reverse proxy that accepted the request.
+	IngressDomain *string
 	// UpstreamEndpoint is the normalized upstream endpoint path, e.g. /v1/responses.
 	UpstreamEndpoint *string
 

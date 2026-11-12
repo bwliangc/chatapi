@@ -53,6 +53,7 @@ func (BatchImageJob) Fields() []ent.Field {
 		field.String("idempotency_key").Optional().Nillable().MaxLen(255),
 		field.String("request_hash").Optional().Nillable().MaxLen(128),
 		field.String("manifest_hash").Optional().Nillable().MaxLen(128),
+		field.String("ingress_domain").Optional().Nillable().MaxLen(253),
 		field.Int("retry_count").Default(0),
 		field.Int("version").Default(0),
 		field.Time("output_expires_at").Optional().Nillable().SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),

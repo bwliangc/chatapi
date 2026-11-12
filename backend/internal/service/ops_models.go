@@ -65,6 +65,7 @@ type OpsErrorLog struct {
 	Stream      bool    `json:"stream"`
 
 	InboundEndpoint  string `json:"inbound_endpoint"`
+	IngressDomain    string `json:"ingress_domain,omitempty"`
 	UpstreamEndpoint string `json:"upstream_endpoint"`
 	RequestedModel   string `json:"requested_model"`
 	UpstreamModel    string `json:"upstream_model"`

@@ -138,6 +138,7 @@ type BatchImageJob struct {
 	RequestHash    *string
 	ManifestHash   *string
 	SessionID      *string
+	IngressDomain  *string
 
 	RetryCount int
 	Version    int
@@ -198,6 +199,7 @@ type CreateBatchImageJobParams struct {
 	RequestHash    *string
 	ManifestHash   *string
 	SessionID      *string
+	IngressDomain  *string
 
 	RetryCount int
 

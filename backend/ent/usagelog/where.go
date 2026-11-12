@@ -290,6 +290,11 @@ func CacheTTLOverridden(v bool) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldCacheTTLOverridden, v))
 }
 
+// IngressDomain applies equality check predicate on the "ingress_domain" field. It's identical to IngressDomainEQ.
+func IngressDomain(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldIngressDomain, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldCreatedAt, v))
@@ -2548,6 +2553,81 @@ func CacheTTLOverriddenEQ(v bool) predicate.UsageLog {
 // CacheTTLOverriddenNEQ applies the NEQ predicate on the "cache_ttl_overridden" field.
 func CacheTTLOverriddenNEQ(v bool) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldNEQ(FieldCacheTTLOverridden, v))
+}
+
+// IngressDomainEQ applies the EQ predicate on the "ingress_domain" field.
+func IngressDomainEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldIngressDomain, v))
+}
+
+// IngressDomainNEQ applies the NEQ predicate on the "ingress_domain" field.
+func IngressDomainNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldIngressDomain, v))
+}
+
+// IngressDomainIn applies the In predicate on the "ingress_domain" field.
+func IngressDomainIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldIngressDomain, vs...))
+}
+
+// IngressDomainNotIn applies the NotIn predicate on the "ingress_domain" field.
+func IngressDomainNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldIngressDomain, vs...))
+}
+
+// IngressDomainGT applies the GT predicate on the "ingress_domain" field.
+func IngressDomainGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldIngressDomain, v))
+}
+
+// IngressDomainGTE applies the GTE predicate on the "ingress_domain" field.
+func IngressDomainGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldIngressDomain, v))
+}
+
+// IngressDomainLT applies the LT predicate on the "ingress_domain" field.
+func IngressDomainLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldIngressDomain, v))
+}
+
+// IngressDomainLTE applies the LTE predicate on the "ingress_domain" field.
+func IngressDomainLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldIngressDomain, v))
+}
+
+// IngressDomainContains applies the Contains predicate on the "ingress_domain" field.
+func IngressDomainContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldIngressDomain, v))
+}
+
+// IngressDomainHasPrefix applies the HasPrefix predicate on the "ingress_domain" field.
+func IngressDomainHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldIngressDomain, v))
+}
+
+// IngressDomainHasSuffix applies the HasSuffix predicate on the "ingress_domain" field.
+func IngressDomainHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldIngressDomain, v))
+}
+
+// IngressDomainIsNil applies the IsNil predicate on the "ingress_domain" field.
+func IngressDomainIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldIngressDomain))
+}
+
+// IngressDomainNotNil applies the NotNil predicate on the "ingress_domain" field.
+func IngressDomainNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldIngressDomain))
+}
+
+// IngressDomainEqualFold applies the EqualFold predicate on the "ingress_domain" field.
+func IngressDomainEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldIngressDomain, v))
+}
+
+// IngressDomainContainsFold applies the ContainsFold predicate on the "ingress_domain" field.
+func IngressDomainContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldIngressDomain, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

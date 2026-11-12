@@ -11345,6 +11345,7 @@ type BatchImageJobMutation struct {
 	idempotency_key     *string
 	request_hash        *string
 	manifest_hash       *string
+	ingress_domain      *string
 	retry_count         *int
 	addretry_count      *int
 	version             *int
@@ -12739,6 +12740,55 @@ func (m *BatchImageJobMutation) ResetManifestHash() {
 	delete(m.clearedFields, batchimagejob.FieldManifestHash)
 }
 
+// SetIngressDomain sets the "ingress_domain" field.
+func (m *BatchImageJobMutation) SetIngressDomain(s string) {
+	m.ingress_domain = &s
+}
+
+// IngressDomain returns the value of the "ingress_domain" field in the mutation.
+func (m *BatchImageJobMutation) IngressDomain() (r string, exists bool) {
+	v := m.ingress_domain
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIngressDomain returns the old "ingress_domain" field's value of the BatchImageJob entity.
+// If the BatchImageJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BatchImageJobMutation) OldIngressDomain(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIngressDomain is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIngressDomain requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIngressDomain: %w", err)
+	}
+	return oldValue.IngressDomain, nil
+}
+
+// ClearIngressDomain clears the value of the "ingress_domain" field.
+func (m *BatchImageJobMutation) ClearIngressDomain() {
+	m.ingress_domain = nil
+	m.clearedFields[batchimagejob.FieldIngressDomain] = struct{}{}
+}
+
+// IngressDomainCleared returns if the "ingress_domain" field was cleared in this mutation.
+func (m *BatchImageJobMutation) IngressDomainCleared() bool {
+	_, ok := m.clearedFields[batchimagejob.FieldIngressDomain]
+	return ok
+}
+
+// ResetIngressDomain resets all changes to the "ingress_domain" field.
+func (m *BatchImageJobMutation) ResetIngressDomain() {
+	m.ingress_domain = nil
+	delete(m.clearedFields, batchimagejob.FieldIngressDomain)
+}
+
 // SetRetryCount sets the "retry_count" field.
 func (m *BatchImageJobMutation) SetRetryCount(i int) {
 	m.retry_count = &i
@@ -13496,7 +13546,7 @@ func (m *BatchImageJobMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BatchImageJobMutation) Fields() []string {
-	fields := make([]string, 0, 40)
+	fields := make([]string, 0, 41)
 	if m.batch_id != nil {
 		fields = append(fields, batchimagejob.FieldBatchID)
 	}
@@ -13571,6 +13621,9 @@ func (m *BatchImageJobMutation) Fields() []string {
 	}
 	if m.manifest_hash != nil {
 		fields = append(fields, batchimagejob.FieldManifestHash)
+	}
+	if m.ingress_domain != nil {
+		fields = append(fields, batchimagejob.FieldIngressDomain)
 	}
 	if m.retry_count != nil {
 		fields = append(fields, batchimagejob.FieldRetryCount)
@@ -13675,6 +13728,8 @@ func (m *BatchImageJobMutation) Field(name string) (ent.Value, bool) {
 		return m.RequestHash()
 	case batchimagejob.FieldManifestHash:
 		return m.ManifestHash()
+	case batchimagejob.FieldIngressDomain:
+		return m.IngressDomain()
 	case batchimagejob.FieldRetryCount:
 		return m.RetryCount()
 	case batchimagejob.FieldVersion:
@@ -13764,6 +13819,8 @@ func (m *BatchImageJobMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldRequestHash(ctx)
 	case batchimagejob.FieldManifestHash:
 		return m.OldManifestHash(ctx)
+	case batchimagejob.FieldIngressDomain:
+		return m.OldIngressDomain(ctx)
 	case batchimagejob.FieldRetryCount:
 		return m.OldRetryCount(ctx)
 	case batchimagejob.FieldVersion:
@@ -13977,6 +14034,13 @@ func (m *BatchImageJobMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetManifestHash(v)
+		return nil
+	case batchimagejob.FieldIngressDomain:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIngressDomain(v)
 		return nil
 	case batchimagejob.FieldRetryCount:
 		v, ok := value.(int)
@@ -14299,6 +14363,9 @@ func (m *BatchImageJobMutation) ClearedFields() []string {
 	if m.FieldCleared(batchimagejob.FieldManifestHash) {
 		fields = append(fields, batchimagejob.FieldManifestHash)
 	}
+	if m.FieldCleared(batchimagejob.FieldIngressDomain) {
+		fields = append(fields, batchimagejob.FieldIngressDomain)
+	}
 	if m.FieldCleared(batchimagejob.FieldOutputExpiresAt) {
 		fields = append(fields, batchimagejob.FieldOutputExpiresAt)
 	}
@@ -14384,6 +14451,9 @@ func (m *BatchImageJobMutation) ClearField(name string) error {
 		return nil
 	case batchimagejob.FieldManifestHash:
 		m.ClearManifestHash()
+		return nil
+	case batchimagejob.FieldIngressDomain:
+		m.ClearIngressDomain()
 		return nil
 	case batchimagejob.FieldOutputExpiresAt:
 		m.ClearOutputExpiresAt()
@@ -14500,6 +14570,9 @@ func (m *BatchImageJobMutation) ResetField(name string) error {
 		return nil
 	case batchimagejob.FieldManifestHash:
 		m.ResetManifestHash()
+		return nil
+	case batchimagejob.FieldIngressDomain:
+		m.ResetIngressDomain()
 		return nil
 	case batchimagejob.FieldRetryCount:
 		m.ResetRetryCount()
@@ -45010,6 +45083,7 @@ type UsageLogMutation struct {
 	video_duration_seconds       *int
 	addvideo_duration_seconds    *int
 	cache_ttl_overridden         *bool
+	ingress_domain               *string
 	created_at                   *time.Time
 	clearedFields                map[string]struct{}
 	user                         *int64
@@ -47604,6 +47678,55 @@ func (m *UsageLogMutation) ResetCacheTTLOverridden() {
 	m.cache_ttl_overridden = nil
 }
 
+// SetIngressDomain sets the "ingress_domain" field.
+func (m *UsageLogMutation) SetIngressDomain(s string) {
+	m.ingress_domain = &s
+}
+
+// IngressDomain returns the value of the "ingress_domain" field in the mutation.
+func (m *UsageLogMutation) IngressDomain() (r string, exists bool) {
+	v := m.ingress_domain
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIngressDomain returns the old "ingress_domain" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldIngressDomain(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIngressDomain is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIngressDomain requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIngressDomain: %w", err)
+	}
+	return oldValue.IngressDomain, nil
+}
+
+// ClearIngressDomain clears the value of the "ingress_domain" field.
+func (m *UsageLogMutation) ClearIngressDomain() {
+	m.ingress_domain = nil
+	m.clearedFields[usagelog.FieldIngressDomain] = struct{}{}
+}
+
+// IngressDomainCleared returns if the "ingress_domain" field was cleared in this mutation.
+func (m *UsageLogMutation) IngressDomainCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldIngressDomain]
+	return ok
+}
+
+// ResetIngressDomain resets all changes to the "ingress_domain" field.
+func (m *UsageLogMutation) ResetIngressDomain() {
+	m.ingress_domain = nil
+	delete(m.clearedFields, usagelog.FieldIngressDomain)
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *UsageLogMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -47809,7 +47932,7 @@ func (m *UsageLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UsageLogMutation) Fields() []string {
-	fields := make([]string, 0, 49)
+	fields := make([]string, 0, 50)
 	if m.user != nil {
 		fields = append(fields, usagelog.FieldUserID)
 	}
@@ -47954,6 +48077,9 @@ func (m *UsageLogMutation) Fields() []string {
 	if m.cache_ttl_overridden != nil {
 		fields = append(fields, usagelog.FieldCacheTTLOverridden)
 	}
+	if m.ingress_domain != nil {
+		fields = append(fields, usagelog.FieldIngressDomain)
+	}
 	if m.created_at != nil {
 		fields = append(fields, usagelog.FieldCreatedAt)
 	}
@@ -48061,6 +48187,8 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.VideoDurationSeconds()
 	case usagelog.FieldCacheTTLOverridden:
 		return m.CacheTTLOverridden()
+	case usagelog.FieldIngressDomain:
+		return m.IngressDomain()
 	case usagelog.FieldCreatedAt:
 		return m.CreatedAt()
 	}
@@ -48168,6 +48296,8 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldVideoDurationSeconds(ctx)
 	case usagelog.FieldCacheTTLOverridden:
 		return m.OldCacheTTLOverridden(ctx)
+	case usagelog.FieldIngressDomain:
+		return m.OldIngressDomain(ctx)
 	case usagelog.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	}
@@ -48514,6 +48644,13 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCacheTTLOverridden(v)
+		return nil
+	case usagelog.FieldIngressDomain:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIngressDomain(v)
 		return nil
 	case usagelog.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -48897,6 +49034,9 @@ func (m *UsageLogMutation) ClearedFields() []string {
 	if m.FieldCleared(usagelog.FieldVideoDurationSeconds) {
 		fields = append(fields, usagelog.FieldVideoDurationSeconds)
 	}
+	if m.FieldCleared(usagelog.FieldIngressDomain) {
+		fields = append(fields, usagelog.FieldIngressDomain)
+	}
 	return fields
 }
 
@@ -48976,6 +49116,9 @@ func (m *UsageLogMutation) ClearField(name string) error {
 		return nil
 	case usagelog.FieldVideoDurationSeconds:
 		m.ClearVideoDurationSeconds()
+		return nil
+	case usagelog.FieldIngressDomain:
+		m.ClearIngressDomain()
 		return nil
 	}
 	return fmt.Errorf("unknown UsageLog nullable field %s", name)
@@ -49128,6 +49271,9 @@ func (m *UsageLogMutation) ResetField(name string) error {
 		return nil
 	case usagelog.FieldCacheTTLOverridden:
 		m.ResetCacheTTLOverridden()
+		return nil
+	case usagelog.FieldIngressDomain:
+		m.ResetIngressDomain()
 		return nil
 	case usagelog.FieldCreatedAt:
 		m.ResetCreatedAt()

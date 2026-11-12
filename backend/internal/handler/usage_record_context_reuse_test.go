@@ -24,7 +24,7 @@ import (
 // same Gin context then handles another request before the queued charge runs.
 // HandleContext makes that reuse deterministic, including under -race (where
 // sync.Pool is allowed to randomly discard entries).
-func TestGatewayUsageKeepsModelAfterGinContextReuse(t *testing.T) {
+func TestGatewayUsageKeepsRequestMetadataAfterGinContextReuse(t *testing.T) {
 	for _, endpoint := range []string{"chat/completions", "responses"} {
 		t.Run(endpoint, func(t *testing.T) {
 			cfg := &config.Config{}
@@ -66,6 +66,7 @@ func TestGatewayUsageKeepsModelAfterGinContextReuse(t *testing.T) {
 			apiKey := &service.APIKey{ID: 9302, UserID: 9303, GroupID: &groupID, Group: group, User: &service.User{ID: 9303, Balance: 100}}
 			var first *gin.Context
 			router := gin.New()
+			router.Use(middleware.IngressDomain([]string{"192.0.2.10"}))
 			router.POST("/v1/"+endpoint, func(c *gin.Context) {
 				first = c
 				c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), ctxkey.RequestedPublicModel, "public-model-A"))
@@ -85,18 +86,24 @@ func TestGatewayUsageKeepsModelAfterGinContextReuse(t *testing.T) {
 				body = `{"model":"claude-sonnet-4.5","stream":true,"messages":[{"role":"user","content":"hello"}]}`
 			}
 			req := httptest.NewRequest(http.MethodPost, "/v1/"+endpoint, strings.NewReader(body))
+			req.RemoteAddr = "192.0.2.10:41234"
 			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-ChatAPI-Ingress-Domain", "hk.api.example.com")
 			recorder := httptest.NewRecorder()
 			router.ServeHTTP(recorder, req)
 			require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
 			require.Equal(t, uint64(1), pool.Stats().WaitingTasks)
 
 			first.Request = httptest.NewRequest(http.MethodGet, "/next", nil)
+			first.Request.RemoteAddr = "192.0.2.10:41234"
+			first.Request.Header.Set("X-ChatAPI-Ingress-Domain", "sg.api.example.com")
 			router.HandleContext(first)
 			unblock()
 			select {
 			case usage := <-usageRepo.created:
 				require.Equal(t, "public-model-A", usage.RequestedModel)
+				require.NotNil(t, usage.IngressDomain)
+				require.Equal(t, "hk.api.example.com", *usage.IngressDomain)
 			case <-time.After(2 * time.Second):
 				t.Fatal("queued request usage was not recorded")
 			}

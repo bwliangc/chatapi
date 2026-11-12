@@ -241,6 +241,42 @@ available for the web UI and static assets.
 Do not use an incoming `$http_x_forwarded_for` value unless Nginx real-IP
 processing is restricted to explicit trusted proxy CIDRs.
 
+## Identify the entry node
+
+With a separate public domain for each entry node, admins can see the domain
+in the **Entry Node** column on **Usage** and **Error Requests**. Usage exports
+and the server's structured request logs also include it. The application
+records it on new requests once the proxies are configured; earlier records
+and requests with no verified node show a dash.
+
+1. In each public reverse proxy, overwrite `X-ChatAPI-Ingress-Domain` with
+   that node's public DNS name (no scheme, path, or port). For Nginx, add
+   this line to every `location` that proxies API requests. Use a different
+   literal domain on each node:
+
+   ```nginx
+   proxy_set_header X-ChatAPI-Ingress-Domain hk.api.example.com;
+   ```
+
+   The bundled Caddyfile already sets this header from `{host}` in its
+   single exact-domain site. If a Caddy site is a wildcard or a catch-all,
+   use an explicit value instead:
+
+   ```caddyfile
+   header_up X-ChatAPI-Ingress-Domain hk.api.example.com
+   ```
+
+2. Set `server.trusted_proxies` (or the `SERVER_TRUSTED_PROXIES` environment
+   variable, as a comma-separated list) on the backend to the IPs or CIDRs of
+   the proxies that directly connect to it. This check applies regardless
+   of the forwarded client IP setting. For a shared last proxy, forward the
+   header only from the trusted entry nodes; clear it on other traffic.
+
+3. Send an API request through each domain using a test key and check the
+   **Entry Node** column. If the column is empty, verify the proxy's direct
+   peer address as seen by Sub2API and that the header reaches the backend.
+   Requests blocked at the proxy are available in that proxy's logs.
+
 ## Caddy and CDN
 
 The bundled `deploy/Caddyfile` sets a 64 KiB header limit, a 10-second header

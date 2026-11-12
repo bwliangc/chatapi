@@ -939,6 +939,7 @@ export interface OpsErrorLog {
   stream?: boolean
 
   // Error observability context (endpoint + model mapping)
+  ingress_domain?: string
   inbound_endpoint?: string
   upstream_endpoint?: string
   requested_model?: string

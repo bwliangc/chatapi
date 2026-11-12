@@ -1,6 +1,8 @@
 // Package ctxkey 定义用于 context.Value 的类型安全 key
 package ctxkey
 
+import "context"
+
 // Key 定义 context key 的类型，避免使用内置 string 类型（staticcheck SA1029）
 type Key string
 
@@ -25,6 +27,9 @@ const (
 
 	// ClientRequestID 客户端请求的唯一标识，用于追踪请求全生命周期（用于 Ops 监控与排障）。
 	ClientRequestID Key = "ctx_client_request_id"
+
+	// IngressDomain is the public domain supplied by a trusted ingress proxy.
+	IngressDomain Key = "ctx_ingress_domain"
 
 	// Model 请求模型标识（用于统一请求链路日志字段）。
 	Model Key = "ctx_model"
@@ -82,3 +87,11 @@ const (
 	// ClaudeCodeVersion stores the extracted Claude Code version from User-Agent (e.g. "2.1.22")
 	ClaudeCodeVersion Key = "ctx_claude_code_version"
 )
+
+func IngressDomainFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	domain, _ := ctx.Value(IngressDomain).(string)
+	return domain
+}

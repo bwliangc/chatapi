@@ -258,6 +258,9 @@ func usageRecordContext(parent context.Context, base context.Context) context.Co
 	if requestID, _ := parent.Value(ctxkey.RequestID).(string); strings.TrimSpace(requestID) != "" {
 		base = context.WithValue(base, ctxkey.RequestID, strings.TrimSpace(requestID))
 	}
+	if domain := ctxkey.IngressDomainFromContext(parent); domain != "" {
+		base = context.WithValue(base, ctxkey.IngressDomain, domain)
+	}
 	return service.CopyLuckySecondContext(parent, base)
 }
 
@@ -4215,6 +4218,7 @@ type cyberPolicyOpsErrorMeta struct {
 	RequestPath     string
 	Stream          bool
 	InboundEndpoint string
+	IngressDomain   string
 	UserAgent       string
 	APIKeyPrefix    string
 	UserID          int64
@@ -4239,6 +4243,7 @@ func buildCyberPolicyOpsErrorEntry(meta cyberPolicyOpsErrorMeta, mark *service.C
 		RequestPath:       meta.RequestPath,
 		Stream:            meta.Stream,
 		InboundEndpoint:   meta.InboundEndpoint,
+		IngressDomain:     meta.IngressDomain,
 		RequestType:       &rt,
 		UserAgent:         meta.UserAgent,
 		APIKeyPrefix:      meta.APIKeyPrefix,
@@ -4287,6 +4292,7 @@ func buildCyberSessionBlockedOpsEntry(meta cyberPolicyOpsErrorMeta) *service.Ops
 		RequestPath:       meta.RequestPath,
 		Stream:            meta.Stream,
 		InboundEndpoint:   meta.InboundEndpoint,
+		IngressDomain:     meta.IngressDomain,
 		RequestType:       &rt,
 		UserAgent:         meta.UserAgent,
 		APIKeyPrefix:      meta.APIKeyPrefix,
@@ -4428,6 +4434,7 @@ func (h *OpenAIGatewayHandler) enqueueCyberSessionBlockedOpsEntry(c *gin.Context
 	if c.Request != nil {
 		requestCtx = c.Request.Context()
 	}
+	meta.IngressDomain = ctxkey.IngressDomainFromContext(requestCtx)
 	meta.Platform = resolveOpsPlatform(requestCtx, apiKey, guessPlatformFromPath(meta.RequestPath))
 	if c.Request != nil {
 		meta.ClientRequestID, _ = c.Request.Context().Value(ctxkey.ClientRequestID).(string)
@@ -4526,6 +4533,7 @@ func (h *OpenAIGatewayHandler) recordCyberPolicyIfMarked(c *gin.Context, apiKey 
 		RequestPath:     requestPath,
 		Stream:          stream,
 		InboundEndpoint: inboundEndpoint,
+		IngressDomain:   ctxkey.IngressDomainFromContext(requestCtx),
 		UserAgent:       userAgent,
 		APIKeyPrefix:    apiKeyPrefix,
 		UserID:          userID,
@@ -4568,7 +4576,11 @@ func (h *OpenAIGatewayHandler) recordCyberPolicyIfMarked(c *gin.Context, apiKey 
 			})
 		}
 		if forwardErrored && gwSvc != nil {
-			gwSvc.RecordCyberPolicyUsageLog(ctx, service.CyberPolicyUsageInput{
+			usageCtx := ctx
+			if opsMeta.IngressDomain != "" {
+				usageCtx = context.WithValue(ctx, ctxkey.IngressDomain, opsMeta.IngressDomain)
+			}
+			gwSvc.RecordCyberPolicyUsageLog(usageCtx, service.CyberPolicyUsageInput{
 				APIKey:             apiKey,
 				Account:            account,
 				Subscription:       subscription,

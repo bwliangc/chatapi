@@ -332,6 +332,20 @@ func (_c *BatchImageJobCreate) SetNillableManifestHash(v *string) *BatchImageJob
 	return _c
 }
 
+// SetIngressDomain sets the "ingress_domain" field.
+func (_c *BatchImageJobCreate) SetIngressDomain(v string) *BatchImageJobCreate {
+	_c.mutation.SetIngressDomain(v)
+	return _c
+}
+
+// SetNillableIngressDomain sets the "ingress_domain" field if the given value is not nil.
+func (_c *BatchImageJobCreate) SetNillableIngressDomain(v *string) *BatchImageJobCreate {
+	if v != nil {
+		_c.SetIngressDomain(*v)
+	}
+	return _c
+}
+
 // SetRetryCount sets the "retry_count" field.
 func (_c *BatchImageJobCreate) SetRetryCount(v int) *BatchImageJobCreate {
 	_c.mutation.SetRetryCount(v)
@@ -736,6 +750,11 @@ func (_c *BatchImageJobCreate) check() error {
 			return &ValidationError{Name: "manifest_hash", err: fmt.Errorf(`ent: validator failed for field "BatchImageJob.manifest_hash": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.IngressDomain(); ok {
+		if err := batchimagejob.IngressDomainValidator(v); err != nil {
+			return &ValidationError{Name: "ingress_domain", err: fmt.Errorf(`ent: validator failed for field "BatchImageJob.ingress_domain": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.RetryCount(); !ok {
 		return &ValidationError{Name: "retry_count", err: errors.New(`ent: missing required field "BatchImageJob.retry_count"`)}
 	}
@@ -879,6 +898,10 @@ func (_c *BatchImageJobCreate) createSpec() (*BatchImageJob, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.ManifestHash(); ok {
 		_spec.SetField(batchimagejob.FieldManifestHash, field.TypeString, value)
 		_node.ManifestHash = &value
+	}
+	if value, ok := _c.mutation.IngressDomain(); ok {
+		_spec.SetField(batchimagejob.FieldIngressDomain, field.TypeString, value)
+		_node.IngressDomain = &value
 	}
 	if value, ok := _c.mutation.RetryCount(); ok {
 		_spec.SetField(batchimagejob.FieldRetryCount, field.TypeInt, value)
@@ -1415,6 +1438,24 @@ func (u *BatchImageJobUpsert) UpdateManifestHash() *BatchImageJobUpsert {
 // ClearManifestHash clears the value of the "manifest_hash" field.
 func (u *BatchImageJobUpsert) ClearManifestHash() *BatchImageJobUpsert {
 	u.SetNull(batchimagejob.FieldManifestHash)
+	return u
+}
+
+// SetIngressDomain sets the "ingress_domain" field.
+func (u *BatchImageJobUpsert) SetIngressDomain(v string) *BatchImageJobUpsert {
+	u.Set(batchimagejob.FieldIngressDomain, v)
+	return u
+}
+
+// UpdateIngressDomain sets the "ingress_domain" field to the value that was provided on create.
+func (u *BatchImageJobUpsert) UpdateIngressDomain() *BatchImageJobUpsert {
+	u.SetExcluded(batchimagejob.FieldIngressDomain)
+	return u
+}
+
+// ClearIngressDomain clears the value of the "ingress_domain" field.
+func (u *BatchImageJobUpsert) ClearIngressDomain() *BatchImageJobUpsert {
+	u.SetNull(batchimagejob.FieldIngressDomain)
 	return u
 }
 
@@ -2206,6 +2247,27 @@ func (u *BatchImageJobUpsertOne) UpdateManifestHash() *BatchImageJobUpsertOne {
 func (u *BatchImageJobUpsertOne) ClearManifestHash() *BatchImageJobUpsertOne {
 	return u.Update(func(s *BatchImageJobUpsert) {
 		s.ClearManifestHash()
+	})
+}
+
+// SetIngressDomain sets the "ingress_domain" field.
+func (u *BatchImageJobUpsertOne) SetIngressDomain(v string) *BatchImageJobUpsertOne {
+	return u.Update(func(s *BatchImageJobUpsert) {
+		s.SetIngressDomain(v)
+	})
+}
+
+// UpdateIngressDomain sets the "ingress_domain" field to the value that was provided on create.
+func (u *BatchImageJobUpsertOne) UpdateIngressDomain() *BatchImageJobUpsertOne {
+	return u.Update(func(s *BatchImageJobUpsert) {
+		s.UpdateIngressDomain()
+	})
+}
+
+// ClearIngressDomain clears the value of the "ingress_domain" field.
+func (u *BatchImageJobUpsertOne) ClearIngressDomain() *BatchImageJobUpsertOne {
+	return u.Update(func(s *BatchImageJobUpsert) {
+		s.ClearIngressDomain()
 	})
 }
 
@@ -3204,6 +3266,27 @@ func (u *BatchImageJobUpsertBulk) UpdateManifestHash() *BatchImageJobUpsertBulk 
 func (u *BatchImageJobUpsertBulk) ClearManifestHash() *BatchImageJobUpsertBulk {
 	return u.Update(func(s *BatchImageJobUpsert) {
 		s.ClearManifestHash()
+	})
+}
+
+// SetIngressDomain sets the "ingress_domain" field.
+func (u *BatchImageJobUpsertBulk) SetIngressDomain(v string) *BatchImageJobUpsertBulk {
+	return u.Update(func(s *BatchImageJobUpsert) {
+		s.SetIngressDomain(v)
+	})
+}
+
+// UpdateIngressDomain sets the "ingress_domain" field to the value that was provided on create.
+func (u *BatchImageJobUpsertBulk) UpdateIngressDomain() *BatchImageJobUpsertBulk {
+	return u.Update(func(s *BatchImageJobUpsert) {
+		s.UpdateIngressDomain()
+	})
+}
+
+// ClearIngressDomain clears the value of the "ingress_domain" field.
+func (u *BatchImageJobUpsertBulk) ClearIngressDomain() *BatchImageJobUpsertBulk {
+	return u.Update(func(s *BatchImageJobUpsert) {
+		s.ClearIngressDomain()
 	})
 }
 

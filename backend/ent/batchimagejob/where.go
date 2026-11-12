@@ -179,6 +179,11 @@ func ManifestHash(v string) predicate.BatchImageJob {
 	return predicate.BatchImageJob(sql.FieldEQ(FieldManifestHash, v))
 }
 
+// IngressDomain applies equality check predicate on the "ingress_domain" field. It's identical to IngressDomainEQ.
+func IngressDomain(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldEQ(FieldIngressDomain, v))
+}
+
 // RetryCount applies equality check predicate on the "retry_count" field. It's identical to RetryCountEQ.
 func RetryCount(v int) predicate.BatchImageJob {
 	return predicate.BatchImageJob(sql.FieldEQ(FieldRetryCount, v))
@@ -1757,6 +1762,81 @@ func ManifestHashEqualFold(v string) predicate.BatchImageJob {
 // ManifestHashContainsFold applies the ContainsFold predicate on the "manifest_hash" field.
 func ManifestHashContainsFold(v string) predicate.BatchImageJob {
 	return predicate.BatchImageJob(sql.FieldContainsFold(FieldManifestHash, v))
+}
+
+// IngressDomainEQ applies the EQ predicate on the "ingress_domain" field.
+func IngressDomainEQ(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldEQ(FieldIngressDomain, v))
+}
+
+// IngressDomainNEQ applies the NEQ predicate on the "ingress_domain" field.
+func IngressDomainNEQ(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldNEQ(FieldIngressDomain, v))
+}
+
+// IngressDomainIn applies the In predicate on the "ingress_domain" field.
+func IngressDomainIn(vs ...string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldIn(FieldIngressDomain, vs...))
+}
+
+// IngressDomainNotIn applies the NotIn predicate on the "ingress_domain" field.
+func IngressDomainNotIn(vs ...string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldNotIn(FieldIngressDomain, vs...))
+}
+
+// IngressDomainGT applies the GT predicate on the "ingress_domain" field.
+func IngressDomainGT(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldGT(FieldIngressDomain, v))
+}
+
+// IngressDomainGTE applies the GTE predicate on the "ingress_domain" field.
+func IngressDomainGTE(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldGTE(FieldIngressDomain, v))
+}
+
+// IngressDomainLT applies the LT predicate on the "ingress_domain" field.
+func IngressDomainLT(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldLT(FieldIngressDomain, v))
+}
+
+// IngressDomainLTE applies the LTE predicate on the "ingress_domain" field.
+func IngressDomainLTE(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldLTE(FieldIngressDomain, v))
+}
+
+// IngressDomainContains applies the Contains predicate on the "ingress_domain" field.
+func IngressDomainContains(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldContains(FieldIngressDomain, v))
+}
+
+// IngressDomainHasPrefix applies the HasPrefix predicate on the "ingress_domain" field.
+func IngressDomainHasPrefix(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldHasPrefix(FieldIngressDomain, v))
+}
+
+// IngressDomainHasSuffix applies the HasSuffix predicate on the "ingress_domain" field.
+func IngressDomainHasSuffix(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldHasSuffix(FieldIngressDomain, v))
+}
+
+// IngressDomainIsNil applies the IsNil predicate on the "ingress_domain" field.
+func IngressDomainIsNil() predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldIsNull(FieldIngressDomain))
+}
+
+// IngressDomainNotNil applies the NotNil predicate on the "ingress_domain" field.
+func IngressDomainNotNil() predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldNotNull(FieldIngressDomain))
+}
+
+// IngressDomainEqualFold applies the EqualFold predicate on the "ingress_domain" field.
+func IngressDomainEqualFold(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldEqualFold(FieldIngressDomain, v))
+}
+
+// IngressDomainContainsFold applies the ContainsFold predicate on the "ingress_domain" field.
+func IngressDomainContainsFold(v string) predicate.BatchImageJob {
+	return predicate.BatchImageJob(sql.FieldContainsFold(FieldIngressDomain, v))
 }
 
 // RetryCountEQ applies the EQ predicate on the "retry_count" field.

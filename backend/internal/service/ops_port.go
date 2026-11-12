@@ -77,6 +77,7 @@ type OpsInsertErrorLogInput struct {
 	Stream      bool
 	// InboundEndpoint is the normalized client-facing API endpoint path, e.g. /v1/chat/completions.
 	InboundEndpoint string
+	IngressDomain   string
 	// UpstreamEndpoint is the normalized upstream endpoint path, e.g. /v1/responses.
 	UpstreamEndpoint string
 	// RequestedModel is the client-requested model name before mapping.

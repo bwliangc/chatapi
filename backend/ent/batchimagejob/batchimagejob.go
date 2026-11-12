@@ -63,6 +63,8 @@ const (
 	FieldRequestHash = "request_hash"
 	// FieldManifestHash holds the string denoting the manifest_hash field in the database.
 	FieldManifestHash = "manifest_hash"
+	// FieldIngressDomain holds the string denoting the ingress_domain field in the database.
+	FieldIngressDomain = "ingress_domain"
 	// FieldRetryCount holds the string denoting the retry_count field in the database.
 	FieldRetryCount = "retry_count"
 	// FieldVersion holds the string denoting the version field in the database.
@@ -125,6 +127,7 @@ var Columns = []string{
 	FieldIdempotencyKey,
 	FieldRequestHash,
 	FieldManifestHash,
+	FieldIngressDomain,
 	FieldRetryCount,
 	FieldVersion,
 	FieldOutputExpiresAt,
@@ -197,6 +200,8 @@ var (
 	RequestHashValidator func(string) error
 	// ManifestHashValidator is a validator for the "manifest_hash" field. It is called by the builders before save.
 	ManifestHashValidator func(string) error
+	// IngressDomainValidator is a validator for the "ingress_domain" field. It is called by the builders before save.
+	IngressDomainValidator func(string) error
 	// DefaultRetryCount holds the default value on creation for the "retry_count" field.
 	DefaultRetryCount int
 	// DefaultVersion holds the default value on creation for the "version" field.
@@ -342,6 +347,11 @@ func ByRequestHash(opts ...sql.OrderTermOption) OrderOption {
 // ByManifestHash orders the results by the manifest_hash field.
 func ByManifestHash(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldManifestHash, opts...).ToFunc()
+}
+
+// ByIngressDomain orders the results by the ingress_domain field.
+func ByIngressDomain(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIngressDomain, opts...).ToFunc()
 }
 
 // ByRetryCount orders the results by the retry_count field.

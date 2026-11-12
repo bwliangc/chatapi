@@ -228,6 +228,7 @@ func (s *OpenAIGatewayService) CreateLiveCall(
 			UserAgent:             identity.UserAgent,
 			IPAddress:             identity.IPAddress,
 			InboundEndpoint:       identity.InboundEndpoint,
+			IngressDomain:         identity.IngressDomain,
 			AttestationCiphertext: attestationCiphertext,
 		}
 		mappingTTL := s.liveMaxSessionDuration() + 5*time.Minute
@@ -848,6 +849,7 @@ func (s *OpenAIGatewayService) finalizeLiveCall(record *LiveCallRecord) {
 		UserAgent:        &userAgent,
 		IPAddress:        &ipAddress,
 		InboundEndpoint:  &inboundEndpoint,
+		IngressDomain:    optionalTrimmedStringPtr(record.IngressDomain),
 		UpstreamEndpoint: &upstreamEndpoint,
 		CreatedAt:        record.CreatedAt,
 	}, "service.openai_live")
