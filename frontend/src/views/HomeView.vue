@@ -93,7 +93,7 @@
   <!-- Default Home Page -->
   <div
     v-else
-    class="cosmic-shell cosmic-distortion-surface relative min-h-screen overflow-hidden text-slate-950 dark:text-white"
+    class="cosmic-shell cosmic-distortion-surface relative flex min-h-screen flex-col overflow-hidden text-slate-950 dark:text-white"
   >
     <!-- 星空与鼠标黑洞透镜背景 -->
     <div class="cosmic-backdrop cosmic-backdrop--absolute">
@@ -112,7 +112,7 @@
       </div>
     </div>
 
-    <!-- Extra tint for the pricing cockpit panels -->
+    <!-- Ambient lighting -->
     <div class="pointer-events-none absolute inset-0 overflow-hidden">
       <div class="absolute left-[-18rem] top-[-14rem] h-[34rem] w-[34rem] rounded-full bg-amber-300/25 blur-3xl dark:bg-amber-500/10"></div>
       <div class="absolute right-[-12rem] top-24 h-[30rem] w-[30rem] rounded-full bg-cyan-400/20 blur-3xl dark:bg-cyan-400/10"></div>
@@ -200,8 +200,8 @@
       </nav>
     </header>
 
-    <main class="relative z-10 px-5 pb-16 pt-8 sm:px-6 lg:pb-24">
-      <div class="mx-auto max-w-7xl">
+    <main class="relative z-10 flex flex-1 flex-col justify-center px-5 pb-16 pt-8 sm:px-6 lg:pb-24">
+      <div class="mx-auto w-full max-w-7xl">
         <!-- Hero -->
         <section class="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
@@ -213,10 +213,10 @@
             </div>
 
             <h1
-              class="max-w-4xl text-5xl font-black leading-[0.95] tracking-[-0.04em] text-slate-950 dark:text-white sm:text-6xl lg:text-6xl xl:text-7xl"
+              class="max-w-4xl text-4xl font-black leading-[1.05] tracking-[-0.04em] text-slate-950 dark:text-white sm:text-6xl xl:text-7xl"
             >
               {{ t('home.hero.title') }}
-              <span class="block whitespace-nowrap bg-gradient-to-r from-amber-500 via-orange-500 to-cyan-500 bg-clip-text text-transparent">
+              <span class="block bg-gradient-to-r from-amber-500 via-orange-500 to-cyan-500 bg-clip-text text-transparent">
                 {{ t('home.hero.titleAccent') }}
               </span>
             </h1>
@@ -242,7 +242,6 @@
                 {{ t('home.viewDocs') }}
               </a>
             </div>
-
           </div>
 
           <!-- Activity -->
@@ -283,157 +282,6 @@
             </div>
           </aside>
         </section>
-
-        <!-- Pricing Table -->
-        <section class="mt-10">
-          <div
-            class="overflow-hidden rounded-[2rem] border border-slate-900/10 bg-white/70 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06]"
-          >
-            <div
-              class="flex flex-col gap-4 border-b border-slate-900/10 p-5 dark:border-white/10 md:flex-row md:items-end md:justify-between"
-            >
-              <div>
-                <div class="text-xs font-black uppercase tracking-[0.24em] text-amber-600 dark:text-amber-300">
-                  {{ t('home.pricingTable.kicker') }}
-                </div>
-                <h2 class="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                  {{ t('home.pricingTable.title') }}
-                </h2>
-                <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                  {{ pricingTableSubtitle }}
-                </p>
-              </div>
-
-              <!-- <div class="flex flex-wrap items-center gap-3 md:justify-end">
-                <div class="flex items-baseline gap-2 text-xs text-slate-500 dark:text-slate-400">
-                  <span>{{ t('home.pricingTable.uniformMultiplier') }}</span>
-                  <strong class="font-mono text-sm text-cyan-700 dark:text-cyan-200">
-                    {{ formatMultiplier(uniformMultiplier) }}
-                  </strong>
-                </div>
-              </div> -->
-            </div>
-
-            <div data-pricing-layout="desktop" class="hidden overflow-x-auto lg:block">
-              <table class="w-full min-w-[52rem] divide-y divide-slate-900/10 text-left text-sm dark:divide-white/10">
-                <thead class="text-xs uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                  <tr>
-                    <th class="px-5 py-4 font-black">{{ t('home.pricingTable.model') }}</th>
-                    <th
-                      v-for="priceKind in priceKinds"
-                      :key="priceKind.key"
-                      class="px-5 py-4 text-right font-black"
-                    >
-                      {{ priceKind.label }}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-900/10 dark:divide-white/10">
-                  <tr
-                    v-for="item in featuredPrices"
-                    :key="item.model"
-                    :data-model="item.model"
-                    class="transition-colors hover:bg-slate-950/[0.03] dark:hover:bg-white/[0.04]"
-                  >
-                    <td class="px-5 py-4">
-                      <div class="font-black text-slate-950 dark:text-white">{{ item.model }}</div>
-                    </td>
-                    <td
-                      v-for="priceKind in priceKinds"
-                      :key="priceKind.key"
-                      :data-price-kind="priceKind.key"
-                      class="px-5 py-4 text-right"
-                    >
-                      <div
-                        data-price-currency="usd"
-                        class="whitespace-nowrap font-mono text-sm font-bold text-slate-800 dark:text-slate-200"
-                      >
-                        {{ formatPrice(item.prices[priceKind.key]) }}
-                      </div>
-                      <div
-                        data-price-currency="cny"
-                        class="mt-1 whitespace-nowrap font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300"
-                      >
-                        {{
-                          formatCnyFromPrice(
-                            item.prices[priceKind.key],
-                            item.multiplier,
-                          )
-                        }}
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <ul data-pricing-layout="mobile" class="divide-y divide-slate-900/10 dark:divide-white/10 lg:hidden">
-              <li
-                v-for="item in featuredPrices"
-                :key="`${item.model}-mobile`"
-                :data-model="item.model"
-                class="px-5 py-4"
-              >
-                <div class="break-words text-sm font-black text-slate-950 dark:text-white">
-                  {{ item.model }}
-                </div>
-
-                <dl class="mt-2 divide-y divide-slate-900/[0.06] dark:divide-white/[0.06]">
-                  <div
-                    v-for="priceKind in priceKinds"
-                    :key="priceKind.key"
-                    :data-price-kind="priceKind.key"
-                    class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-3 py-1.5"
-                  >
-                    <dt class="min-w-0 text-xs text-slate-500 dark:text-slate-400">
-                      {{ priceKind.label }}
-                    </dt>
-                    <dd
-                      data-price-currency="usd"
-                      class="whitespace-nowrap font-mono text-xs font-bold text-slate-800 dark:text-slate-200"
-                    >
-                      {{ formatPrice(item.prices[priceKind.key]) }}
-                    </dd>
-                    <dd
-                      data-price-currency="cny"
-                      class="min-w-[4.75rem] whitespace-nowrap text-right font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300"
-                    >
-                      {{
-                        formatCnyFromPrice(
-                          item.prices[priceKind.key],
-                          item.multiplier,
-                        )
-                      }}
-                    </dd>
-                  </div>
-                </dl>
-              </li>
-            </ul>
-          </div>
-
-        </section>
-
-        <!-- Bottom CTA -->
-        <section
-          class="mt-10 overflow-hidden rounded-[2rem] border border-slate-900/10 bg-white/65 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] sm:p-8"
-        >
-          <div class="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div>
-              <div class="text-xs font-black uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
-                {{ t('home.cta.kicker') }}
-              </div>
-              <h2 class="mt-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-                {{ t('home.cta.title') }}
-              </h2>
-            </div>
-            <router-link
-              :to="isAuthenticated ? dashboardPath : '/login'"
-              class="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-6 py-3.5 text-sm font-black text-white shadow-xl shadow-slate-950/20 transition-transform hover:-translate-y-1 dark:bg-white dark:text-slate-950"
-            >
-              {{ isAuthenticated ? t('home.goToDashboard') : t('home.cta.button') }}
-            </router-link>
-          </div>
-        </section>
       </div>
     </main>
 
@@ -454,7 +302,6 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore, useAppStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
-import { formatScaled } from '@/utils/pricing'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
 
@@ -463,36 +310,10 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 
-const EXCHANGE_CNY_PER_100_CREDITS = 15
-const CNY_PER_CREDIT = EXCHANGE_CNY_PER_100_CREDITS / 100
-const PRICE_SCALE = 1_000_000
-
-type PriceKind = 'input' | 'cacheRead' | 'cacheWrite' | 'output'
-
-interface TokenPrices {
-  input: number | null
-  cacheRead: number | null
-  cacheWrite: number | null
-  output: number | null
-}
-
-interface FeaturedPrice {
-  model: string
-  multiplier: number
-  prices: TokenPrices
-}
-
 type LeaderboardActivityPublicSettings = {
   leaderboard_reward_pool_rate?: unknown
   leaderboard_reward_top_n?: unknown
 }
-
-const priceKinds = computed<Array<{ key: PriceKind; label: string }>>(() => [
-  { key: 'input', label: t('home.pricingTable.priceInput') },
-  { key: 'cacheRead', label: t('home.pricingTable.priceCacheRead') },
-  { key: 'cacheWrite', label: t('home.pricingTable.priceCacheWrite') },
-  { key: 'output', label: t('home.pricingTable.priceOutput') }
-])
 
 // Site settings - directly from appStore (already initialized from injected config)
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Sub2API')
@@ -531,99 +352,12 @@ const userInitial = computed(() => {
 
 const currentYear = computed(() => new Date().getFullYear())
 
-const uniformMultiplier = 1
-
-const featuredPrices: FeaturedPrice[] = [
-  {
-    model: 'gpt-6-astra',
-    multiplier: uniformMultiplier,
-    prices: {
-      input: 0.00001,
-      cacheRead: 0.000001,
-      cacheWrite: 0.0000125,
-      output: 0.00005
-    }
-  },
-  {
-    model: 'gpt-6.1-sol',
-    multiplier: uniformMultiplier,
-    prices: {
-      input: 0.000002,
-      cacheRead: 0.0000001,
-      cacheWrite: 0.0000025,
-      output: 0.00001
-    }
-  },
-  {
-    model: 'gpt-6-sol',
-    multiplier: uniformMultiplier,
-    prices: {
-      input: 0.000002,
-      cacheRead: 0.0000002,
-      cacheWrite: 0.0000025,
-      output: 0.00001
-    }
-  },
-  {
-    model: 'gpt-6-luna',
-    multiplier: uniformMultiplier,
-    prices: {
-      input: 0.0000001,
-      cacheRead: 0.00000001,
-      cacheWrite: 0.000000125,
-      output: 0.0000005
-    }
-  },
-  {
-    model: 'gpt-5.6-sol',
-    multiplier: uniformMultiplier,
-    prices: {
-      input: 0.000005,
-      cacheRead: 0.0000005,
-      cacheWrite: 0.00000625,
-      output: 0.00003
-    }
-  },
-  {
-    model: 'gpt-5.6-terra',
-    multiplier: uniformMultiplier,
-    prices: {
-      input: 0.000002,
-      cacheRead: 0.0000002,
-      cacheWrite: 0.0000025,
-      output: 0.000012
-    }
-  },
-  {
-    model: 'gpt-5.6-luna',
-    multiplier: uniformMultiplier,
-    prices: {
-      input: 0.0000002,
-      cacheRead: 0.00000002,
-      cacheWrite: 0.00000025,
-      output: 0.0000012
-    }
-  },
-  {
-    model: 'gpt-5.5',
-    multiplier: uniformMultiplier,
-    prices: {
-      input: 0.000005,
-      cacheRead: 0.0000005,
-      cacheWrite: null,
-      output: 0.00003
-    }
-  }
-]
-
 const activityHighlights = computed(() => [
   { label: t('home.activity.items.period'), value: t('home.activity.values.period') },
   { label: t('home.activity.items.pool'), value: activityPoolValue.value },
   { label: t('home.activity.items.reward'), value: activityRewardValue.value },
   { label: t('home.activity.items.threshold'), value: t('home.activity.values.threshold') }
 ])
-
-const pricingTableSubtitle = computed(() => t('home.pricingTable.fixedSubtitle'))
 
 const leaderboardActivitySettings = computed(
   () => appStore.cachedPublicSettings as LeaderboardActivityPublicSettings | null,
@@ -649,22 +383,8 @@ const activityRewardValue = computed(() => {
   return t('home.activity.values.configuredReward', { topN: leaderboardTopN.value })
 })
 
-// function formatMultiplier(rate: number): string {
-//   return `${Number(rate || 0).toFixed(2).replace(/\.00$/, '').replace(/0$/, '')}x`
-// }
-
 function formatActivityNumber(value: number): string {
   return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
-}
-
-function formatPrice(value: number | null): string {
-  return formatScaled(value, PRICE_SCALE)
-}
-
-function formatCnyFromPrice(value: number | null, multiplier: number): string {
-  if (value == null) return '-'
-  const cny = value * PRICE_SCALE * multiplier * CNY_PER_CREDIT
-  return `¥${cny.toFixed(5).replace(/\.?0+$/, '')}`
 }
 
 function toggleTheme() {

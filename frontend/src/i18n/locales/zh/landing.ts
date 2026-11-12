@@ -16,23 +16,10 @@ export default {
     goToDashboard: '进入控制台',
     // 新增：面向用户的价值主张
     heroSubtitle: '一个密钥，畅用多个 AI 模型',
-    heroDescription: '统一展示官方价格、平台倍率与人民币折算结果。',
     hero: {
-      kicker: '价格公示',
-      title: 'AI 调用成本',
-      titleAccent: '按公开规则清晰计算',
-      description: '首页统一展示官方输入、缓存读写与输出价格、平台倍率、人民币折算结果及排行榜活动规则。'
-    },
-    pricingTable: {
-      kicker: '透明定价',
-      title: '模型价格',
-      fixedSubtitle: '每 1M Tokens；人民币按 ¥15 / $100 换算，所有上下文统一按基础价格。',
-      model: '模型',
-      uniformMultiplier: '统一倍率',
-      priceInput: '输入',
-      priceCacheRead: '缓存读取',
-      priceCacheWrite: '缓存写入',
-      priceOutput: '输出'
+      kicker: 'AI API 网关',
+      title: '一个 API 密钥',
+      titleAccent: '畅用多个 AI 模型'
     },
     activity: {
       badge: '排行榜活动',
@@ -135,13 +122,6 @@ export default {
       gemini: 'Gemini',
       antigravity: 'Antigravity',
       more: '更多'
-    },
-    // CTA 区块
-    cta: {
-      kicker: '开始使用',
-      title: '创建 API 密钥，按量透明计费。',
-      description: '注册即可获得免费试用额度，体验一站式 AI 服务',
-      button: '创建 API 密钥'
     },
     footer: {
       allRightsReserved: '保留所有权利。'

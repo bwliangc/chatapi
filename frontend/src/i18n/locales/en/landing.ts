@@ -16,23 +16,10 @@ export default {
     goToDashboard: 'Go to Dashboard',
     // User-focused value proposition
     heroSubtitle: 'One Key, All AI Models',
-    heroDescription: 'Published official pricing, platform multipliers, and RMB conversion in one place.',
     hero: {
-      kicker: 'Published pricing',
-      title: 'AI usage costs',
-      titleAccent: 'Calculated by clear public rules',
-      description: 'The home page publishes input, cache read, cache write, and output prices, plus platform multipliers, RMB conversion, and ranking activity rules.'
-    },
-    pricingTable: {
-      kicker: 'Transparent pricing',
-      title: 'Model pricing',
-      fixedSubtitle: 'Per 1M tokens; RMB converted at ¥15 / $100. Base pricing applies to all context lengths.',
-      model: 'Model',
-      uniformMultiplier: 'Uniform multiplier',
-      priceInput: 'Input',
-      priceCacheRead: 'Cache read',
-      priceCacheWrite: 'Cache write',
-      priceOutput: 'Output'
+      kicker: 'AI API gateway',
+      title: 'One API key',
+      titleAccent: 'Access multiple AI models'
     },
     activity: {
       badge: 'Ranking event',
@@ -135,13 +122,6 @@ export default {
       gemini: 'Gemini',
       antigravity: 'Antigravity',
       more: 'More'
-    },
-    // CTA section
-    cta: {
-      kicker: 'Get started',
-      title: 'Create an API key with transparent usage-based billing.',
-      description: 'Sign up now and get free trial credits to experience seamless AI access',
-      button: 'Create API key'
     },
     footer: {
       allRightsReserved: 'All rights reserved.'

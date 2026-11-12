@@ -44,7 +44,7 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
-describe('HomeView transparent pricing', () => {
+describe('HomeView default home', () => {
   beforeEach(() => {
     appStore.cachedPublicSettings.doc_url = ''
   })
@@ -66,53 +66,5 @@ describe('HomeView transparent pricing', () => {
     expect(docLink.attributes('href')).toBe('https://docs.example.com/guide')
     expect(docLink.attributes('target')).toBe('_blank')
     expect(docLink.attributes('rel')).toBe('noopener noreferrer')
-  })
-
-  it('shows one set of base prices for all context lengths', () => {
-    const wrapper = mount(HomeView, {
-      global: {
-        stubs: {
-          RouterLink: { template: '<a><slot /></a>' },
-          LocaleSwitcher: true,
-          Icon: true,
-        },
-      },
-    })
-
-    const rows = [
-      { model: 'gpt-6-astra', prices: ['$10', '$1', '$12.5', '$50'] },
-      { model: 'gpt-6.1-sol', prices: ['$2', '$0.1', '$2.5', '$10'] },
-      { model: 'gpt-6-sol', prices: ['$2', '$0.2', '$2.5', '$10'] },
-      { model: 'gpt-6-luna', prices: ['$0.1', '$0.01', '$0.125', '$0.5'] },
-      { model: 'gpt-5.6-sol', prices: ['$5', '$0.5', '$6.25', '$30'] },
-      { model: 'gpt-5.6-terra', prices: ['$2', '$0.2', '$2.5', '$12'] },
-      { model: 'gpt-5.6-luna', prices: ['$0.2', '$0.02', '$0.25', '$1.2'] },
-      { model: 'gpt-5.5', prices: ['$5', '$0.5', '-', '$30'] },
-    ]
-    const priceKinds = ['input', 'cacheRead', 'cacheWrite', 'output']
-
-    const expectPrices = () => {
-      for (const layout of ['desktop', 'mobile']) {
-        const pricingLayout = wrapper.get(`[data-pricing-layout="${layout}"]`)
-        expect(pricingLayout.findAll('[data-model]')).toHaveLength(8)
-        rows.forEach(({ model, prices }) => {
-          const row = pricingLayout.get(`[data-model="${model}"]`)
-          priceKinds.forEach((kind, index) => {
-            expect(row.get(`[data-price-kind="${kind}"] [data-price-currency="usd"]`).text()).toBe(prices[index])
-          })
-        })
-      }
-    }
-
-    expect(wrapper.find('[data-context-select]').exists()).toBe(false)
-    expectPrices()
-
-    const desktop = wrapper.get('[data-pricing-layout="desktop"]')
-    expect(
-      desktop.get('[data-model="gpt-5.6-terra"] [data-price-kind="cacheWrite"] [data-price-currency="cny"]').text(),
-    ).toBe('¥0.375')
-    expect(
-      desktop.get('[data-model="gpt-5.6-luna"] [data-price-kind="cacheRead"] [data-price-currency="cny"]').text(),
-    ).toBe('¥0.003')
   })
 })

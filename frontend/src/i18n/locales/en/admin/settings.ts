@@ -778,7 +778,7 @@ export default {
         logoReadError: 'Failed to read the image file',
         homeContent: 'Home Page Content',
         homeContentPlaceholder: 'Leave empty to use the built-in new home page. Enter a full URL to override the home page with an iframe, or trusted HTML to render a custom page.',
-        homeContentHint: 'Best for temporary campaigns, announcements, or external landing pages. When set, it overrides the default home page; leave it empty to use the built-in pricing and leaderboard home page.',
+        homeContentHint: 'Best for temporary campaigns, announcements, or external landing pages. Leave it empty to use the built-in home page.',
         homeContentIframeWarning: '⚠️ Custom home note: iframe mode depends on the target site allowing embedding via X-Frame-Options/CSP; HTML mode renders directly, so only paste trusted content.',
         compactHome: 'Compact Home Page',
         compactHomeHint: 'Show a restrained site identity page when no custom home page content is set.',
