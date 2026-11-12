@@ -828,14 +828,9 @@ func safeRawJSONArray(raw string) json.RawMessage {
 	return json.RawMessage("[]")
 }
 
-// GetFrameSrcOrigins returns deduplicated http(s) origins from home_content URL,
+// FrameSrcOrigins returns deduplicated http(s) origins from home_content URL,
 // purchase_subscription_url, and all custom_menu_items URLs. Used by the router layer for CSP frame-src injection.
-func (s *SettingService) GetFrameSrcOrigins(ctx context.Context) ([]string, error) {
-	settings, err := s.GetPublicSettings(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func (settings *PublicSettings) FrameSrcOrigins() []string {
 	seen := make(map[string]struct{})
 	var origins []string
 
@@ -861,7 +856,7 @@ func (s *SettingService) GetFrameSrcOrigins(ctx context.Context) ([]string, erro
 		addOrigin(item)
 	}
 
-	return origins, nil
+	return origins
 }
 
 // extractOriginFromURL returns the scheme+host origin from rawURL.

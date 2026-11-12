@@ -39,10 +39,12 @@ server:
   # Trusted proxies used when security.trust_forwarded_ip_for_api_key_acl is false.
   # Also used to verify which peers may set X-ChatAPI-Ingress-Domain.
   # List only the exact proxy addresses that connect directly to Sub2API.
-  # Set [] explicitly to disable forwarded-IP trust in high-security mode.
+  # Set [] explicitly to disable proxy-supplied entry markers and forwarded-IP trust in high-security mode.
+  # Entry domains can still be recorded from Host when it matches a configured API endpoint.
   # security.trust_forwarded_ip_for_api_key_acl=false 时使用的可信代理。
   # 同时用于验证设置入口节点标记的代理。只填写直连 Sub2API 的代理地址；
-  # 显式设置 [] 会禁用入口节点标记，也会在高安全模式下禁用转发 IP 信任。
+  # 显式设置 [] 会禁用代理提供的入口标记，也会在高安全模式下禁用转发 IP 信任。
+  # 请求的 Host 与已配置的 API 端点域名匹配时，仍会记录入口域名。
   trusted_proxies:
     - 127.0.0.1/32
     - ::1/128

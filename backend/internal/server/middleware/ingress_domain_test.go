@@ -32,7 +32,7 @@ func TestIngressDomainFromTrustedProxy(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			router := gin.New()
-			router.Use(IngressDomain(tt.proxies))
+			router.Use(IngressDomain(tt.proxies, nil))
 			router.GET("/v1/models", func(c *gin.Context) {
 				require.Empty(t, c.Request.Header.Values(ingressDomainHeader))
 				c.String(http.StatusOK, "%s", ctxkey.IngressDomainFromContext(c.Request.Context()))
@@ -43,6 +43,47 @@ func TestIngressDomainFromTrustedProxy(t *testing.T) {
 			req.Header.Set("X-Forwarded-Host", "spoofed.example.com")
 			for _, value := range tt.headers {
 				req.Header.Add(ingressDomainHeader, value)
+			}
+			rec := httptest.NewRecorder()
+			router.ServeHTTP(rec, req)
+			require.Equal(t, http.StatusOK, rec.Code)
+			require.Equal(t, tt.want, rec.Body.String())
+		})
+	}
+}
+
+func TestIngressDomainFromConfiguredAPIHost(t *testing.T) {
+	domains := IngressDomainsFromURLs([]string{
+		"https://HK.API.EXAMPLE.COM./v1", "https://sg.api.example.com:8443/v1",
+		"https://192.0.2.10/v1", "*.api.example.com", "ftp://ftp.example.com",
+	})
+	for _, tt := range []struct {
+		name, host, peer, marker, want string
+	}{
+		{"primary node without proxy metadata", "hk.api.example.com", "192.0.2.11:4096", "", "hk.api.example.com"},
+		{"secondary node with a port", "SG.API.EXAMPLE.COM.:8443", "192.0.2.11:4096", "", "sg.api.example.com"},
+		{"unknown subdomain", "other.api.example.com", "192.0.2.11:4096", "", ""},
+		{"IP endpoint", "192.0.2.10", "192.0.2.11:4096", "", ""},
+		{"non-HTTP endpoint", "ftp.example.com", "192.0.2.11:4096", "", ""},
+		{"invalid port", "sg.api.example.com:wrong", "192.0.2.11:4096", "", ""},
+		{"ignore forwarded host even from trusted proxy", "backend.internal", "192.0.2.10:4096", "", ""},
+		{"ignore forged marker", "backend.internal", "192.0.2.11:4096", "hk.api.example.com", ""},
+		{"prefer configured host over forged marker", "hk.api.example.com", "192.0.2.11:4096", "sg.api.example.com", "hk.api.example.com"},
+		{"prefer trusted marker over configured host", "hk.api.example.com", "192.0.2.10:4096", "edge.api.example.com", "edge.api.example.com"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			router := gin.New()
+			router.Use(IngressDomain([]string{"192.0.2.10"}, func() map[string]struct{} { return domains }))
+			router.GET("/v1/models", func(c *gin.Context) {
+				require.Empty(t, c.Request.Header.Values(ingressDomainHeader))
+				c.String(http.StatusOK, "%s", ctxkey.IngressDomainFromContext(c.Request.Context()))
+			})
+			req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+			req.Host = tt.host
+			req.RemoteAddr = tt.peer
+			req.Header.Set("X-Forwarded-Host", "sg.api.example.com")
+			if tt.marker != "" {
+				req.Header.Set(ingressDomainHeader, tt.marker)
 			}
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, req)

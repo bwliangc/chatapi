@@ -245,9 +245,18 @@ processing is restricted to explicit trusted proxy CIDRs.
 
 With a separate public domain for each entry node, admins can see the domain
 in the **Entry Node** column on **Usage** and **Error Requests**. Usage exports
-and the server's structured request logs also include it. The application
-records it on new requests once the proxies are configured; earlier records
-and requests with no verified node show a dash.
+and the server's structured request logs also include it. Existing records that
+did not capture a domain and new requests with no recognized domain show a dash.
+
+If the proxy preserves the public `Host` (as in the Nginx example above), set
+the main URL in **Site Settings → API Base URL** and add each other URL under
+**Custom Endpoints**. When the backend sees one of those exact domains in `Host`,
+it records the requested domain. Use this setup when your public proxies route
+requests by that domain and the backend is reachable only through those proxies.
+
+If a proxy replaces `Host` with an internal address, configure the dedicated
+entry marker below. A valid marker from a trusted proxy takes precedence over
+the configured `Host`; the backend does not use `X-Forwarded-Host` for this field.
 
 1. In each public reverse proxy, overwrite `X-ChatAPI-Ingress-Domain` with
    that node's public DNS name (no scheme, path, or port). For Nginx, add
@@ -272,10 +281,10 @@ and requests with no verified node show a dash.
    of the forwarded client IP setting. For a shared last proxy, forward the
    header only from the trusted entry nodes; clear it on other traffic.
 
-3. Send an API request through each domain using a test key and check the
-   **Entry Node** column. If the column is empty, verify the proxy's direct
-   peer address as seen by Sub2API and that the header reaches the backend.
-   Requests blocked at the proxy are available in that proxy's logs.
+To verify, send a completion request through each domain with a test key and
+check the new rows in **Usage**. If a row has no entry node, check the `Host`
+that reaches the backend, or the marker and direct peer IP when using the
+dedicated header. Requests blocked at the proxy are available in its logs.
 
 ## Caddy and CDN
 

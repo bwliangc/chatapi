@@ -3,11 +3,13 @@ package server
 import (
 	"context"
 	"log"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler"
+	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/server/routes"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -17,7 +19,25 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const frameSrcRefreshTimeout = 5 * time.Second
+const routerSettingsRefreshTimeout = 5 * time.Second
+
+type routerSettings struct {
+	frameOrigins   []string
+	ingressDomains map[string]struct{}
+}
+
+func newRouterSettings(settings *service.PublicSettings) *routerSettings {
+	endpoints := dto.ParseCustomEndpoints(settings.CustomEndpoints)
+	urls := make([]string, 0, len(endpoints)+1)
+	urls = append(urls, settings.APIBaseURL)
+	for _, endpoint := range endpoints {
+		urls = append(urls, endpoint.Endpoint)
+	}
+	return &routerSettings{
+		frameOrigins:   settings.FrameSrcOrigins(),
+		ingressDomains: middleware2.IngressDomainsFromURLs(urls),
+	}
+}
 
 // SetupRouter 配置路由器中间件和路由
 func SetupRouter(
@@ -38,25 +58,27 @@ func SetupRouter(
 	redisClient *redis.Client,
 ) *gin.Engine {
 	middleware2.SetIngressRejectRecorder(opsService)
-	// 缓存 iframe 页面的 origin 列表，用于动态注入 CSP frame-src
-	var cachedFrameOrigins atomic.Pointer[[]string]
-	emptyOrigins := []string{}
-	cachedFrameOrigins.Store(&emptyOrigins)
-
-	refreshFrameOrigins := func() {
-		ctx, cancel := context.WithTimeout(context.Background(), frameSrcRefreshTimeout)
+	// Load CSP origins and API domains together, outside the request path.
+	var cachedSettings atomic.Pointer[routerSettings]
+	cachedSettings.Store(&routerSettings{})
+	var refreshMu sync.Mutex
+	refreshRouterSettings := func() {
+		refreshMu.Lock()
+		defer refreshMu.Unlock()
+		ctx, cancel := context.WithTimeout(context.Background(), routerSettingsRefreshTimeout)
 		defer cancel()
-		origins, err := settingService.GetFrameSrcOrigins(ctx)
+		settings, err := settingService.GetPublicSettings(ctx)
 		if err != nil {
-			// 获取失败时保留已有缓存，避免 frame-src 被意外清空
-			return
+			return // Keep the previous snapshot on a transient read failure.
 		}
-		cachedFrameOrigins.Store(&origins)
+		cachedSettings.Store(newRouterSettings(settings))
 	}
-	refreshFrameOrigins() // 启动时初始化
+	refreshRouterSettings()
 
 	// 应用中间件
-	r.Use(middleware2.IngressDomain(cfg.Server.TrustedProxies))
+	r.Use(middleware2.IngressDomain(cfg.Server.TrustedProxies, func() map[string]struct{} {
+		return cachedSettings.Load().ingressDomains
+	}))
 	r.Use(middleware2.RequestLogger())
 	// 将客户端 IP + UA 注入 request context，供 token 签发/会话绑定/审计日志统一读取。
 	// 解析模式按请求快照：兼容开关开启时信任原始转发头，关闭时使用 server.trusted_proxies。
@@ -64,31 +86,26 @@ func SetupRouter(
 	r.Use(middleware2.Logger())
 	r.Use(middleware2.CORS(cfg.CORS))
 	r.Use(middleware2.SecurityHeaders(cfg.Security.CSP, func() []string {
-		if p := cachedFrameOrigins.Load(); p != nil {
-			return *p
-		}
-		return nil
+		return cachedSettings.Load().frameOrigins
 	}))
 	r.Use(middleware2.ServerTiming(cfg.Server.EnableServerTiming))
 
+	onSettingsUpdate := refreshRouterSettings
 	// Serve embedded frontend with settings injection if available
 	if web.HasEmbeddedFrontend() {
 		frontendServer, err := web.NewFrontendServer(settingService) //nolint:staticcheck // SA4023: the !embed stub always errors; embed builds can return nil
 		if err != nil {                                              //nolint:staticcheck // SA4023: see above
 			log.Printf("Warning: Failed to create frontend server with settings injection: %v, using legacy mode", err)
 			r.Use(web.ServeEmbeddedFrontend())
-			settingService.SetOnUpdateCallback(refreshFrameOrigins)
 		} else {
-			// Register combined callback: invalidate HTML cache + refresh frame origins
-			settingService.SetOnUpdateCallback(func() {
+			onSettingsUpdate = func() {
 				frontendServer.InvalidateCache()
-				refreshFrameOrigins()
-			})
+				refreshRouterSettings()
+			}
 			r.Use(frontendServer.Middleware())
 		}
-	} else {
-		settingService.SetOnUpdateCallback(refreshFrameOrigins)
 	}
+	settingService.SetOnUpdateCallback(onSettingsUpdate)
 
 	// 注册路由
 	registerRoutes(r, handlers, jwtAuth, optionalJWTAuth, adminAuth, apiKeyAuth, auditLog, stepUpAuth, apiKeyService, subscriptionService, opsService, settingService, compositeResolver, cfg, redisClient)

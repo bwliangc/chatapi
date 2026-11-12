@@ -3,6 +3,8 @@ package middleware
 import (
 	"context"
 	"net"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
@@ -11,10 +13,11 @@ import (
 
 const ingressDomainHeader = "X-ChatAPI-Ingress-Domain"
 
-// IngressDomain reads the domain set by the reverse proxy that accepted the
-// request. Only the immediate peer can vouch for it; client IP headers and the
-// client IP compatibility switch have no effect here.
-func IngressDomain(trustedProxies []string) gin.HandlerFunc {
+// IngressDomain prefers the marker from a trusted immediate peer. Otherwise,
+// it records the request's own Host only if it matches a configured API domain.
+// The Host fallback identifies the requested domain for logs, not a trusted
+// peer. The callback returns a read-only snapshot of the configured domains.
+func IngressDomain(trustedProxies []string, configuredDomains func() map[string]struct{}) gin.HandlerFunc {
 	proxies := ingressProxyNetworks(trustedProxies)
 	return func(c *gin.Context) {
 		req := c.Request
@@ -23,19 +26,55 @@ func IngressDomain(trustedProxies []string) gin.HandlerFunc {
 			// This is internal metadata and must never be forwarded upstream.
 			req.Header.Del(ingressDomainHeader)
 		}
+		var domain string
 		if len(values) == 1 && len(proxies) > 0 {
 			peer := net.ParseIP(c.RemoteIP())
 			for _, proxy := range proxies {
 				if proxy.Contains(peer) {
-					if domain := normalizeIngressDomain(values[0]); domain != "" {
-						c.Request = req.WithContext(context.WithValue(req.Context(), ctxkey.IngressDomain, domain))
-					}
+					domain = normalizeIngressDomain(values[0])
 					break
 				}
 			}
 		}
+		if domain == "" && configuredDomains != nil {
+			if allowed := configuredDomains(); len(allowed) > 0 {
+				if host := ingressDomainFromHost(req.Host); host != "" {
+					if _, ok := allowed[host]; ok {
+						domain = host
+					}
+				}
+			}
+		}
+		if domain != "" {
+			c.Request = req.WithContext(context.WithValue(req.Context(), ctxkey.IngressDomain, domain))
+		}
 		c.Next()
 	}
+}
+
+// IngressDomainsFromURLs builds an exact domain allowlist from configured API URLs.
+func IngressDomainsFromURLs(endpoints []string) map[string]struct{} {
+	domains := make(map[string]struct{}, len(endpoints))
+	for _, endpoint := range endpoints {
+		u, err := url.Parse(strings.TrimSpace(endpoint))
+		if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil {
+			continue
+		}
+		if domain := ingressDomainFromHost(u.Host); domain != "" {
+			domains[domain] = struct{}{}
+		}
+	}
+	return domains
+}
+
+func ingressDomainFromHost(host string) string {
+	domain, port, hasPort := strings.Cut(host, ":")
+	if hasPort {
+		if _, err := strconv.ParseUint(port, 10, 16); err != nil {
+			return ""
+		}
+	}
+	return normalizeIngressDomain(domain)
 }
 
 func ingressProxyNetworks(proxies []string) []*net.IPNet {
